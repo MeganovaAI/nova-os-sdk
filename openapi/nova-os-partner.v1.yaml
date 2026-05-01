@@ -320,6 +320,113 @@ components:
         next_cursor:
           type: string
 
+    Employee:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+        display_name:
+          type: string
+        description:
+          type: string
+        model_config:
+          $ref: '#/components/schemas/ModelConfig'
+          description: Cascades to all owned agents unless they override.
+        web_search_config:
+          $ref: '#/components/schemas/WebSearchConfig'
+          description: Cascades to owned agents.
+        callback:
+          $ref: '#/components/schemas/CustomToolCallback'
+          description: Catch-all callback for any owned-agent tool with no closer match.
+        agents:
+          type: array
+          items:
+            type: string
+          description: IDs of agents owned by this employee.
+          readOnly: true
+        storage_path:
+          type: string
+          description: Filesystem path under users/<owner>/employees/<id>/.
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    EmployeeCreate:
+      allOf:
+        - $ref: '#/components/schemas/Employee'
+      required: [id]
+
+    EmployeeUpdate:
+      type: object
+      properties:
+        display_name:
+          type: string
+        description:
+          type: string
+        model_config:
+          $ref: '#/components/schemas/ModelConfig'
+        web_search_config:
+          $ref: '#/components/schemas/WebSearchConfig'
+        callback:
+          $ref: '#/components/schemas/CustomToolCallback'
+
+    EmployeeList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+
+    BundleManifest:
+      type: object
+      required: [schema_version, employee_id, nova_os_min_version, created_at]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        employee_id:
+          type: string
+        nova_os_min_version:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        agents:
+          type: array
+          items:
+            type: string
+        knowledge_files:
+          type: integer
+
+    BundleImportResult:
+      type: object
+      required: [employee_id, agents_imported]
+      properties:
+        employee_id:
+          type: string
+        agents_imported:
+          type: integer
+        knowledge_files_indexed:
+          type: integer
+        warnings:
+          type: array
+          items:
+            type: string
+
   responses:
     BadRequest:
       description: Request validation failed.
