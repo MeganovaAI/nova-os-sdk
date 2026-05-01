@@ -975,3 +975,152 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/managed/employees:
+    post:
+      operationId: createEmployee
+      summary: Create an employee
+      tags: [Employees]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+      responses:
+        '201':
+          description: Employee created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    get:
+      operationId: listEmployees
+      summary: List employees
+      tags: [Employees]
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        '200':
+          description: Employee list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/managed/employees/{employee_id}:
+    parameters:
+      - in: path
+        name: employee_id
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getEmployee
+      summary: Get an employee
+      tags: [Employees]
+      responses:
+        '200':
+          description: Employee.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateEmployee
+      summary: Update an employee (partial)
+      tags: [Employees]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdate'
+      responses:
+        '200':
+          description: Updated employee.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      operationId: deleteEmployee
+      summary: Delete an employee
+      tags: [Employees]
+      responses:
+        '204':
+          description: Deleted.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/managed/employees/{employee_id}/bundle/export:
+    parameters:
+      - in: path
+        name: employee_id
+        required: true
+        schema: { type: string }
+    get:
+      operationId: exportEmployeeBundle
+      summary: Download a portable .nova-bundle.zip
+      tags: [Employees]
+      parameters:
+        - in: query
+          name: include_knowledge
+          schema: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Zip bundle.
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/managed/employees/bundle/import:
+    post:
+      operationId: importEmployeeBundle
+      summary: Import a .nova-bundle.zip
+      tags: [Employees]
+      parameters:
+        - in: query
+          name: on_conflict
+          schema:
+            type: string
+            enum: [overwrite, skip, error]
+            default: error
+      requestBody:
+        required: true
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Imported.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleImportResult'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: Conflict — existing employee with same id and `on_conflict=error`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
