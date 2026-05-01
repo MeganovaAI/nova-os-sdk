@@ -706,6 +706,75 @@ components:
           type: boolean
           default: false
 
+    JobStatus:
+      type: string
+      enum: [queued, running, completed, failed, cancelled]
+
+    Job:
+      type: object
+      required: [job_id, agent_id, status, created_at]
+      properties:
+        job_id:
+          type: string
+        agent_id:
+          type: string
+        employee_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        result:
+          $ref: '#/components/schemas/MessageResponse'
+        error:
+          $ref: '#/components/schemas/Error'
+        event_count:
+          type: integer
+          readOnly: true
+        instance_id:
+          type: string
+          readOnly: true
+
+    JobCreate:
+      type: object
+      required: [agent_id, messages]
+      properties:
+        agent_id:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        model:
+          type: string
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolDefinition'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    JobList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Job'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+
   responses:
     BadRequest:
       description: Request validation failed.
