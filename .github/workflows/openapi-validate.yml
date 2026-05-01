@@ -1,0 +1,38 @@
+name: OpenAPI Validate
+
+on:
+  pull_request:
+    paths:
+      - 'openapi/**'
+      - 'Makefile'
+      - '.github/workflows/openapi-validate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'openapi/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node (for Spectral)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Python (for openapi-spec-validator)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Spectral
+        run: npm install -g @stoplight/spectral-cli
+
+      - name: Install openapi-spec-validator
+        run: pip install openapi-spec-validator
+
+      - name: Run spec-check (validate + lint + hash drift)
+        run: make spec-check

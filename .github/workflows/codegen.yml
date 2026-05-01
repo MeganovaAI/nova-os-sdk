@@ -1,0 +1,79 @@
+name: Codegen Drift Check
+
+on:
+  pull_request:
+    paths:
+      - 'openapi/**'
+      - 'cli/**'
+      - 'python/**'
+      - '.github/workflows/codegen.yml'
+  push:
+    branches: [main]
+
+jobs:
+  codegen-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Install oapi-codegen
+        run: go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1
+
+      - name: Regenerate Go client
+        run: |
+          cd cli
+          go generate ./...
+
+      - name: Fail on drift
+        run: |
+          if ! git diff --quiet -- cli/internal/client/client.gen.go; then
+            echo "FAIL: cli/internal/client/client.gen.go drifted from spec."
+            echo "Run 'make codegen-go' locally and commit the result."
+            git diff -- cli/internal/client/client.gen.go | head -80
+            exit 1
+          fi
+
+      - name: Build CLI
+        run: cd cli && go build ./...
+
+  codegen-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install openapi-python-client
+        run: pip install openapi-python-client
+
+      - name: Regenerate Python client
+        run: |
+          cd python
+          rm -rf nova_os/_generated
+          openapi-python-client generate --path ../openapi/nova-os-partner.v1.yaml --overwrite \
+            --config openapi-python-client.yaml
+          mv nova-os-sdk-generated/nova_os/_generated nova_os/_generated
+          rm -rf nova-os-sdk-generated
+
+      - name: Fail on drift
+        run: |
+          if ! git diff --quiet -- python/nova_os/_generated; then
+            echo "FAIL: python/nova_os/_generated drifted from spec."
+            echo "Run 'make codegen-python' locally and commit the result."
+            git diff --stat -- python/nova_os/_generated
+            exit 1
+          fi
+
+      - name: Run smoke tests
+        run: |
+          cd python
+          pip install -e ".[dev]"
+          pytest tests/test_smoke.py -v

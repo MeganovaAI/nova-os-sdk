@@ -1,0 +1,115 @@
+name: SDK Spec Check (callable)
+
+on:
+  workflow_call:
+    inputs:
+      caller_repo:
+        description: Caller repo (e.g., MeganovaAI/nova-os).
+        required: true
+        type: string
+      caller_ref:
+        description: Caller ref (commit SHA or branch).
+        required: true
+        type: string
+      route_index_path:
+        description: |
+          Path within the caller repo to a YAML file that lists every HTTP
+          route the caller exposes. Format: `routes: [{method, path}]`.
+        required: false
+        type: string
+        default: 'docs/openapi-route-index.yaml'
+
+jobs:
+  spec-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout nova-os-sdk
+        uses: actions/checkout@v4
+        with:
+          repository: MeganovaAI/nova-os-sdk
+          ref: main
+          path: nova-os-sdk
+
+      - name: Checkout caller repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.caller_repo }}
+          ref: ${{ inputs.caller_ref }}
+          path: caller
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pyyaml openapi-spec-validator
+
+      - name: Validate caller route index against spec
+        env:
+          ROUTE_INDEX: ${{ inputs.route_index_path }}
+        run: |
+          python <<'PY'
+          import os
+          import sys
+          import yaml
+
+          spec_path = "nova-os-sdk/openapi/nova-os-partner.v1.yaml"
+          route_index_path = f"caller/{os.environ['ROUTE_INDEX']}"
+
+          with open(spec_path) as f:
+              spec = yaml.safe_load(f)
+
+          spec_routes = set()
+          for path, ops in (spec.get("paths") or {}).items():
+              for method in ("get", "post", "put", "delete", "patch"):
+                  if method in ops:
+                      spec_routes.add((method.upper(), path))
+
+          try:
+              with open(route_index_path) as f:
+                  caller = yaml.safe_load(f) or {}
+          except FileNotFoundError:
+              print(f"::warning::Route index not found at {route_index_path}; skipping match check.")
+              sys.exit(0)
+
+          caller_routes = set()
+          for r in caller.get("routes", []):
+              caller_routes.add((r["method"].upper(), r["path"]))
+
+          missing_in_spec = caller_routes - spec_routes
+          missing_in_caller = spec_routes - caller_routes
+
+          fail = False
+          if missing_in_spec:
+              fail = True
+              print("::error::Caller exposes routes NOT in the OpenAPI spec:")
+              for m, p in sorted(missing_in_spec):
+                  print(f"::error::  {m} {p}")
+
+          if missing_in_caller:
+              fail = True
+              print("::error::Spec declares routes NOT exposed by the caller:")
+              for m, p in sorted(missing_in_caller):
+                  print(f"::error::  {m} {p}")
+
+          if fail:
+              sys.exit(1)
+
+          print(f"OK: {len(spec_routes)} routes match between spec and caller.")
+          PY
+
+      - name: Compare OpenAPI hash with caller-pinned hash
+        run: |
+          actual=$(sha256sum nova-os-sdk/openapi/nova-os-partner.v1.yaml | cut -c1-12)
+          committed=$(cat nova-os-sdk/openapi/openapi-hash.txt)
+          if [ "$actual" != "$committed" ]; then
+            echo "::error::nova-os-sdk@main has unsynced spec hash (committed=$committed actual=$actual). Open a PR on nova-os-sdk."
+            exit 1
+          fi
+          if [ -f caller/docs/openapi-pinned-hash.txt ]; then
+            pinned=$(cat caller/docs/openapi-pinned-hash.txt)
+            if [ "$actual" != "$pinned" ]; then
+              echo "::warning::Caller pinned hash ($pinned) differs from current main ($actual). Caller should bump."
+            fi
+          fi
