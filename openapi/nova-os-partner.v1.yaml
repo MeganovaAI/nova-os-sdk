@@ -13,6 +13,7 @@ info:
   contact:
     name: Nova OS Team
     url: https://github.com/MeganovaAI/nova-os-sdk
+    email: support@meganova.ai
 
 servers:
   - url: https://nova.partner.example.com
