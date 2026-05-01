@@ -4,20 +4,56 @@ Single static Go binary for managing Nova OS employees, agents, and jobs from th
 
 ## Install
 
-Pre-built binaries for linux/darwin/windows ship on the GitHub Releases page (multi-arch build pipeline coming soon). For now, install from source:
+### Pre-built binary (recommended)
+
+Pre-built binaries for linux/darwin/windows × amd64/arm64 are attached to every GitHub Release:
+
+```bash
+# linux/amd64 example — adjust for your platform
+TAG=v0.9.0rc2  # or whichever tag you want
+curl -L "https://github.com/MeganovaAI/nova-os-sdk/releases/download/$TAG/nova-os-cli_linux_amd64.tar.gz" \
+  | tar -xz -C /usr/local/bin nova-os-cli
+
+nova-os-cli version
+```
+
+### Docker
+
+```bash
+docker run --rm -it ghcr.io/meganovaai/nova-os-cli:latest version
+```
+
+Mount your config + data:
+
+```bash
+docker run --rm -it \
+  -v ~/.nova-os:/home/nonroot/.nova-os \
+  -v $PWD/data:/data \
+  -e NOVA_OS_API_KEY \
+  ghcr.io/meganovaai/nova-os-cli:latest sync /data/
+```
+
+### Verify signature (cosign keyless)
+
+Every binary archive is signed with cosign keyless. Verify:
+
+```bash
+TAG=v0.9.0rc2
+cosign verify-blob \
+  --certificate-identity-regexp 'https://github.com/MeganovaAI/nova-os-sdk/.+' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  --signature nova-os-cli_linux_amd64.tar.gz.sig \
+  --certificate nova-os-cli_linux_amd64.tar.gz.pem \
+  nova-os-cli_linux_amd64.tar.gz
+```
+
+### From source
 
 ```bash
 go install github.com/MeganovaAI/nova-os-sdk/cli@latest
-mv $(go env GOPATH)/bin/cli $(go env GOPATH)/bin/nova-os-cli
 ```
 
-Or build locally:
-
-```bash
-git clone https://github.com/MeganovaAI/nova-os-sdk.git
-cd nova-os-sdk/cli
-go build -o nova-os-cli .
-```
+(Installs as `cli` in `$GOPATH/bin`; rename to `nova-os-cli` for clarity.)
 
 ## Quick start
 
