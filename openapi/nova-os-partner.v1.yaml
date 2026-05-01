@@ -1124,3 +1124,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /v1/managed/agents/jobs:
+    post:
+      operationId: createJob
+      summary: Submit an async agent run
+      tags: [Jobs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreate'
+      responses:
+        '202':
+          description: Job queued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    get:
+      operationId: listJobs
+      summary: List jobs
+      tags: [Jobs]
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/JobStatus'
+        - in: query
+          name: agent_id
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        '200':
+          description: Job list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/managed/agents/jobs/{job_id}:
+    parameters:
+      - in: path
+        name: job_id
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getJob
+      summary: Get a job
+      tags: [Jobs]
+      responses:
+        '200':
+          description: Job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      operationId: cancelJob
+      summary: Cancel a job (graceful drain)
+      tags: [Jobs]
+      responses:
+        '202':
+          description: Cancellation accepted.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/managed/agents/jobs/{job_id}/stream:
+    parameters:
+      - in: path
+        name: job_id
+        required: true
+        schema: { type: string }
+      - in: header
+        name: Last-Event-ID
+        schema: { type: string }
+        description: Resume from event seq — replays missed events from PG before live broadcast.
+    get:
+      operationId: streamJob
+      summary: SSE stream for an async job (with replay)
+      tags: [Jobs]
+      responses:
+        '200':
+          description: SSE stream.
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/StreamEvent'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
