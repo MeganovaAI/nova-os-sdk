@@ -4,5 +4,32 @@ See https://github.com/MeganovaAI/nova-os-sdk for documentation.
 """
 
 from nova_os._version import __version__, OPENAPI_VERSION
+from nova_os.client import Client
+from nova_os.errors import (
+    NovaOSError,
+    AuthenticationError,
+    PermissionError,
+    NotFoundError,
+    RateLimitedError,
+    BillingError,
+    UpstreamError,
+    VertexSchemaError,
+    ModelNotFoundError,
+    InternalError,
+)
 
-__all__ = ["__version__", "OPENAPI_VERSION"]
+__all__ = [
+    "__version__",
+    "OPENAPI_VERSION",
+    "Client",
+    "NovaOSError",
+    "AuthenticationError",
+    "PermissionError",
+    "NotFoundError",
+    "RateLimitedError",
+    "BillingError",
+    "UpstreamError",
+    "VertexSchemaError",
+    "ModelNotFoundError",
+    "InternalError",
+]
