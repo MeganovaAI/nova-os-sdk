@@ -121,9 +121,7 @@ class MessageResponse:
         _content = d.pop("content")
         for content_item_data in _content:
 
-            def _parse_content_item(
-                data: object,
-            ) -> TextBlock | ToolResultBlock | ToolUseBlock:
+            def _parse_content_item(data: object) -> TextBlock | ToolResultBlock | ToolUseBlock:
                 try:
                     if not isinstance(data, dict):
                         raise TypeError()
@@ -135,9 +133,7 @@ class MessageResponse:
                 try:
                     if not isinstance(data, dict):
                         raise TypeError()
-                    componentsschemas_content_block_type_1 = ToolUseBlock.from_dict(
-                        data
-                    )
+                    componentsschemas_content_block_type_1 = ToolUseBlock.from_dict(data)
 
                     return componentsschemas_content_block_type_1
                 except (TypeError, ValueError, AttributeError, KeyError):

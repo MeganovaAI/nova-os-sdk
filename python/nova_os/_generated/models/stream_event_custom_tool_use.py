@@ -9,9 +9,7 @@ from attrs import field as _attrs_field
 from ..models.stream_event_custom_tool_use_type import StreamEventCustomToolUseType
 
 if TYPE_CHECKING:
-    from ..models.stream_event_custom_tool_use_input import (
-        StreamEventCustomToolUseInput,
-    )
+    from ..models.stream_event_custom_tool_use_input import StreamEventCustomToolUseInput
 
 
 T = TypeVar("T", bound="StreamEventCustomToolUse")
@@ -57,9 +55,7 @@ class StreamEventCustomToolUse:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
-        from ..models.stream_event_custom_tool_use_input import (
-            StreamEventCustomToolUseInput,
-        )
+        from ..models.stream_event_custom_tool_use_input import StreamEventCustomToolUseInput
 
         d = dict(src_dict)
         type_ = StreamEventCustomToolUseType(d.pop("type"))

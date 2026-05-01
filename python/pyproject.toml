@@ -12,7 +12,7 @@ authors = [{ name = "Nova OS Team", email = "engineering@meganova.ai" }]
 requires-python = ">=3.10"
 dependencies = [
     "httpx>=0.27",
-    "pydantic>=2.7",
+    "attrs>=23.1",
     "anyio>=4.0",
 ]
 
