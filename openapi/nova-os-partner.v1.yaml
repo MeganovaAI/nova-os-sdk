@@ -427,6 +427,285 @@ components:
           items:
             type: string
 
+    Role:
+      type: string
+      enum: [user, assistant, system]
+
+    TextBlock:
+      type: object
+      required: [type, text]
+      properties:
+        type:
+          type: string
+          enum: [text]
+        text:
+          type: string
+
+    ToolUseBlock:
+      type: object
+      required: [type, id, name, input]
+      properties:
+        type:
+          type: string
+          enum: [tool_use]
+        id:
+          type: string
+        name:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+
+    ToolResultBlock:
+      type: object
+      required: [type, tool_use_id, content]
+      properties:
+        type:
+          type: string
+          enum: [tool_result]
+        tool_use_id:
+          type: string
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                $ref: '#/components/schemas/TextBlock'
+        is_error:
+          type: boolean
+          default: false
+
+    ContentBlock:
+      oneOf:
+        - $ref: '#/components/schemas/TextBlock'
+        - $ref: '#/components/schemas/ToolUseBlock'
+        - $ref: '#/components/schemas/ToolResultBlock'
+      discriminator:
+        propertyName: type
+
+    Message:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          $ref: '#/components/schemas/Role'
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                $ref: '#/components/schemas/ContentBlock'
+
+    ToolDefinition:
+      type: object
+      required: [name, input_schema]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        input_schema:
+          $ref: '#/components/schemas/JSONSchemaObject'
+        type:
+          type: string
+          enum:
+            - custom
+            - web_search_20250305
+            - text_editor_20250124
+            - bash_20250124
+          default: custom
+
+    MessageRequest:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        model:
+          type: string
+          description: Per-call override; matches Anthropic shape, also accepts <vendor>/<model>.
+          pattern: '^[a-z0-9_.-]+/[A-Za-z0-9_.:-]+$|^claude-[a-z0-9._-]+$'
+        max_tokens:
+          type: integer
+          minimum: 1
+          maximum: 64000
+          default: 4096
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+        system:
+          type: string
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolDefinition'
+        stream:
+          type: boolean
+          default: false
+        metadata:
+          type: object
+          properties:
+            brain:
+              type: boolean
+              description: Per-call planner toggle (3-state — null inherits server default).
+            stream_events:
+              type: boolean
+              description: Per-call orchestration event streaming toggle.
+            stream_thinking:
+              type: boolean
+              description: Per-call planner-thinking event toggle.
+          additionalProperties: true
+
+    MessageResponse:
+      type: object
+      required: [id, role, content, model, stop_reason]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [message]
+        role:
+          $ref: '#/components/schemas/Role'
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentBlock'
+        model:
+          type: string
+          description: Resolved model that handled the request.
+        stop_reason:
+          type: string
+          enum: [end_turn, max_tokens, stop_sequence, tool_use]
+        usage:
+          type: object
+          properties:
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+        model_used:
+          type: string
+          description: Nova OS extension — same as `model`, surfaced for clarity.
+        fallback_triggered:
+          type: boolean
+          description: Nova OS extension — true if a fallback model handled the request.
+
+    StreamEventTextDelta:
+      type: object
+      required: [type, content]
+      properties:
+        type:
+          type: string
+          enum: [text]
+        content:
+          type: string
+
+    StreamEventToolUse:
+      type: object
+      required: [type, id, name, input]
+      properties:
+        type:
+          type: string
+          enum: [tool_use]
+        id:
+          type: string
+        name:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+
+    StreamEventToolResult:
+      type: object
+      required: [type, tool_use_id]
+      properties:
+        type:
+          type: string
+          enum: [tool_result]
+        tool_use_id:
+          type: string
+        output_summary:
+          type: string
+          description: Preview-truncated (~1KB on the wire); full payload in call_log.
+        is_error:
+          type: boolean
+
+    StreamEventCustomToolUse:
+      type: object
+      required: [type, id, name, input]
+      properties:
+        type:
+          type: string
+          enum: [custom_tool_use]
+        id:
+          type: string
+        name:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+
+    StreamEventThinking:
+      type: object
+      required: [type, content]
+      properties:
+        type:
+          type: string
+          enum: [thinking]
+        content:
+          type: string
+
+    StreamEventError:
+      type: object
+      required: [type, error]
+      properties:
+        type:
+          type: string
+          enum: [error]
+        error:
+          $ref: '#/components/schemas/Error'
+
+    StreamEventDone:
+      type: object
+      required: [type, status]
+      properties:
+        type:
+          type: string
+          enum: [done]
+        status:
+          type: string
+          enum: [completed, failed, cancelled]
+        message_id:
+          type: string
+
+    StreamEvent:
+      oneOf:
+        - $ref: '#/components/schemas/StreamEventTextDelta'
+        - $ref: '#/components/schemas/StreamEventToolUse'
+        - $ref: '#/components/schemas/StreamEventToolResult'
+        - $ref: '#/components/schemas/StreamEventCustomToolUse'
+        - $ref: '#/components/schemas/StreamEventThinking'
+        - $ref: '#/components/schemas/StreamEventError'
+        - $ref: '#/components/schemas/StreamEventDone'
+      discriminator:
+        propertyName: type
+
+    CustomToolResultRequest:
+      type: object
+      required: [tool_use_id, output]
+      properties:
+        tool_use_id:
+          type: string
+        output:
+          type: string
+        is_error:
+          type: boolean
+          default: false
+
   responses:
     BadRequest:
       description: Request validation failed.
