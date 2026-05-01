@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       caller_repo:
-        description: Caller repo (e.g., MeganovaAI/nova-os).
+        description: Caller repo (e.g., your-org/your-server-repo).
         required: true
         type: string
       caller_ref:
