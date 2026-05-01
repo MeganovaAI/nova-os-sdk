@@ -1,3 +1,0 @@
-package_name_override = "nova_os._generated"
-project_name_override = "nova-os-sdk-generated"
-use_path_prefixes_for_title_model_names = true
