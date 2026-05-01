@@ -45,3 +45,23 @@ def test_client_and_errors_reexported() -> None:
     assert hasattr(c, "messages")
     assert hasattr(c, "jobs")
     assert hasattr(c, "sync")
+
+
+def test_streaming_and_webhook_reexported() -> None:
+    """Phase 3.2 additions — WebhookRouter and MessageStream must be re-exported."""
+    import nova_os
+
+    assert hasattr(nova_os, "WebhookRouter")
+    assert hasattr(nova_os, "MessageStream")
+
+    # WebhookRouter must be instantiable with a secret
+    router = nova_os.WebhookRouter(secret="test-secret-at-least-16-chars")
+    assert hasattr(router, "tool")
+    assert hasattr(router, "handle")
+    assert hasattr(router, "fastapi_router")
+    assert hasattr(router, "flask_blueprint")
+    assert hasattr(router, "aws_lambda_handler")
+
+    # MessageStream must be the same class as nova_os.streaming.MessageStream
+    from nova_os.streaming import MessageStream
+    assert nova_os.MessageStream is MessageStream
