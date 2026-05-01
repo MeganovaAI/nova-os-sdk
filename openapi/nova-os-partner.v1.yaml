@@ -75,6 +75,251 @@ components:
           type: string
           description: Human-readable hint for actionable errors.
 
+    AgentType:
+      type: string
+      enum: [persona, skill]
+      description: |
+        Whether this agent dispatches to other skill agents (persona) or
+        executes one skill directly (skill). Maps to nova-os internals;
+        partners only see the discriminator.
+
+    ModelSlot:
+      type: object
+      required: [primary]
+      properties:
+        primary:
+          type: string
+          description: Model identifier in `<vendor>/<model>` shape (e.g., `anthropic/claude-opus-4-7`).
+          pattern: '^[a-z0-9_.-]+/[A-Za-z0-9_.:-]+$'
+        fallback:
+          type: array
+          items:
+            type: string
+            pattern: '^[a-z0-9_.-]+/[A-Za-z0-9_.:-]+$'
+          description: |
+            Ordered fallback chain. Activates on rate-limit / 5xx / vendor outage /
+            Vertex 400 schema-error before falling through to the next resolution level.
+
+    ModelConfig:
+      type: object
+      description: |
+        Three-slot model configuration. Any slot may be omitted; resolution
+        falls through per the spec (per-call → per-skill → per-agent →
+        per-employee → server default).
+      properties:
+        answer:
+          $ref: '#/components/schemas/ModelSlot'
+          description: Main chat / synthesis model.
+        planner:
+          $ref: '#/components/schemas/ModelSlot'
+          description: Brain / DAG planning model.
+        skill:
+          $ref: '#/components/schemas/ModelSlot'
+          description: Cheap tier for skill agents + report sections.
+
+    WebSearchBackend:
+      type: string
+      enum: [ceramic, tavily, brave, exa, searxng, meganova, auto]
+      description: |
+        Web search backend selection. `auto` uses Nova OS DefaultSearcher()
+        priority (Ceramic → Tavily → Brave → Exa → SearXNG, with reformulator
+        + Tavily fallback wrappers when configured).
+
+    WebSearchConfig:
+      type: object
+      properties:
+        backend:
+          $ref: '#/components/schemas/WebSearchBackend'
+          default: auto
+        fallback:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebSearchBackend'
+          description: Ordered fallback chain. Used on empty/error/off-topic results.
+        reformulator:
+          type: boolean
+          default: true
+          description: |
+            Wrap the search call with the LLM reformulator. Lifts Ceramic
+            42→70% on broad queries; only applied to keyword backends
+            (ceramic / searxng / exa), not bundled-extraction backends.
+        recency_terms:
+          type: array
+          items:
+            type: string
+          description: Custom recency markers for the recency-intent escalator.
+
+    JSONSchemaObject:
+      type: object
+      description: |
+        A subset of JSON Schema Draft 2020-12 used for tool input schemas.
+        Vertex AI rejects `type:array` without `items` — the SDK validator
+        enforces `items` is present everywhere on write.
+      additionalProperties: true
+
+    CustomToolCallback:
+      type: object
+      required: [url, auth]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: HTTPS URL (or http://localhost:* for dev). Webhook target.
+        auth:
+          type: object
+          required: [type, secret_ref]
+          properties:
+            type:
+              type: string
+              enum: [hmac_sha256]
+            secret_ref:
+              type: string
+              description: Settings-store key holding the HMAC shared secret.
+        timeout_sec:
+          type: integer
+          minimum: 1
+          maximum: 600
+          default: 30
+        retry:
+          type: object
+          properties:
+            max_attempts:
+              type: integer
+              minimum: 1
+              maximum: 10
+              default: 3
+            backoff:
+              type: string
+              enum: [exponential, linear, fixed]
+              default: exponential
+
+    CustomTool:
+      type: object
+      required: [name, input_schema]
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z][a-z0-9_]*$'
+          description: Lowercase snake_case identifier; unique within the agent.
+        description:
+          type: string
+          description: Free-text description shown to the LLM via the tool definition.
+        input_schema:
+          $ref: '#/components/schemas/JSONSchemaObject'
+        callback:
+          $ref: '#/components/schemas/CustomToolCallback'
+          description: |
+            Per-tool callback override. Falls through to agent.callback then
+            employee.callback. Required at one of the three levels.
+
+    Skill:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        model:
+          type: string
+          pattern: '^[a-z0-9_.-]+/[A-Za-z0-9_.:-]+$'
+          description: Per-skill model override (highest priority below per-call).
+
+    Agent:
+      type: object
+      required: [id, type]
+      properties:
+        id:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+        type:
+          $ref: '#/components/schemas/AgentType'
+        owner_employee:
+          type: string
+          description: Employee that owns this agent (cascades model_config + callback).
+        system_prompt:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: Skill labels this persona can dispatch to.
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+        model_config:
+          $ref: '#/components/schemas/ModelConfig'
+        web_search_config:
+          $ref: '#/components/schemas/WebSearchConfig'
+        custom_tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomTool'
+        callback:
+          $ref: '#/components/schemas/CustomToolCallback'
+          description: Agent-default callback for any custom_tool without its own.
+        max_turns:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    AgentCreate:
+      allOf:
+        - $ref: '#/components/schemas/Agent'
+      required: [id, type]
+
+    AgentUpdate:
+      type: object
+      description: Partial update; only the fields supplied are changed.
+      properties:
+        type:
+          $ref: '#/components/schemas/AgentType'
+        owner_employee:
+          type: string
+        system_prompt:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+        model_config:
+          $ref: '#/components/schemas/ModelConfig'
+        web_search_config:
+          $ref: '#/components/schemas/WebSearchConfig'
+        custom_tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomTool'
+        callback:
+          $ref: '#/components/schemas/CustomToolCallback'
+        max_turns:
+          type: integer
+
+    AgentList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Agent'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+
   responses:
     BadRequest:
       description: Request validation failed.
