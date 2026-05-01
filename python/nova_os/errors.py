@@ -118,7 +118,7 @@ class ModelNotFoundError(NovaOSError):
 
 
 class InternalError(NovaOSError):
-    """500 — server bug. Report to MeganovaAI/nova-os."""
+    """500 — server bug. Report at https://github.com/MeganovaAI/nova-os-sdk/issues."""
 
 
 _TYPE_TO_CLASS: dict[str, type[NovaOSError]] = {
