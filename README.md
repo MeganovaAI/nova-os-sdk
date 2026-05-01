@@ -17,7 +17,7 @@ This repo ships:
 
 ## Status
 
-Pre-1.0 — the API surface is being stabilized. Watch this repo's releases for the `v0.9.0-rc` API freeze tag, after which the public Python and CLI surfaces are locked for `v1.0.0`.
+**v0.9.0-rc1** — Public API frozen. Downstream consumers can integrate against this tag without chasing a moving target. `v1.0.0` ships when the cross-repo CI gate stays green and at least one partner has signaled "intent to validate" against this RC.
 
 ## License
 
