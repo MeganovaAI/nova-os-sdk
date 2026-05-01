@@ -912,3 +912,66 @@ paths:
           description: Deleted.
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/managed/agents/{agent_id}/messages:
+    parameters:
+      - in: path
+        name: agent_id
+        required: true
+        schema: { type: string }
+    post:
+      operationId: createMessage
+      summary: Send a message to an agent
+      description: |
+        When `stream:false`, returns a single `MessageResponse`.
+        When `stream:true`, returns SSE with one `event:` line + JSON
+        payload per event. Event types defined by `StreamEvent`.
+      tags: [Messages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+      responses:
+        '200':
+          description: Message response (non-stream) or SSE stream.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/StreamEvent'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '426': { $ref: '#/components/responses/UpgradeRequired' }
+
+  /v1/managed/agents/messages/{message_id}/custom_tool_results:
+    parameters:
+      - in: path
+        name: message_id
+        required: true
+        schema: { type: string }
+    post:
+      operationId: submitCustomToolResult
+      summary: Submit a custom_tool_use result (Mode A inline)
+      description: |
+        Used when partner consumes the SSE stream directly. POST the result
+        for an emitted `custom_tool_use` event; Nova OS resumes the agent
+        loop and continues streaming on the original request connection.
+      tags: [Messages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomToolResultRequest'
+      responses:
+        '202':
+          description: Result accepted; streaming resumes on the original connection.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
