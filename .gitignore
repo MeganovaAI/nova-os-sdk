@@ -30,3 +30,25 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Generated client code (re-generated in CI; checked in for offline builds)
+# (we DO check generated code in — it's a deliberate decision, see codegen.yml)
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Local secrets
+.env.local
