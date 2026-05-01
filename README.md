@@ -10,6 +10,16 @@ This repo ships:
 - **Docs** (`docs/`) — getting started, Anthropic compatibility, multi-model, web-search, custom tools.
 - **Examples** (`examples/`) — worked partner integrations (legaltech, healthcare, finance).
 
+## Install
+
+| Surface | Command |
+|---|---|
+| Python SDK | `pip install nova-os-sdk` |
+| CLI binary | `curl -L $(release_url)/nova-os-cli_linux_amd64.tar.gz \| tar -xz` |
+| CLI Docker | `docker pull ghcr.io/meganovaai/nova-os-cli:latest` |
+
+See `python/README.md` and `cli/README.md` for usage details.
+
 ## Two-tier client model
 
 - **Anthropic-compat:** code targeting `anthropic.Anthropic(base_url=...)` works unchanged for the 1:1 surface.

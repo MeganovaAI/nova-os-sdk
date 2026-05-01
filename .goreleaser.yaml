@@ -1,0 +1,130 @@
+version: 2
+project_name: nova-os-cli
+
+before:
+  hooks:
+    - sh -c 'cd cli && go mod tidy'
+
+builds:
+  - id: nova-os-cli
+    dir: cli
+    main: .
+    binary: nova-os-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      # Windows on arm64 is technically supported but the Go toolchain's
+      # support is incomplete for some deps; skip until needed.
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X github.com/MeganovaAI/nova-os-sdk/cli/cmd.CLIVersion={{.Version}}
+      - -X github.com/MeganovaAI/nova-os-sdk/cli/cmd.commit={{.Commit}}
+      - -X github.com/MeganovaAI/nova-os-sdk/cli/cmd.buildDate={{.Date}}
+
+archives:
+  - id: default
+    builds:
+      - nova-os-cli
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - cli/README.md
+      - LICENSE
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+# cosign keyless signing — uses GitHub Actions OIDC token via Fulcio CA.
+# No long-lived key. Partners verify with:
+#   cosign verify-blob --certificate-identity-regexp '...' \
+#                     --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+#                     --signature <file>.sig --certificate <file>.pem <file>
+signs:
+  - id: archives
+    cmd: cosign
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    args:
+      - sign-blob
+      - --yes
+      - --output-signature=${signature}
+      - --output-certificate=${certificate}
+      - ${artifact}
+    artifacts: archive
+
+dockers:
+  - id: linux-amd64
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-amd64"
+    dockerfile: cli/Dockerfile
+    extra_files:
+      # extra_files are additional files copied into the build context
+      # (the binary itself is auto-included by goreleaser based on the
+      # build above).
+      - cli/README.md
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.revision={{ .Commit }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+  - id: linux-arm64
+    goos: linux
+    goarch: arm64
+    image_templates:
+      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-arm64"
+    dockerfile: cli/Dockerfile
+    extra_files:
+      - cli/README.md
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.revision={{ .Commit }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+
+docker_manifests:
+  - name_template: "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-amd64"
+      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/meganovaai/nova-os-cli:latest"
+    image_templates:
+      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-amd64"
+      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-arm64"
+
+# release section — goreleaser uploads everything to the GitHub Release
+# the workflow already created (or creates one if absent).
+release:
+  github:
+    owner: MeganovaAI
+    name: nova-os-sdk
+  prerelease: auto    # auto-detect rc/alpha/beta tags
+  draft: false
