@@ -2,51 +2,46 @@
 
 Python reference SDK for **Nova OS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
 
-This is the Python client published to PyPI as `nova-os-sdk`. It wraps an OpenAPI-generated client (under `nova_os._generated/`) with ergonomic Anthropic-compatible and Nova OS extended surfaces.
-
-Status: pre-1.0 — the API surface is being stabilized. Watch this repo's releases for the `v0.9.0-rc` API freeze tag, after which the public Python surface is locked for `v1.0.0`.
+Published to PyPI as `nova-os-sdk`. Status: **v0.9.0-rc1** — public API frozen for `v1.0.0`.
 
 ## Install
 
 ```bash
 pip install nova-os-sdk
+# Optional — for Anthropic SDK drop-in compatibility
+pip install anthropic
 ```
 
-## Quick start
+## Usage
 
 ```python
-import nova_os
+from nova_os import Client, AnthropicCompatClient, WebhookRouter
 
-# Async (recommended)
-c = nova_os.Client(base_url="https://nova.partner.com", api_key="...")
+# Nova OS extended client (multi-model, employees, bundles, async jobs, ...)
+async with Client(base_url="https://nova.partner.com", api_key="...") as c:
+    agents = [a async for a in c.agents.list()]
+    msg = await c.messages.create(
+        agent_id="...",
+        messages=[{"role": "user", "content": "hi"}],
+    )
 
-# List all agents (auto-paginating async iterator)
-agents = [a async for a in c.agents.list()]
-
-# Create an agent
-agent = await c.agents.create(id="marketing-assistant", type="skill")
-
-# Send a message (non-streaming)
-resp = await c.messages.create(
-    agent_id="marketing-assistant",
-    messages=[{"role": "user", "content": "Hello"}],
+# Drop-in Anthropic SDK compat — partners using the Anthropic SDK
+# can switch base_url and ship without any other code changes.
+client = AnthropicCompatClient(base_url="https://nova.partner.com", api_key="...")
+msg = client.messages.create(
+    model="anthropic/claude-opus-4-7",
+    messages=[{"role": "user", "content": "hello"}],
+    max_tokens=256,
 )
 
-# Submit a long-running job
-job = await c.jobs.create(
-    "marketing-assistant",
-    messages=[{"role": "user", "content": "Write a full market report"}],
-)
-# Poll until done
-import asyncio
-while (job := await c.jobs.get(job["job_id"]))["status"] not in ("completed", "failed"):
-    await asyncio.sleep(2)
-
-# Sync mirror — for scripts and notebooks (not inside async handlers)
-sync_agents = c.sync.agents.list()          # returns a plain list
-agent = c.sync.agents.create(id="foo", type="skill")
-agent = c.sync.agents.get("marketing-assistant")
+# Mode B custom-tool webhook router (FastAPI mount shown; Flask/Lambda also supported)
+router = WebhookRouter(secret="...")
+@router.tool("fetch_invoice")
+async def fetch_invoice(input, ctx): ...
+app.include_router(router.fastapi_router(), prefix="/nova/cb")
 ```
+
+See `python/examples/` for 7 worked examples covering every public surface.
 
 ## Error handling
 
@@ -91,8 +86,20 @@ agent = await c.agents.create(
 |----------|-----------|
 | `c.agents` | `create`, `get`, `update`, `delete`, `list` |
 | `c.employees` | `create`, `get`, `update`, `delete`, `list` |
-| `c.messages` | `create` (streaming in Phase 3.2) |
+| `c.messages` | `create` (streaming via `stream()` context manager) |
 | `c.jobs` | `create`, `get`, `cancel`, `list` |
+
+## Sync mirror
+
+```python
+# For scripts and notebooks — not inside async handlers
+sync_agents = c.sync.agents.list()          # returns a plain list
+agent = c.sync.agents.create(id="foo", type="skill")
+```
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## Development
 
