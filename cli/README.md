@@ -44,6 +44,11 @@ nova-os-cli agents get marketing-assistant
 nova-os-cli jobs list --status running
 nova-os-cli jobs get job_abc123
 
+# Validate + sync a local folder of agent/employee definitions
+nova-os-cli validate ./data/
+nova-os-cli sync ./data/
+nova-os-cli sync --watch ./data/
+
 nova-os-cli version --json
 ```
 
@@ -131,6 +136,44 @@ nova-os-cli config default <profile>
 nova-os-cli config delete <profile>
 ```
 
+### validate (offline CI gate)
+
+```bash
+nova-os-cli validate ./data/
+```
+
+Walks `./data/employees/*.md` and `./data/agents/*.md`, runs the rule chain on each, exits non-zero if any issue is found. Use it as your CI pre-deploy gate.
+
+Rules checked:
+
+- Frontmatter parses cleanly
+- `model_config.{answer,planner,skill}.primary` matches `<vendor>/<model>` shape (e.g. `anthropic/claude-opus-4-7`)
+- `custom_tools[].input_schema` recursively contains no `type: array` without `items` (catches the deterministic Vertex AI 400 class before runtime)
+- `callback.url` is HTTPS (localhost is allowed for dev)
+- `agent.owner_employee` references resolve within the validated folder
+
+Exit 0 = green. Exit 1 = block deploy.
+
+```bash
+# Machine-readable (suitable for piping to jq)
+nova-os-cli validate ./data/ --json
+```
+
+### sync (folder → server)
+
+```bash
+# One-shot
+nova-os-cli sync ./data/
+
+# Watch mode — re-run on every change, 300ms debounce
+nova-os-cli sync --watch ./data/
+
+# Preview the plan without executing
+nova-os-cli sync --dry-run ./data/
+```
+
+Diffs `./data/employees/` and `./data/agents/` against the server, computes a forward-only plan (create/update), and executes it. Server-side resources missing from the folder are NOT deleted (destructive `--prune` is a planned future addition).
+
 ### version
 
 ```bash
@@ -140,7 +183,6 @@ nova-os-cli version --json  # machine-readable
 
 ## Coming soon
 
-- `nova-os-cli sync --watch ./data/` — live folder-to-server sync
-- `nova-os-cli validate ./data/` — offline frontmatter validation
 - `nova-os-cli test-callback` — forge signed webhook for partner endpoint smoke tests
+- `nova-os-cli sync --prune` — destructive sync (removes server-side resources absent from the folder)
 - Pre-built binaries for linux/darwin/windows (amd64 + arm64)
