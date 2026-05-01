@@ -21,9 +21,7 @@ class CustomToolCallbackRetry:
     """
 
     max_attempts: int | Unset = 3
-    backoff: CustomToolCallbackRetryBackoff | Unset = (
-        CustomToolCallbackRetryBackoff.EXPONENTIAL
-    )
+    backoff: CustomToolCallbackRetryBackoff | Unset = CustomToolCallbackRetryBackoff.EXPONENTIAL
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:

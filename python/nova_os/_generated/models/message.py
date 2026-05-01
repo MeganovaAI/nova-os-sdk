@@ -72,9 +72,7 @@ class Message:
         d = dict(src_dict)
         role = Role(d.pop("role"))
 
-        def _parse_content(
-            data: object,
-        ) -> list[TextBlock | ToolResultBlock | ToolUseBlock] | str:
+        def _parse_content(data: object) -> list[TextBlock | ToolResultBlock | ToolUseBlock] | str:
             try:
                 if not isinstance(data, list):
                     raise TypeError()
@@ -82,15 +80,11 @@ class Message:
                 _content_type_1 = data
                 for content_type_1_item_data in _content_type_1:
 
-                    def _parse_content_type_1_item(
-                        data: object,
-                    ) -> TextBlock | ToolResultBlock | ToolUseBlock:
+                    def _parse_content_type_1_item(data: object) -> TextBlock | ToolResultBlock | ToolUseBlock:
                         try:
                             if not isinstance(data, dict):
                                 raise TypeError()
-                            componentsschemas_content_block_type_0 = (
-                                TextBlock.from_dict(data)
-                            )
+                            componentsschemas_content_block_type_0 = TextBlock.from_dict(data)
 
                             return componentsschemas_content_block_type_0
                         except (TypeError, ValueError, AttributeError, KeyError):
@@ -98,24 +92,18 @@ class Message:
                         try:
                             if not isinstance(data, dict):
                                 raise TypeError()
-                            componentsschemas_content_block_type_1 = (
-                                ToolUseBlock.from_dict(data)
-                            )
+                            componentsschemas_content_block_type_1 = ToolUseBlock.from_dict(data)
 
                             return componentsschemas_content_block_type_1
                         except (TypeError, ValueError, AttributeError, KeyError):
                             pass
                         if not isinstance(data, dict):
                             raise TypeError()
-                        componentsschemas_content_block_type_2 = (
-                            ToolResultBlock.from_dict(data)
-                        )
+                        componentsschemas_content_block_type_2 = ToolResultBlock.from_dict(data)
 
                         return componentsschemas_content_block_type_2
 
-                    content_type_1_item = _parse_content_type_1_item(
-                        content_type_1_item_data
-                    )
+                    content_type_1_item = _parse_content_type_1_item(content_type_1_item_data)
 
                     content_type_1.append(content_type_1_item)
 

@@ -28,7 +28,7 @@ codegen-go:
 
 codegen-python:
 	cd python && openapi-python-client generate --path ../$(SPEC) --overwrite \
-	  --config openapi-python-client.toml
+	  --config openapi-python-client.yaml
 
 smoke:
 	$(MAKE) spec-check

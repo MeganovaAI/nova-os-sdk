@@ -57,10 +57,10 @@ jobs:
       - name: Regenerate Python client
         run: |
           cd python
-          rm -rf nova_os/_generated
-          openapi-python-client generate --path ../openapi/nova-os-partner.v1.yaml --overwrite \
+          rm -rf nova_os/_generated nova-os-sdk-generated
+          openapi-python-client generate --path ../openapi/nova-os-partner.v1.yaml \
             --config openapi-python-client.yaml
-          mv nova-os-sdk-generated/nova_os/_generated nova_os/_generated
+          mv nova-os-sdk-generated/nova_os._generated nova_os/_generated
           rm -rf nova-os-sdk-generated
 
       - name: Fail on drift

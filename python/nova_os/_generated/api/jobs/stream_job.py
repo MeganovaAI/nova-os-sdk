@@ -66,9 +66,7 @@ def _parse_response(
             try:
                 if not isinstance(data, dict):
                     raise TypeError()
-                componentsschemas_stream_event_type_0 = StreamEventTextDelta.from_dict(
-                    data
-                )
+                componentsschemas_stream_event_type_0 = StreamEventTextDelta.from_dict(data)
 
                 return componentsschemas_stream_event_type_0
             except (TypeError, ValueError, AttributeError, KeyError):
@@ -76,9 +74,7 @@ def _parse_response(
             try:
                 if not isinstance(data, dict):
                     raise TypeError()
-                componentsschemas_stream_event_type_1 = StreamEventToolUse.from_dict(
-                    data
-                )
+                componentsschemas_stream_event_type_1 = StreamEventToolUse.from_dict(data)
 
                 return componentsschemas_stream_event_type_1
             except (TypeError, ValueError, AttributeError, KeyError):
@@ -86,9 +82,7 @@ def _parse_response(
             try:
                 if not isinstance(data, dict):
                     raise TypeError()
-                componentsschemas_stream_event_type_2 = StreamEventToolResult.from_dict(
-                    data
-                )
+                componentsschemas_stream_event_type_2 = StreamEventToolResult.from_dict(data)
 
                 return componentsschemas_stream_event_type_2
             except (TypeError, ValueError, AttributeError, KeyError):
@@ -96,9 +90,7 @@ def _parse_response(
             try:
                 if not isinstance(data, dict):
                     raise TypeError()
-                componentsschemas_stream_event_type_3 = (
-                    StreamEventCustomToolUse.from_dict(data)
-                )
+                componentsschemas_stream_event_type_3 = StreamEventCustomToolUse.from_dict(data)
 
                 return componentsschemas_stream_event_type_3
             except (TypeError, ValueError, AttributeError, KeyError):
@@ -106,9 +98,7 @@ def _parse_response(
             try:
                 if not isinstance(data, dict):
                     raise TypeError()
-                componentsschemas_stream_event_type_4 = StreamEventThinking.from_dict(
-                    data
-                )
+                componentsschemas_stream_event_type_4 = StreamEventThinking.from_dict(data)
 
                 return componentsschemas_stream_event_type_4
             except (TypeError, ValueError, AttributeError, KeyError):
