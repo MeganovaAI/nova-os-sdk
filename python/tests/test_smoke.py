@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 
-def test_package_imports() -> None:
-    import nova_os
+def test_package_reexports_version() -> None:
+    """`nova_os` package re-exports the symbols defined in `_version` unchanged.
 
-    assert nova_os.__version__ == "0.1.0a1"
-    assert nova_os.OPENAPI_VERSION == "1.0.0-alpha.1"
+    Asserting against literals would silently rot on every release; asserting
+    re-export identity catches the actual drift risk (an __init__ that
+    accidentally drops or renames a symbol).
+    """
+    import nova_os
+    from nova_os import _version
+
+    assert nova_os.__version__ == _version.__version__
+    assert nova_os.OPENAPI_VERSION == _version.OPENAPI_VERSION
 
 
 def test_generated_client_imports() -> None:
