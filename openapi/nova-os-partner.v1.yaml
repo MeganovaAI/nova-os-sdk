@@ -817,4 +817,98 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
 
-paths: {}
+paths:
+  /v1/managed/agents:
+    post:
+      operationId: createAgent
+      summary: Create an agent
+      tags: [Agents]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentCreate'
+      responses:
+        '201':
+          description: Agent created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    get:
+      operationId: listAgents
+      summary: List agents
+      tags: [Agents]
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: owner_employee
+          schema: { type: string }
+          description: Filter to agents owned by this employee.
+      responses:
+        '200':
+          description: Agent list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/managed/agents/{agent_id}:
+    parameters:
+      - in: path
+        name: agent_id
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getAgent
+      summary: Get an agent
+      tags: [Agents]
+      responses:
+        '200':
+          description: Agent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateAgent
+      summary: Update an agent (partial)
+      tags: [Agents]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentUpdate'
+      responses:
+        '200':
+          description: Updated agent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      operationId: deleteAgent
+      summary: Delete an agent
+      tags: [Agents]
+      responses:
+        '204':
+          description: Deleted.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
