@@ -13,9 +13,12 @@ import (
 
 // CLIVersion is the published nova-os-cli version.
 // SpecVersion stays in lockstep with the OpenAPI version pinned in the spec file.
-const (
-	CLIVersion  = "0.1.0-alpha.1"
+// CLIVersion, commit, and buildDate are overridable via -ldflags from goreleaser.
+var (
+	CLIVersion  = "0.1.0-alpha.1" // overridable via -ldflags from goreleaser
 	SpecVersion = "1.0.0-alpha.1"
+	commit      = "dev"
+	buildDate   = "unknown"
 )
 
 var versionCmd = &cobra.Command{
@@ -33,12 +36,14 @@ var versionCmd = &cobra.Command{
 				"cli_version":  CLIVersion,
 				"spec_version": SpecVersion,
 				"spec_hash":    hash,
+				"commit":       commit,
+				"build_date":   buildDate,
 			}
 			b, _ := json.Marshal(out)
 			cmd.Println(string(b))
 			return nil
 		}
-		cmd.Printf("nova-os-cli %s\n", CLIVersion)
+		cmd.Printf("nova-os-cli %s (commit %s, built %s)\n", CLIVersion, commit, buildDate)
 		cmd.Printf("openapi spec %s (hash %s)\n", SpecVersion, hash)
 		return nil
 	},
