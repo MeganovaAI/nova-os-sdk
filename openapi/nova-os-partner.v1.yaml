@@ -1,0 +1,120 @@
+openapi: 3.1.0
+info:
+  title: Nova OS Partner API
+  version: 1.0.0-alpha.1
+  description: |
+    Partner integration API for Nova OS. Mirrors Anthropic Managed Agents
+    1:1 for the compat surface (Section 1.1 of the design); extends with
+    employees, multi-model config, web-search backend selection, custom-tool
+    webhook callbacks, and async jobs (Section 1.2).
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: Nova OS Team
+    url: https://github.com/MeganovaAI/nova-os-sdk
+
+servers:
+  - url: https://nova.partner.example.com
+    description: Partner-self-hosted Nova OS (v1 default)
+  - url: https://api.nova-os.com
+    description: Nova OS managed cloud (future)
+  - url: http://localhost:8900
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        HS256-signed JWT bearer token. Partners mint tokens server-side per
+        their tenancy model. The cloud variant accepts `msk_live_…` tokens
+        in the same Bearer slot.
+
+  schemas:
+    Error:
+      type: object
+      required: [type, message]
+      properties:
+        type:
+          type: string
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - billing_error
+            - upstream_error
+            - vertex_schema_error
+            - validation_error
+            - internal_error
+        message:
+          type: string
+        param:
+          type: string
+          description: When applicable, the request parameter that failed validation.
+        code:
+          type: string
+          description: Machine-readable subcode (e.g., "credits_exhausted", "USAGE_LIMIT_EXCEEDED").
+        retry_after:
+          type: integer
+          description: Seconds — present on rate_limit_error.
+        tool_name:
+          type: string
+          description: Present on vertex_schema_error — the tool whose schema is invalid.
+        parameter_path:
+          type: string
+          description: Present on vertex_schema_error — JSON path to the offending parameter.
+        fix_hint:
+          type: string
+          description: Human-readable hint for actionable errors.
+
+  responses:
+    BadRequest:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Token valid but lacks permission for this operation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found (or hidden from this token's scope).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Too many requests.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UpgradeRequired:
+      description: SDK or OpenAPI hash major mismatch.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+paths: {}
