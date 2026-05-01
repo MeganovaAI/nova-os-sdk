@@ -1,10 +1,10 @@
 # nova-os-sdk
 
-Python reference SDK for [Nova OS](https://github.com/MeganovaAI/nova-os).
+Python reference SDK for **Nova OS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
 
 This is the Python client published to PyPI as `nova-os-sdk`. It wraps an OpenAPI-generated client (under `nova_os._generated/`) with ergonomic Anthropic-compatible and Nova OS extended surfaces.
 
-Status: pre-1.0. See [MeganovaAI/nova-os#123](https://github.com/MeganovaAI/nova-os/issues/123) for the implementation epic.
+Status: pre-1.0 — the API surface is being stabilized. Watch this repo's releases for the `v0.9.0-rc` API freeze tag, after which the public Python surface is locked for `v1.0.0`.
 
 ## Install
 

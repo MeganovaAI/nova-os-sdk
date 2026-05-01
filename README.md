@@ -1,6 +1,6 @@
 # Nova OS SDK
 
-Partner integration SDK for [Nova OS](https://github.com/MeganovaAI/nova-os).
+Partner integration SDK for **Nova OS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
 
 This repo ships:
 
@@ -17,7 +17,7 @@ This repo ships:
 
 ## Status
 
-Pre-1.0. See [MeganovaAI/nova-os#123](https://github.com/MeganovaAI/nova-os/issues/123) for the implementation epic.
+Pre-1.0 — the API surface is being stabilized. Watch this repo's releases for the `v0.9.0-rc` API freeze tag, after which the public Python and CLI surfaces are locked for `v1.0.0`.
 
 ## License
 
