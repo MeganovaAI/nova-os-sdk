@@ -174,6 +174,39 @@ nova-os-cli sync --dry-run ./data/
 
 Diffs `./data/employees/` and `./data/agents/` against the server, computes a forward-only plan (create/update), and executes it. Server-side resources missing from the folder are NOT deleted (destructive `--prune` is a planned future addition).
 
+### test-callback (Mode B webhook smoke)
+
+Forges a Nova-OS-shaped signed webhook POST to your partner endpoint. Use it to smoke-test your `WebhookRouter` handler before exposing it to live traffic.
+
+```bash
+export NOVA_CB_SECRET=your-shared-hmac-secret
+nova-os-cli test-callback \
+  --target https://partner.example.com/nova/cb \
+  --tool fetch_invoice \
+  --input '{"invoice_id":"INV-9912"}'
+
+# Same shape Nova OS's Mode B dispatcher would send. Verify your handler
+# returns 200 with {"output":"...","is_error":false}.
+
+# Test idempotency dedup — POST 3x with the same tool_use_id, your handler
+# should run exactly once
+nova-os-cli test-callback --target ... --tool ... --repeat 3 --tool-use-id toolu_dedupe_test
+```
+
+The signature scheme is `t=<unix_ts>,v1=<hex(hmac_sha256(secret, ts + "." + tool_use_id + "." + body))>` — matches what `nova_os.callbacks.WebhookRouter` (Python SDK) verifies.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--target` | (required) | Partner endpoint URL |
+| `--tool` | (required) | Tool name to send in the payload |
+| `--input` | `{}` | Tool input args as a JSON object |
+| `--secret-env` | `NOVA_CB_SECRET` | Name of the env var holding the HMAC secret |
+| `--tool-use-id` | random | Fixed `tool_use_id` (useful for idempotency tests) |
+| `--agent-id` | `test-agent` | `agent_id` field in the payload |
+| `--employee-id` | (empty) | `employee_id` field in the payload |
+| `--repeat` | `1` | POST N times to test partner-side idempotency dedup |
+| `--timeout` | `30` | Per-request timeout in seconds |
+
 ### version
 
 ```bash
@@ -183,6 +216,5 @@ nova-os-cli version --json  # machine-readable
 
 ## Coming soon
 
-- `nova-os-cli test-callback` — forge signed webhook for partner endpoint smoke tests
 - `nova-os-cli sync --prune` — destructive sync (removes server-side resources absent from the folder)
 - Pre-built binaries for linux/darwin/windows (amd64 + arm64)
