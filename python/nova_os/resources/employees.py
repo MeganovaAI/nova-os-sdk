@@ -10,9 +10,8 @@ from nova_os.resources._base import Resource
 class Employees(Resource):
     """CRUD + list for /v1/managed/employees.
 
-    All methods are async-first. The `.sync` mirror lives on the parent
-    Client (Task 9). Generated-client typed models are NOT yet wrapped —
-    methods return / accept dicts. Phase 3.2 layers Pydantic-style models.
+    All methods are async-first; `.sync` mirror on the parent Client.
+    Methods return / accept dicts.
     """
 
     _PATH = "/v1/managed/employees"
