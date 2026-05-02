@@ -18,6 +18,8 @@ from nova_os.errors import (
     ModelNotFoundError,
     InternalError,
 )
+from nova_os.callbacks import WebhookRouter
+from nova_os.streaming import MessageStream
 
 __all__ = [
     "__version__",
@@ -34,4 +36,6 @@ __all__ = [
     "VertexSchemaError",
     "ModelNotFoundError",
     "InternalError",
+    "WebhookRouter",
+    "MessageStream",
 ]

@@ -129,7 +129,7 @@ agent = await c.agents.create(
 |----------|-----------|
 | `c.agents` | `create`, `get`, `update`, `delete`, `list` |
 | `c.employees` | `create`, `get`, `update`, `delete`, `list` |
-| `c.messages` | `create` (streaming via `stream()` context manager) |
+| `c.messages` | `create`, `stream` |
 | `c.jobs` | `create`, `get`, `cancel`, `list` |
 
 ## Sync mirror
@@ -138,6 +138,75 @@ agent = await c.agents.create(
 # For scripts and notebooks — not inside async handlers
 sync_agents = c.sync.agents.list()          # returns a plain list
 agent = c.sync.agents.create(id="foo", type="skill")
+```
+
+## Streaming
+
+`c.messages.stream()` opens an SSE connection and returns an async context manager:
+
+```python
+async with c.messages.stream(
+    agent_id="invoice-bot",
+    messages=[{"role": "user", "content": "Process invoice INV-9912"}],
+) as stream:
+    async for event in stream:
+        if event["event"] == "text":
+            print(event["data"]["content"], end="", flush=True)
+        elif event["event"] == "done":
+            print()  # newline at end
+```
+
+**Mode A — custom-tool inline** (intercept the LLM tool call, compute result, resume):
+
+```python
+async with c.messages.stream(
+    agent_id="invoice-bot",
+    messages=[{"role": "user", "content": "Fetch invoice INV-9912"}],
+    message_id="my-request-id",  # required for submit_tool_result before done
+) as stream:
+    async for event in stream:
+        if event["event"] == "custom_tool_use":
+            result = await my_invoice_lookup(event["data"]["input"]["invoice_id"])
+            await stream.submit_tool_result(event["data"]["id"], result)
+```
+
+## Webhook router (Mode B)
+
+`WebhookRouter` receives Nova OS custom-tool dispatches on your HTTP endpoint, verifies the HMAC-SHA256 signature, dedupes by idempotency key, and dispatches to registered handlers:
+
+```python
+from nova_os import WebhookRouter
+
+router = WebhookRouter(secret="your-webhook-secret")
+
+@router.tool("fetch_invoice")
+async def fetch_invoice(input: dict, ctx: dict) -> str:
+    invoice = await db.get_invoice(input["invoice_id"])
+    return f"Invoice {invoice.id}: ${invoice.amount}"
+```
+
+**FastAPI mount:**
+
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+app.include_router(router.fastapi_router(), prefix="/nova/callbacks")
+```
+
+**Flask mount:**
+
+```python
+from flask import Flask
+
+app = Flask(__name__)
+app.register_blueprint(router.flask_blueprint(), url_prefix="/nova/callbacks")
+```
+
+**AWS Lambda mount:**
+
+```python
+handler = router.aws_lambda_handler()  # pass to Lambda runtime
 ```
 
 ## Changelog
