@@ -11,8 +11,12 @@ if TYPE_CHECKING:
 
 
 class Messages(Resource):
-    """Send messages to an agent. Streaming + custom-tool inline are
-    wired in Phase 3.2 via the `c.messages.stream(...)` context manager."""
+    """Send messages to an agent.
+
+    For streaming + Mode A custom-tool inline, use the
+    ``c.messages.stream(...)`` async context manager. ``create()`` below
+    is the non-streaming variant.
+    """
 
     async def create(
         self,
@@ -27,10 +31,7 @@ class Messages(Resource):
         metadata: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
     ) -> dict[str, Any]:
-        """POST /v1/managed/agents/{agent_id}/messages — non-streaming.
-
-        Streaming context manager lands in Phase 3.2.
-        """
+        """POST /v1/managed/agents/{agent_id}/messages — non-streaming."""
         body: dict[str, Any] = {"messages": messages, "stream": False}
         if model is not None:
             body["model"] = model

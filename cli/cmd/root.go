@@ -40,8 +40,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flagJSON, "json", false, "Emit one JSON object per record on stdout (default: human table)")
 }
 
-// globalConfig resolves --url + --api-key per the design spec section 8.1
-// resolution order: explicit flag -> env -> profile -> discovery hint.
+// globalConfig resolves --url + --api-key in this priority order:
+// explicit flag -> env -> profile -> discovery hint.
 func globalConfig() (url string, apiKey string, err error) {
 	url = flagURL
 	if url == "" {
