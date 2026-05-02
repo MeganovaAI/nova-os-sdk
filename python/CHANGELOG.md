@@ -2,7 +2,7 @@
 
 All notable changes to `nova-os-sdk` (Python) will be documented in this file.
 
-## [1.0.0] — TBD (drafted)
+## [1.0.0] — 2026-05-02
 
 **Public API stable.** First stable release of the v1.x line. **No breaking changes from `v0.9.0rc1`** — upgrade is `pip install --upgrade nova-os-sdk`.
 

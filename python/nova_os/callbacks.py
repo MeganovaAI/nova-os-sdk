@@ -5,9 +5,9 @@ with a `callback.url`). Nova OS POSTs to that URL when the LLM invokes
 the tool; this router decorates partner-side handlers, verifies the
 HMAC-SHA256 signature, dedupes by `Idempotency-Key`, and dispatches.
 
-HMAC scheme matches Nova OS's Go `internal/callbacks/dispatcher.go`:
-the signing input is `ts + "." + tool_use_id + "." + body`. Signature
-header format is `t=<unix>,v1=<hex>`. Replay window default 5 min.
+HMAC scheme: signing input is `ts + "." + tool_use_id + "." + body`.
+Signature header format is `t=<unix>,v1=<hex>`. Replay window default
+5 min. The Nova OS server-side dispatcher signs with the same scheme.
 
 Idempotency dedup is in-memory for v1 — a process restart loses the
 dedup table. Production deployments serving the same partner across

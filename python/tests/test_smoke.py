@@ -48,7 +48,7 @@ def test_client_and_errors_reexported() -> None:
 
 
 def test_streaming_and_webhook_reexported() -> None:
-    """Phase 3.2 additions — WebhookRouter and MessageStream must be re-exported."""
+    """WebhookRouter and MessageStream must be re-exported from the top-level package."""
     import nova_os
 
     assert hasattr(nova_os, "WebhookRouter")

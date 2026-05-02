@@ -10,10 +10,9 @@ from nova_os.resources._base import Resource
 class Agents(Resource):
     """CRUD + list for /v1/managed/agents.
 
-    All methods are async-first. The `.sync` mirror lives on the parent
-    Client (Task 9 wires it). Generated-client typed models are NOT yet
-    wrapped — methods return / accept dicts. Phase 3.2 layers Pydantic-
-    style models for IDE ergonomics; this round prioritizes the wire.
+    All methods are async-first; `.sync` mirror on the parent Client.
+    Methods return / accept dicts (the underlying generated typed models
+    are available under `nova_os._generated` for callers that need them).
     """
 
     _PATH = "/v1/managed/agents"

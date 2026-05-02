@@ -82,7 +82,7 @@ def test_anthropic_sdk_messages_create_against_nova_os(nova_os_mock_response: di
         model="anthropic/claude-opus-4-7",
         max_tokens=1024,
         messages=[{"role": "user", "content": "ping"}],
-        metadata={"agent_id": "legal-assistant"},   # Nova OS routes by this field
+        metadata={"agent_id": "invoice-bot"},   # Nova OS routes by this field
     )
 
     # --- Outbound path check (strict) ---
@@ -113,7 +113,7 @@ def test_anthropic_sdk_messages_create_against_nova_os(nova_os_mock_response: di
     # route to a specific Nova OS persona (Nova OS reads metadata.agent_id
     # server-side and dispatches accordingly, with Brain orchestration when
     # the resolved agent has brain:true).
-    assert captured["body"]["metadata"]["agent_id"] == "legal-assistant", (
+    assert captured["body"]["metadata"]["agent_id"] == "invoice-bot", (
         "metadata.agent_id was dropped on the wire — Nova OS persona dispatch broken"
     )
 
