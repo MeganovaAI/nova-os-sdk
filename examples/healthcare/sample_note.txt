@@ -1,0 +1,34 @@
+CLINICAL NOTE — synthetic / deidentified for documentation use only
+Date: 2026-04-30  |  Setting: outpatient clinic  |  Provider: PA-on-call
+
+CHIEF COMPLAINT
+Chest discomfort and shortness of breath, started this morning.
+
+HISTORY OF PRESENT ILLNESS
+58-year-old presents with substernal chest pressure that began approximately 3 hours ago while walking up a flight of stairs. Discomfort radiates to the left jaw and left arm. Associated symptoms include diaphoresis and mild nausea. Patient reports the discomfort is partially relieved at rest but recurs with minimal exertion. Pain rated 6/10 at peak. Denies hemoptysis, syncope, fever.
+
+PAST MEDICAL HISTORY
+- Hypertension, on lisinopril 20 mg daily
+- Hyperlipidemia, on atorvastatin 40 mg daily
+- Coronary artery disease, status post drug-eluting stent to LAD in 2024
+- Type 2 diabetes mellitus, on metformin 1000 mg BID
+
+FAMILY HISTORY
+Father had myocardial infarction at age 55. Mother with type 2 diabetes.
+
+SOCIAL HISTORY
+Former smoker, quit 8 years ago (30 pack-years prior). Drinks 2 beers/week. Sedentary office job.
+
+VITALS (in clinic)
+BP 158/94, HR 92 regular, RR 18, SpO2 96% on room air, T 37.1°C.
+
+EXAM
+Anxious-appearing male, diaphoretic. Lungs clear to auscultation bilaterally. Heart regular rate and rhythm, no murmurs/rubs/gallops. No JVD. No peripheral edema. Distal pulses 2+ bilaterally.
+
+ASSESSMENT (preliminary, in-clinic)
+Substernal chest pressure with classic anginal features (radiation to jaw/arm, diaphoresis, exertional, partial relief at rest) in a patient with known CAD and multiple risk factors. Cannot rule out acute coronary syndrome from clinic alone.
+
+PLAN (preliminary)
+Pending triage decision-support input.
+
+[End of note — synthetic example, not a real patient]

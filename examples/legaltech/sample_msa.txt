@@ -1,0 +1,35 @@
+MASTER SERVICES AGREEMENT
+
+This Master Services Agreement (the "Agreement") is entered into as of February 14, 2026 (the "Effective Date") by and between Acme Cloud Solutions, Inc., a Delaware corporation ("Provider"), and Beacon Industries LLC, a New York limited liability company ("Customer").
+
+1. SERVICES
+Provider shall furnish to Customer the cloud-platform services described in any Statement of Work executed under this Agreement (collectively, the "Services").
+
+2. FEES AND PAYMENT
+Customer shall pay all fees set forth in each Statement of Work within forty-five (45) days of invoice date. All amounts are non-refundable except as expressly set forth herein. Late payments shall accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law.
+
+3. TERM AND TERMINATION
+This Agreement commences on the Effective Date and shall continue for an initial term of three (3) years. Either party may terminate this Agreement for material breach upon ninety (90) days' written notice if the breach remains uncured. Customer's termination for convenience requires payment of all remaining contract value through the end of the initial term.
+
+4. CONFIDENTIALITY
+Each party shall hold the other party's Confidential Information in strict confidence and use it solely for the purpose of performing this Agreement. The receiving party shall protect such information using at least the same degree of care it uses to protect its own confidential information of like kind, but in no event less than reasonable care.
+
+5. INTELLECTUAL PROPERTY
+All right, title, and interest in and to the Services, including all intellectual property rights therein, shall remain with Provider. Any feedback, suggestions, or improvements provided by Customer regarding the Services shall be the sole property of Provider, and Customer hereby assigns all such rights to Provider without further consideration.
+
+6. WARRANTY DISCLAIMER
+THE SERVICES ARE PROVIDED "AS IS" AND PROVIDER MAKES NO REPRESENTATIONS OR WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+
+7. LIMITATION OF LIABILITY
+IN NO EVENT SHALL EITHER PARTY'S AGGREGATE LIABILITY EXCEED THE FEES PAID BY CUSTOMER IN THE THREE (3) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM. NEITHER PARTY SHALL BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES.
+
+8. INDEMNIFICATION
+Provider shall indemnify, defend, and hold harmless Customer from third-party claims alleging that the Services infringe a U.S. patent or copyright, provided Customer (a) promptly notifies Provider of the claim, (b) gives Provider sole control of the defense, and (c) provides reasonable assistance at Provider's expense. PROVIDER'S INDEMNIFICATION OBLIGATION SHALL NOT EXCEED ONE HUNDRED THOUSAND DOLLARS ($100,000) IN THE AGGREGATE.
+
+9. FORCE MAJEURE
+Neither party shall be liable for delays or failures in performance caused by events beyond its reasonable control, including acts of God, war, terrorism, governmental action, labor disputes, or failures of third-party telecommunications providers.
+
+10. GOVERNING LAW
+This Agreement shall be governed by and construed in accordance with the laws of the State of New York, without regard to its conflict-of-laws principles.
+
+[End of MSA — synthetic example, not a real contract]

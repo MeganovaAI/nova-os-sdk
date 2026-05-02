@@ -23,3 +23,6 @@ python examples/01_basic_chat.py
 
 **Skipped:** `03_upload_knowledge.py` — the `knowledge` resource is not yet
 available server-side. This example will be added in a future release.
+
+For full end-to-end vertical integrations (legaltech contract review,
+healthcare clinical-note triage, finance 10-K diff) see [`../../examples/`](../../examples/).
