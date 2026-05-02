@@ -8,10 +8,7 @@ from nova_os.resources._base import Resource
 
 
 class Jobs(Resource):
-    """Async-job submit/poll/cancel/list for long-running agent tasks.
-
-    Stream endpoint (/jobs/{id}/stream) is Phase 3.2.
-    """
+    """Async-job submit/poll/cancel/list for long-running agent tasks."""
 
     _PATH = "/v1/managed/agents/jobs"
 

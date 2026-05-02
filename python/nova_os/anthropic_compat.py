@@ -24,7 +24,7 @@ Usage::
         model="anthropic/claude-opus-4-7",
         max_tokens=1024,
         messages=[{"role": "user", "content": "hello"}],
-        metadata={"agent_id": "legal-assistant"},  # routes to legal-assistant + Brain dispatch
+        metadata={"agent_id": "invoice-bot"},  # routes to that agent + Brain dispatch when configured
     )
 
 The official ``anthropic`` package is an optional dep — partners install it
@@ -57,7 +57,7 @@ def AnthropicCompatClient(
         msg = c.messages.create(
             model="anthropic/claude-opus-4-7",
             messages=[...],
-            metadata={"agent_id": "legal-assistant"},
+            metadata={"agent_id": "invoice-bot"},
         )
 
     Raises:
