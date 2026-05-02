@@ -1,0 +1,16 @@
+ACME INDUSTRIES, INC. — Form 10-K, Item 1A (Risk Factors)
+Fiscal year ended December 31, 2026  (synthetic example)
+
+We operate in an increasingly competitive industry. During fiscal 2026 a single Connected Devices customer accounted for 19% of consolidated net revenue (compared with no customer above 8% in fiscal 2025), and the loss or material reduction of business with this customer would have a material adverse effect on our results of operations.
+
+Our long-term debt totaled $580 million at year-end 2026, an increase of approximately 38% over the prior year, primarily reflecting borrowings to fund the acquisition of Beacon Robotics in May 2026. Our debt covenants now require us to maintain a consolidated leverage ratio of not more than 3.5x trailing-twelve-month EBITDA (revised upward from 3.0x in conjunction with the Beacon financing) and a fixed-charge coverage ratio of not less than 1.5x. As of December 31, 2026 our consolidated leverage ratio was 3.1x and we had $90 million of unused capacity on our revolving credit facility.
+
+Following the integration of Beacon Robotics, we now derive approximately 48% of revenue from Industrial Automation, 41% from Connected Devices, and 11% from Services. The increased weighting toward Connected Devices, combined with the customer-concentration noted above, increases our exposure to short-cycle consumer-electronics demand.
+
+In June 2026 the U.S. Environmental Protection Agency proposed a new rule that, if adopted as currently drafted, would require capital expenditures we estimate at $45 to $60 million over fiscal 2027 and 2028 at our two largest manufacturing facilities. We are unable to predict the final form of the rule.
+
+In September 2026 we were named as a defendant in a putative class action filed in the U.S. District Court for the Northern District of California alleging that certain of our Connected Devices products do not comply with state-level data-protection laws. We intend to defend the matter vigorously, but the range of potential loss is not presently estimable and could be material.
+
+The opinion of our independent registered public accounting firm on our consolidated financial statements as of and for the fiscal year ended December 31, 2026 was unqualified, but included a critical-audit-matter paragraph addressing the valuation of goodwill arising from the Beacon Robotics acquisition.
+
+[End of synthetic FY2026 Item 1A excerpt]

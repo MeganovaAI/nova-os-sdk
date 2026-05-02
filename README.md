@@ -31,6 +31,35 @@ The SDK targets a running Nova OS server. To stand one up yourself:
 | [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) | Step-by-step install guide: prerequisites, env vars, smoke tests, reverse-proxy templates. |
 | [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases) | Release notes + migration notes for each server version. |
 
+### One-liner evaluation
+
+Smallest possible local instance — single container, ephemeral state, fine for a kick-the-tires evaluation. **Not for production**:
+
+```bash
+docker run --rm -p 8900:8900 \
+  -e NOVA_OS_PUBLIC_URL=http://localhost:8900 \
+  -e NOVA_OS_ADMIN_EMAIL=admin@example.com \
+  -e NOVA_OS_ADMIN_PASSWORD=$(openssl rand -hex 16) \
+  -e NOVA_OS_DATABASE_URL=sqlite:///tmp/nova.db \
+  -e ANTHROPIC_API_KEY=sk-ant-... \
+  ghcr.io/meganovaai/nova-os:v0.1.4
+```
+
+Then point the SDK at it:
+
+```python
+from nova_os import AnthropicCompatClient
+
+client = AnthropicCompatClient(base_url="http://localhost:8900", api_key="msk_eval_...")
+msg = client.messages.create(
+    model="anthropic/claude-opus-4-7",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Hello, Nova OS!"}],
+)
+```
+
+For anything beyond evaluation (real Postgres, SurrealDB knowledge store, companion apps, TLS, OIDC) use the `MeganovaAI/nova-os-stack` manifests linked above and follow [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install).
+
 If you only need to call a hosted Nova OS that someone else operates, skip this section — the SDK works against any reachable Nova OS endpoint.
 
 ## Two-tier client model
