@@ -26,7 +26,7 @@ The SDK targets a running Nova OS server. To stand one up yourself:
 
 | Resource | What it is |
 |---|---|
-| [`ghcr.io/meganovaai/nova-os`](https://github.com/orgs/MeganovaAI/packages/container/package/nova-os) | Public, multi-arch Docker image of the server. `docker pull ghcr.io/meganovaai/nova-os:v0.1.4`. |
+| [`ghcr.io/meganovaai/nova-os`](https://github.com/orgs/MeganovaAI/packages/container/package/nova-os) | Public, multi-arch Docker image of the server. `docker pull ghcr.io/meganovaai/nova-os:v0.1.5`. |
 | [`MeganovaAI/nova-os-stack`](https://github.com/MeganovaAI/nova-os-stack) | Reference docker-compose manifests — core (Nova OS + Postgres + SurrealDB) plus 8 optional companion apps (LibreChat chat UI, SearXNG, crawl4ai, Firecrawl, Docling, FlashRank, Phoenix, Hermes). |
 | [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) | Step-by-step install guide: prerequisites, env vars, smoke tests, reverse-proxy templates. |
 | [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases) | Release notes + migration notes for each server version. |
@@ -42,7 +42,7 @@ docker run --rm -p 8900:8900 \
   -e NOVA_OS_ADMIN_PASSWORD=$(openssl rand -hex 16) \
   -e NOVA_OS_DATABASE_URL=sqlite:///tmp/nova.db \
   -e ANTHROPIC_API_KEY=sk-ant-... \
-  ghcr.io/meganovaai/nova-os:v0.1.4
+  ghcr.io/meganovaai/nova-os:v0.1.5
 ```
 
 Then point the SDK at it:
