@@ -1,19 +1,24 @@
 """Mode A custom tool — inline (SSE stream) pattern.
 
-In Mode A, Nova OS pauses the agent mid-run and sends a
-``custom_tool_use`` SSE event to the partner's streaming connection.
-The partner executes the tool locally and submits the result back via
-``c.messages.submit_tool_result(...)``.
+In Mode A, Nova OS pauses the agent mid-run and emits a ``custom_tool_use``
+SSE event on the partner's open streaming connection. The partner runs the
+tool locally and submits the result back via
+``MessageStream.submit_tool_result(...)`` — same socket, no separate HTTP
+round-trip.
 
-This example shows the streaming loop pattern. The Mode A streaming
-context manager (``c.messages.stream(...)``) will be available in the
-next SDK release; a note is included where you would swap in that API.
+Use Mode A when you don't want to expose a public webhook endpoint and your
+process can hold a streaming connection while the agent runs (typical for
+backend services; awkward for serverless). Use Mode B (webhook) — see
+``05_custom_tool_webhook.py`` — when the agent run is long enough that
+holding the connection is impractical, or when the partner is naturally
+HTTP-server-shaped.
 
 Prerequisites::
 
     pip install nova-os-sdk
-    export NOVA_OS_URL=https://nova.partner.com
+    export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
+    export NOVA_OS_AGENT_ID=invoice-bot
 
 Run::
 
@@ -26,13 +31,11 @@ import asyncio
 import os
 from typing import Any
 
-import httpx
-
 from nova_os import Client
 
 
 # ---------------------------------------------------------------------------
-# Partner tool implementation — replace with your real business logic.
+# Partner tool implementations — replace with your real business logic.
 # ---------------------------------------------------------------------------
 
 async def fetch_invoice(input_data: dict[str, Any]) -> str:
@@ -48,48 +51,47 @@ TOOL_HANDLERS: dict[str, Any] = {
 
 
 async def main() -> None:
-    base_url = os.environ.get("NOVA_OS_URL", "https://nova.partner.com")
+    base_url = os.environ.get("NOVA_OS_URL", "https://nova.your-company.example")
     api_key = os.environ["NOVA_OS_API_KEY"]
     agent_id = os.environ.get("NOVA_OS_AGENT_ID", "invoice-bot")
 
     async with Client(base_url=base_url, api_key=api_key) as c:
-        # Start the message — stream=True activates Mode A SSE delivery.
-        # Note: the high-level c.messages.stream(...) context manager
-        # is available in the next SDK release. This lower-level pattern
-        # uses the underlying HTTP client directly to show the wire protocol.
-        resp = await c.messages.create(
+        # ``c.messages.stream(...)`` opens an SSE connection and yields
+        # parsed events. Inside the context manager we can dispatch tool
+        # calls back over the same socket via ``s.submit_tool_result(...)``.
+        async with c.messages.stream(
             agent_id=agent_id,
             messages=[{"role": "user", "content": "Show me invoice INV-2026-042"}],
-            metadata={"stream": True},
-        )
+        ) as s:
+            async for event in s:
+                kind = event.get("type")
 
-        # In a full Mode A implementation the response is an SSE stream.
-        # Events to handle:
-        #   text_delta      → accumulate into the reply text
-        #   custom_tool_use → call partner tool, submit result
-        #   done            → stream finished
-        #
-        # Example event loop (pseudocode matching the wire protocol):
-        #
-        #   async for event in resp.iter_events():
-        #       if event["type"] == "text_delta":
-        #           print(event["content"], end="", flush=True)
-        #       elif event["type"] == "custom_tool_use":
-        #           tool_name = event["name"]
-        #           handler = TOOL_HANDLERS.get(tool_name)
-        #           if handler:
-        #               result = await handler(event["input"])
-        #               await c.messages.submit_tool_result(
-        #                   agent_id=agent_id,
-        #                   message_id=event["message_id"],
-        #                   tool_use_id=event["id"],
-        #                   result=result,
-        #               )
-        #       elif event["type"] == "done":
-        #           break
+                if kind == "text_delta":
+                    # Accumulate the reply text as it streams.
+                    print(event.get("content", ""), end="", flush=True)
 
-        # For now (non-streaming path), print the synchronous response.
-        print("Response:", resp)
+                elif kind == "custom_tool_use":
+                    # Agent paused mid-run requesting a partner tool.
+                    handler = TOOL_HANDLERS.get(event["name"])
+                    if handler is None:
+                        # Tell the agent we don't know this tool — it can
+                        # recover (often by trying a different approach).
+                        await s.submit_tool_result(
+                            tool_use_id=event["id"],
+                            result=f"unknown tool: {event['name']}",
+                            is_error=True,
+                        )
+                        continue
+
+                    result = await handler(event.get("input", {}))
+                    await s.submit_tool_result(
+                        tool_use_id=event["id"],
+                        result=result,
+                    )
+
+                elif kind == "done":
+                    print()  # newline after the streamed text
+                    break
 
 
 if __name__ == "__main__":
