@@ -128,15 +128,26 @@ components:
 
     WebSearchConfig:
       type: object
+      description: |
+        Persona-level web-search configuration. Resolved per-invocation on
+        ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
+        Field names changed in nova-os PR #212 (closes #200) — old
+        ``backend`` / ``fallback`` are no longer accepted.
       properties:
-        backend:
+        primary_backend:
           $ref: '#/components/schemas/WebSearchBackend'
           default: auto
-        fallback:
+          description: |
+            Primary search backend. ``auto`` falls through to the server's
+            ``DefaultSearcher()`` priority order.
+        fallback_chain:
           type: array
           items:
             $ref: '#/components/schemas/WebSearchBackend'
-          description: Ordered fallback chain. Used on empty/error/off-topic results.
+          description: |
+            Ordered fallback chain. Used on empty/error/off-topic results.
+            Wraps the primary in a ``FallbackSearcher`` whose ``Name()``
+            renders as ``primary→fallback1→fallback2``.
         reformulator:
           type: boolean
           default: true

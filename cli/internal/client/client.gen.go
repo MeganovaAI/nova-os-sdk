@@ -719,8 +719,13 @@ type Agent struct {
 	// Type Whether this agent dispatches to other skill agents (persona) or
 	// executes one skill directly (skill). Maps to nova-os internals;
 	// partners only see the discriminator.
-	Type            AgentType        `json:"type"`
-	UpdatedAt       *time.Time       `json:"updated_at,omitempty"`
+	Type      AgentType  `json:"type"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+
+	// WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
+	// ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
+	// Field names changed in nova-os PR #212 (closes #200) — old
+	// ``backend`` / ``fallback`` are no longer accepted.
 	WebSearchConfig *WebSearchConfig `json:"web_search_config,omitempty"`
 }
 
@@ -763,7 +768,12 @@ type AgentUpdate struct {
 	// Type Whether this agent dispatches to other skill agents (persona) or
 	// executes one skill directly (skill). Maps to nova-os internals;
 	// partners only see the discriminator.
-	Type            *AgentType       `json:"type,omitempty"`
+	Type *AgentType `json:"type,omitempty"`
+
+	// WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
+	// ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
+	// Field names changed in nova-os PR #212 (closes #200) — old
+	// ``backend`` / ``fallback`` are no longer accepted.
 	WebSearchConfig *WebSearchConfig `json:"web_search_config,omitempty"`
 }
 
@@ -870,8 +880,13 @@ type Employee struct {
 	ModelConfig *ModelConfig `json:"model_config,omitempty"`
 
 	// StoragePath Filesystem path under users/<owner>/employees/<id>/.
-	StoragePath     *string          `json:"storage_path,omitempty"`
-	UpdatedAt       *time.Time       `json:"updated_at,omitempty"`
+	StoragePath *string    `json:"storage_path,omitempty"`
+	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
+
+	// WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
+	// ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
+	// Field names changed in nova-os PR #212 (closes #200) — old
+	// ``backend`` / ``fallback`` are no longer accepted.
 	WebSearchConfig *WebSearchConfig `json:"web_search_config,omitempty"`
 }
 
@@ -894,7 +909,12 @@ type EmployeeUpdate struct {
 	// ModelConfig Three-slot model configuration. Any slot may be omitted; resolution
 	// falls through per the spec (per-call → per-skill → per-agent →
 	// per-employee → server default).
-	ModelConfig     *ModelConfig     `json:"model_config,omitempty"`
+	ModelConfig *ModelConfig `json:"model_config,omitempty"`
+
+	// WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
+	// ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
+	// Field names changed in nova-os PR #212 (closes #200) — old
+	// ``backend`` / ``fallback`` are no longer accepted.
 	WebSearchConfig *WebSearchConfig `json:"web_search_config,omitempty"`
 }
 
@@ -1516,15 +1536,20 @@ type UserList struct {
 // + Tavily fallback wrappers when configured).
 type WebSearchBackend string
 
-// WebSearchConfig defines model for WebSearchConfig.
+// WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
+// “skill_deep_research“ via “searchctx.WebSearchConfigFromContext“.
+// Field names changed in nova-os PR #212 (closes #200) — old
+// “backend“ / “fallback“ are no longer accepted.
 type WebSearchConfig struct {
-	// Backend Web search backend selection. `auto` uses Nova OS DefaultSearcher()
+	// FallbackChain Ordered fallback chain. Used on empty/error/off-topic results.
+	// Wraps the primary in a ``FallbackSearcher`` whose ``Name()``
+	// renders as ``primary→fallback1→fallback2``.
+	FallbackChain *[]WebSearchBackend `json:"fallback_chain,omitempty"`
+
+	// PrimaryBackend Web search backend selection. `auto` uses Nova OS DefaultSearcher()
 	// priority (Ceramic → Tavily → Brave → Exa → SearXNG, with reformulator
 	// + Tavily fallback wrappers when configured).
-	Backend *WebSearchBackend `json:"backend,omitempty"`
-
-	// Fallback Ordered fallback chain. Used on empty/error/off-topic results.
-	Fallback *[]WebSearchBackend `json:"fallback,omitempty"`
+	PrimaryBackend *WebSearchBackend `json:"primary_backend,omitempty"`
 
 	// RecencyTerms Custom recency markers for the recency-intent escalator.
 	RecencyTerms *[]string `json:"recency_terms,omitempty"`
