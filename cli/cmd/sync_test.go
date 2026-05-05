@@ -3,8 +3,10 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -275,3 +277,135 @@ display_name: Test
 		t.Fatalf("expected dry-run in output, got %q", buf.String())
 	}
 }
+
+// TestSync_PruneDeletesAbsentResources — server has employees + agents
+// the folder doesn't reference; --prune deletes them.
+func TestSync_PruneDeletesAbsentResources(t *testing.T) {
+	deletedEmps := []string{}
+	deletedAgents := []string{}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		// GET /v1/managed/employees — server lists frontdesk + stale-emp.
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/managed/employees":
+			json.NewEncoder(w).Encode(gen.EmployeeList{
+				Data: []gen.Employee{{Id: "frontdesk"}, {Id: "stale-emp"}},
+			})
+		// GET /v1/managed/agents — server lists intake + stale-agent.
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/managed/agents":
+			json.NewEncoder(w).Encode(gen.AgentList{
+				Data: []gen.Agent{{Id: "intake", Type: gen.AgentTypeSkill}, {Id: "stale-agent", Type: gen.AgentTypeSkill}},
+			})
+		// GET /v1/managed/employees/{id} → returns the requested entry
+		// so the create/update pass nops on local IDs.
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/v1/managed/employees/"):
+			id := strings.TrimPrefix(r.URL.Path, "/v1/managed/employees/")
+			json.NewEncoder(w).Encode(gen.Employee{Id: id, DisplayName: ptrStr("Front Desk")})
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/v1/managed/agents/"):
+			id := strings.TrimPrefix(r.URL.Path, "/v1/managed/agents/")
+			json.NewEncoder(w).Encode(gen.Agent{Id: id, Type: gen.AgentTypeSkill})
+		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/v1/managed/employees/"):
+			deletedEmps = append(deletedEmps, strings.TrimPrefix(r.URL.Path, "/v1/managed/employees/"))
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/v1/managed/agents/"):
+			deletedAgents = append(deletedAgents, strings.TrimPrefix(r.URL.Path, "/v1/managed/agents/"))
+			w.WriteHeader(http.StatusNoContent)
+		// PUT — accepted no-op for whichever upstream (the create/update
+		// pass may PUT local resources whose minimal GET shape differs
+		// from frontmatter; we don't care about the diff path here, only
+		// that prune ran correctly).
+		case r.Method == http.MethodPut:
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{}`)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer ts.Close()
+
+	dir := t.TempDir()
+	mustMk(t, filepath.Join(dir, "employees"), "frontdesk.md", "---\nid: frontdesk\ndisplay_name: Front Desk\n---\n")
+	mustMk(t, filepath.Join(dir, "agents"), "intake.md", "---\nagent_id: intake\ntype: skill\n---\n")
+
+	origURL, origKey, origPrune := flagURL, flagAPIKey, syncFlagPrune
+	flagURL, flagAPIKey, syncFlagPrune = ts.URL, "test-key", true
+	t.Cleanup(func() {
+		flagURL, flagAPIKey, syncFlagPrune = origURL, origKey, origPrune
+		rootCmd.SetArgs(nil)
+	})
+
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+	rootCmd.SetErr(&buf)
+	rootCmd.SetArgs([]string{"sync", "--prune", dir})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("sync --prune: %v\n%s", err, buf.String())
+	}
+	if len(deletedEmps) != 1 || deletedEmps[0] != "stale-emp" {
+		t.Errorf("deleted employees = %v, want [stale-emp]", deletedEmps)
+	}
+	if len(deletedAgents) != 1 || deletedAgents[0] != "stale-agent" {
+		t.Errorf("deleted agents = %v, want [stale-agent]", deletedAgents)
+	}
+	if !strings.Contains(buf.String(), "PRUNED employee stale-emp") {
+		t.Errorf("output missing PRUNED line: %s", buf.String())
+	}
+}
+
+// TestSync_PruneDryRunDoesNotDelete — --prune --dry-run prints the plan
+// but does not issue DELETE requests.
+func TestSync_PruneDryRunDoesNotDelete(t *testing.T) {
+	deleted := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/managed/employees":
+			json.NewEncoder(w).Encode(gen.EmployeeList{
+				Data: []gen.Employee{{Id: "stale-emp"}},
+			})
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/managed/agents":
+			json.NewEncoder(w).Encode(gen.AgentList{Data: []gen.Agent{}})
+		case r.Method == http.MethodDelete:
+			deleted = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer ts.Close()
+
+	dir := t.TempDir()
+	// Empty folders → every server-side resource looks stale.
+	if err := os.MkdirAll(filepath.Join(dir, "employees"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	origURL, origKey, origPrune, origDry := flagURL, flagAPIKey, syncFlagPrune, syncFlagDry
+	flagURL, flagAPIKey, syncFlagPrune, syncFlagDry = ts.URL, "test-key", true, true
+	t.Cleanup(func() {
+		flagURL, flagAPIKey, syncFlagPrune, syncFlagDry = origURL, origKey, origPrune, origDry
+		rootCmd.SetArgs(nil)
+	})
+
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+	rootCmd.SetErr(&buf)
+	rootCmd.SetArgs([]string{"sync", "--prune", "--dry-run", dir})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("sync --prune --dry-run: %v\n%s", err, buf.String())
+	}
+	if deleted {
+		t.Fatal("dry-run must not DELETE")
+	}
+	if !strings.Contains(buf.String(), "[dry-run] PRUNE employee stale-emp") {
+		t.Errorf("expected dry-run prune line, got %s", buf.String())
+	}
+}
+
+func ptrStr(s string) *string { return &s }
