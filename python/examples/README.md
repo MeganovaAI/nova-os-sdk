@@ -67,6 +67,7 @@ async for message in query(prompt="...", options=options):
 | `01_basic_chat.py` | Anthropic-compat hello world (Anthropic SDK drop-in, no agent setup) |
 | `01b_claude_agent_sdk_drop_in.py` | Claude Agent SDK drop-in via env-var redirect — existing `query()` / `ClaudeSDKClient` code runs against Nova OS unchanged |
 | `02_create_employee_and_agent.py` | Full lifecycle: employee → owned agent → first chat → cleanup |
+| `03_upload_knowledge.py` | `c.knowledge` — ingest a document then search it back |
 | `04_custom_tool_inline.py` | Mode A (SSE inline) — partner intercepts `custom_tool_use` mid-stream |
 | `05_custom_tool_webhook.py` | Mode B (webhook) — partner exposes a FastAPI endpoint |
 | `06_multi_model_fallback.py` | Per-employee `model_config` cascade, observe fallback fields |
@@ -75,9 +76,10 @@ async for message in query(prompt="...", options=options):
 | `09_streaming_messages.py` | `c.messages.stream(...)` minimum-lines example — token-on-the-wire latency for chat UIs |
 | `10_idempotency.py` | `idempotency_key=` on `create()` — safely retry across network failures, no duplicates |
 | `11_pagination.py` | `async for x in c.agents.list()` auto-pagination — page boundaries invisible to partner code |
-
-**Skipped:** `03_upload_knowledge.py` — the `knowledge` resource is not yet
-available server-side. This example will be added in a future release.
+| `12_documents_upload.py` | `c.documents` — multipart upload, list, delete; auto-indexed by Super Nova |
+| `13_hooks_subscribe.py` | `c.hooks` — register lifecycle-event subscriptions (9 canonical events) |
+| `14_filesystem_seed.py` | `c.filesystem` — seed an agent's per-tenant workspace before its first turn |
+| `15_users_settings_admin.py` | `c.users` + `c.settings` — partner-admin onboarding flow |
 
 For full end-to-end vertical integrations (legaltech contract review,
 healthcare clinical-note triage, finance 10-K diff) see [`../../examples/`](../../examples/).
