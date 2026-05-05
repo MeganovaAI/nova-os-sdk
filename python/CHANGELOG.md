@@ -2,6 +2,26 @@
 
 All notable changes to `nova-os-sdk` (Python) will be documented in this file.
 
+## [Unreleased] — towards 1.1.0
+
+Tracks Python surface added since `1.0.0`. Targets a `1.1.0` minor cut once the partner-prefix wave settles. The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare the new server endpoints; the matching server build is `ghcr.io/meganovaai/nova-os:v0.1.5-week-2026-05-09` (round-5 in-week force-update on 2026-05-05).
+
+### Added
+
+- **`c.documents`** — partner-prefix CRUD wrapper for `/v1/managed/documents` (lockstep with `MeganovaAI/nova-os#175` / PR #189). OpenAPI alpha.3.
+- **`c.knowledge`** — partner-prefix wrapper for `/v1/managed/knowledge` (lockstep with `#176` / PR #190). OpenAPI alpha.3.
+- **`c.hooks`** — partner-prefix CRUD for lifecycle-hook subscriptions under `/v1/managed/hooks` (lockstep with `#177` / PR #193). OpenAPI alpha.3. First slice is in-memory on the server; persistence + bus bridge tracked for a follow-up.
+- **`c.filesystem`** — partner-prefix wrapper for `/v1/managed/filesystem` (lockstep with `#178` / PR #192). OpenAPI alpha.3. `POST /provision` endpoint deferred to a follow-up.
+- **`c.users`** + **`c.settings`** — partner-prefix wrappers for `/v1/managed/users` and `/v1/managed/settings` (lockstep with `#179` / PR #191). OpenAPI alpha.3.
+- **`c.sessions`** — partner-prefix wrapper for `/v1/managed/sessions` (lockstep with `#185` / PR #194). OpenAPI alpha.4. Currently `create` + `get`; `list` / `delete` / `fork` tracked for a follow-up.
+- **`c.personas`** — boot-time persona-contract surface (`GET /agents/v1/personas` + `:id`) with `If-None-Match` ETag round-trip and `PersonaNotFound` typed error (lockstep with `#187`). OpenAPI alpha.5. Closes `nova-os-sdk#14`.
+- **`PersonaNotFound`** typed error — subclass of `NotFoundError`, raised by `c.personas.get(persona_id)` on a 404 with the persona-envelope shape `{"error": "persona not found", "id": ...}`. `parse_error_response` detects the envelope.
+- Examples 16 (sessions) + 17 (personas discovery) under `python/examples/`.
+
+### Server-side notes for partners
+
+- `OPENAI_MODEL` now defaults to `gemini/gemini-2.5-flash` server-side (`nova-os#197` / PR #198). Partners running `docker run ghcr.io/meganovaai/nova-os` against the MegaNova gateway with no env var no longer hit the bare-`gpt-4o` 404 on first chat. Override via `-e OPENAI_MODEL=<vendor>/<model>` still wins. Default is gateway-safe per `validateModelShape` (`<provider>/<model>`).
+
 ## [1.0.0] — 2026-05-02
 
 **Public API stable.** First stable release of the v1.x line. **No breaking changes from `v0.9.0rc1`** — upgrade is `pip install --upgrade nova-os-sdk`.
