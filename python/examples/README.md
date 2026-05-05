@@ -25,12 +25,47 @@ Nova OS's agent surface maps onto [Claude Managed Agents](https://platform.claud
 
 Total to go from zero to a working digital agent: **3 SDK calls** (`00_quickstart.py`).
 
+## Coming from the Claude Agent SDK?
+
+The [Claude Agent SDK for Python](https://github.com/anthropics/claude-agent-sdk-python) is a different Anthropic-published library — it spawns the bundled `claude` CLI as a subprocess and drives a **local agent loop** (Read / Write / Bash / Edit + custom MCP tools) against `api.anthropic.com`. Different shape from Managed Agents, different shape from the Anthropic Messages SDK.
+
+**It works against Nova OS unchanged.** The CLI inherits parent-process env when spawned, so `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY` (set globally or via `ClaudeAgentOptions(env={...})`) reroute every call to your Nova OS instance:
+
+```python
+options = ClaudeAgentOptions(
+    env={
+        "ANTHROPIC_BASE_URL": "https://nova.your-company.example",
+        "ANTHROPIC_API_KEY": "msk_live_...",
+    },
+    system_prompt="You are a helpful assistant.",
+    max_turns=1,
+)
+async for message in query(prompt="...", options=options):
+    ...
+```
+
+| Claude Agent SDK | Nova OS SDK |
+|---|---|
+| `query(prompt, options)` — AsyncIterator, one-shot | `c.messages.create(agent_id, messages)` — sync or streaming via `MessageStream` |
+| `ClaudeSDKClient` — bidirectional / interruptible | `c.messages.create()` repeated against the same `agent_id`; observational memory threads conversation state automatically |
+| `agents={"name": AgentDefinition(...)}` — declared per-options | `c.agents.create(id, type, owner_employee, instructions, ...)` — registered server-side, persisted across processes |
+| Tools: built-in CLI set (Read/Bash/Edit/Write) + in-process MCP custom tools | Tools: server-side Nova OS skills + custom-tool callbacks (Mode A inline / Mode B webhook) |
+| Permissions: `permission_mode` + `can_use_tool` per-tool callback | Permissions: JWT/API-key + agent-level firewall + opt-in custom-tool patterns |
+| State: local session files (resume / fork / store) | State: server-side observational memory keyed on `(API key, end_user, agent)` |
+
+**When to use which:**
+
+- **Claude Agent SDK** when you want the local-CLI ergonomics — Read/Bash/Edit acting on the developer's own filesystem, in-process MCP servers, plan/acceptEdits permission modes. Scope is single-user, single-machine.
+- **Nova OS SDK** when you want server-managed agents — multi-tenant, persisted, OIDC/SSO, RBAC, observational memory across sessions. Scope is the partner's user base.
+- **Both together** is the killer pattern — write Claude Agent SDK code, redirect with two env vars, get the local-CLI dev ergonomics with the multi-tenant Nova OS backend. See `01b_claude_agent_sdk_drop_in.py`.
+
 ## Example index
 
 | File | Surface |
 |---|---|
 | `00_quickstart.py` | **Start here.** Fastest path from zero to a digital agent — 3 SDK calls, side-by-side mapping to Anthropic Managed Agents Quickstart |
 | `01_basic_chat.py` | Anthropic-compat hello world (Anthropic SDK drop-in, no agent setup) |
+| `01b_claude_agent_sdk_drop_in.py` | Claude Agent SDK drop-in via env-var redirect — existing `query()` / `ClaudeSDKClient` code runs against Nova OS unchanged |
 | `02_create_employee_and_agent.py` | Full lifecycle: employee → owned agent → first chat → cleanup |
 | `04_custom_tool_inline.py` | Mode A (SSE inline) — partner intercepts `custom_tool_use` mid-stream |
 | `05_custom_tool_webhook.py` | Mode B (webhook) — partner exposes a FastAPI endpoint |

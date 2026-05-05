@@ -62,10 +62,15 @@ For anything beyond evaluation (real Postgres, SurrealDB knowledge store, compan
 
 If you only need to call a hosted Nova OS that someone else operates, skip this section — the SDK works against any reachable Nova OS endpoint.
 
-## Two-tier client model
+## Three drop-in compat surfaces
 
-- **Anthropic-compat:** code targeting `anthropic.Anthropic(base_url=...)` works unchanged for the 1:1 surface.
-- **Nova OS extended:** multi-model at agent + employee level, custom-tool webhook callbacks, portable employee bundles, async jobs.
+Existing partner code targeting any of the three Anthropic-published Python entry points works against Nova OS with at most an env-var or constructor change:
+
+- **Anthropic Messages SDK** (`anthropic.Anthropic(base_url=...)`) — set `base_url` to your Nova OS instance. The 1:1 Messages-API surface plus the Managed Agents beta endpoints (`/v1/agents`, `/v1/sessions`, `/v1/messages` behind the `anthropic-beta: managed-agents-2026-04-01` header) work unchanged. See [`python/examples/01_basic_chat.py`](python/examples/01_basic_chat.py).
+- **Claude Agent SDK** (`claude_agent_sdk.query` / `ClaudeSDKClient`) — set `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY` (or `ClaudeAgentOptions(env={...})`) to redirect the bundled CLI subprocess to Nova OS. Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by Nova OS's multi-tenant runtime instead of `api.anthropic.com`. See [`python/examples/01b_claude_agent_sdk_drop_in.py`](python/examples/01b_claude_agent_sdk_drop_in.py).
+- **Nova OS native** (`from nova_os import Client`) — the extended surface partners reach for once they're past hello-world: multi-model `model_config` cascade at employee + agent level, structured-output `output_type` validation, custom-tool webhook callbacks (Mode A inline / Mode B webhook), portable employee bundles, async jobs. See [`python/examples/00_quickstart.py`](python/examples/00_quickstart.py).
+
+The first two are about meeting partners where they are. The third is the surface they grow into when their integration deepens.
 
 ## Status
 
