@@ -106,12 +106,21 @@ End-to-end paths for the most common partner tasks. Each row points at a worked 
 |---|---|---|
 | Hello-world chat | Bare `Anthropic(base_url=...)` round-trip | [`python/examples/01_basic_chat.py`](../python/examples/01_basic_chat.py) |
 | Claude Agent SDK redirect | Subprocess CLI redirected to Nova OS | [`python/examples/01b_claude_agent_sdk_drop_in.py`](../python/examples/01b_claude_agent_sdk_drop_in.py) |
-| Streaming chat | SSE event parsing + Mode A inline tool result | [`python/examples/02_streaming.py`](../python/examples/02_streaming.py) |
-| Multi-model with fallback | Per-call model override + cascade resolution | [`python/examples/03_multi_model.py`](../python/examples/03_multi_model.py) |
-| Structured output (`output_type`) | JSON Schema 2020-12 validation on assistant messages | [`python/examples/04_output_type.py`](../python/examples/04_output_type.py) |
-| Mode A custom tool | SSE inline `tool_use` → `submit_tool_result` | [`python/examples/05_custom_tool_mode_a.py`](../python/examples/05_custom_tool_mode_a.py) |
-| Mode B webhook custom tool | HMAC-signed webhook + idempotency dedup | [`python/examples/06_custom_tool_mode_b.py`](../python/examples/06_custom_tool_mode_b.py) |
-| Async long-running job | Job submit + polling | [`python/examples/07_async_job.py`](../python/examples/07_async_job.py) |
+| Create an employee + agent from scratch | Define employee, attach agents, set model_config | [`python/examples/02_create_employee_and_agent.py`](../python/examples/02_create_employee_and_agent.py) |
+| Upload knowledge to a collection | Ingest + verify retrieval at chat time | [`python/examples/03_upload_knowledge.py`](../python/examples/03_upload_knowledge.py) |
+| Mode A custom tool (SSE inline) | Stream + `submit_tool_result` round-trip | [`python/examples/04_custom_tool_inline.py`](../python/examples/04_custom_tool_inline.py) |
+| Mode B custom tool (webhook) | HMAC-signed webhook + idempotency dedup | [`python/examples/05_custom_tool_webhook.py`](../python/examples/05_custom_tool_webhook.py) |
+| Multi-model with fallback | Per-call model override + cascade resolution | [`python/examples/06_multi_model_fallback.py`](../python/examples/06_multi_model_fallback.py) |
+| Bundle export / import | `.nova-bundle.zip` across instances | [`python/examples/07_bundle_export_import.py`](../python/examples/07_bundle_export_import.py) |
+| Async long-running job | Job submit + polling | [`python/examples/08_async_job_long_running.py`](../python/examples/08_async_job_long_running.py) |
+| Streaming chat | SSE event parsing | [`python/examples/09_streaming_messages.py`](../python/examples/09_streaming_messages.py) |
+| Idempotency | `Idempotency-Key` retry-safe POSTs | [`python/examples/10_idempotency.py`](../python/examples/10_idempotency.py) |
+| Auto-paginating list | Walk every record without offset bookkeeping | [`python/examples/11_pagination.py`](../python/examples/11_pagination.py) |
+| Documents upload | `c.documents` partner-prefix CRUD | [`python/examples/12_documents_upload.py`](../python/examples/12_documents_upload.py) |
+| Lifecycle hooks | `c.hooks` subscribe to canonical agent-loop events | [`python/examples/13_hooks_subscribe.py`](../python/examples/13_hooks_subscribe.py) |
+| Per-tenant filesystem | `c.filesystem` seed + read | [`python/examples/14_filesystem_seed.py`](../python/examples/14_filesystem_seed.py) |
+| Admin: users + settings | `c.users` + `c.settings` partner-prefix admin | [`python/examples/15_users_settings_admin.py`](../python/examples/15_users_settings_admin.py) |
+| Explicit sessions | `c.sessions` create + get for resumed conversations | [`python/examples/16_sessions_explicit.py`](../python/examples/16_sessions_explicit.py) |
 | Persona discovery (boot-time) | `c.personas.list()` with `If-None-Match` ETag | [`python/examples/17_personas_discovery.py`](../python/examples/17_personas_discovery.py) |
 | Folder-to-server sync | `nova-os-cli sync ./data/` | [`cli/README.md` → sync](../cli/README.md#sync-folder--server) |
 | Webhook smoke test | Forge a Nova-OS-shaped signed POST to your handler | [`cli/README.md` → test-callback](../cli/README.md#test-callback-mode-b-webhook-smoke) |
