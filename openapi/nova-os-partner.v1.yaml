@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Nova OS Partner API
-  version: 1.0.0-alpha.4
+  version: 1.0.0-alpha.5
   description: |
     Partner integration API for Nova OS. Mirrors Anthropic Managed Agents
     1:1 for the compat surface (Section 1.1 of the design); extends with
@@ -1113,6 +1113,66 @@ components:
         value:
           description: Setting value — type varies per key (string for model identifiers, int for thresholds, bool for feature flags).
 
+    # ── Personas (#187 server / nova-os-sdk#14 SDK) ──────────────────
+    PersonaTriage:
+      type: string
+      enum: [always_brain, never_brain, conditional]
+      description: |
+        Resolved persona triage default. ``always_brain`` forces the
+        planner; ``never_brain`` skips it; ``conditional`` defers to
+        the per-turn regex/LLM triage chain. Per-call ``metadata.brain``
+        on the messages endpoint still wins as an override. Resolved
+        server-side by the canonical ``persona.ResolveTriage`` function
+        — partners receive the projected value, not the raw frontmatter.
+
+    PersonaManifestEntry:
+      type: object
+      required: [id, display_name, capabilities, triage, emits_route_hint_kinds, route_template_names]
+      properties:
+        id: { type: string }
+        display_name: { type: string }
+        capabilities:
+          type: array
+          items: { type: string }
+          description: Skill labels the persona dispatches to.
+        triage: { $ref: '#/components/schemas/PersonaTriage' }
+        emits_route_hint_kinds:
+          type: array
+          items:
+            type: string
+            enum: [render_inline, navigate_to, ask_clarification]
+          description: Which RouteHint kinds the persona emits at all (drives partner UI prep).
+        route_template_names:
+          type: array
+          items: { type: string }
+          description: Keys into the agent's route_templates map; partners pre-resolve URL templates.
+
+    Manifest:
+      type: object
+      required: [manifest_version, personas]
+      description: |
+        Boot-time persona discovery contract. Partners cache by
+        ``manifest_version`` (sha256 over canonical-JSON) and use
+        ``If-None-Match`` on subsequent fetches to short-circuit at 304.
+      properties:
+        manifest_version:
+          type: string
+          description: |
+            ``sha256:<hex>`` — emitted as ``ETag``. Partners send
+            ``If-None-Match: <manifest_version>`` to skip the body when
+            unchanged.
+        personas:
+          type: array
+          items: { $ref: '#/components/schemas/PersonaManifestEntry' }
+
+    PersonaNotFoundError:
+      type: object
+      required: [error, id]
+      description: Returned on GET /agents/v1/personas/{id} miss. Distinct envelope from the standard Error type for backwards-compat with the existing `/agents/v1/*` surface.
+      properties:
+        error: { type: string, example: "persona not found" }
+        id: { type: string, description: The requested persona id (echoed back). }
+
     # ── Sessions (#185) ──────────────────────────────────────────────
     Session:
       type: object
@@ -2020,3 +2080,54 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Session' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  # ── Personas (nova-os-sdk#14, server PR #187) ─────────────────────
+  /agents/v1/personas:
+    get:
+      operationId: listPersonas
+      summary: Boot-time persona manifest with ETag round-trip
+      tags: [Personas]
+      description: |
+        Returns the manifest envelope (`manifest_version` sha256 + every
+        registered persona). Partners cache by `manifest_version` and
+        send `If-None-Match` on subsequent fetches; the server replies
+        304 with no body when the manifest hasn't changed.
+      parameters:
+        - in: header
+          name: If-None-Match
+          schema: { type: string }
+          description: Cached `manifest_version` from a prior fetch.
+      responses:
+        '200':
+          description: Full manifest.
+          headers:
+            ETag:
+              schema: { type: string }
+              description: The current `manifest_version`. Round-trip via `If-None-Match`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Manifest' }
+        '304':
+          description: Manifest unchanged. No body. Partner's cached version is current.
+
+  /agents/v1/personas/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getPersonaByID
+      summary: Fetch a single persona by id
+      tags: [Personas]
+      responses:
+        '200':
+          description: Persona entry.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PersonaManifestEntry' }
+        '404':
+          description: No persona with that id is registered.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PersonaNotFoundError' }

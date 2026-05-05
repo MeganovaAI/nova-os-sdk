@@ -74,6 +74,7 @@ class Client:
         from nova_os.resources.users import Users
         from nova_os.resources.settings import Settings
         from nova_os.resources.sessions import Sessions
+        from nova_os.resources.personas import Personas
 
         self.agents = Agents(self)
         self.employees = Employees(self)
@@ -87,6 +88,8 @@ class Client:
         self.users = Users(self)
         self.settings = Settings(self)
         self.sessions = Sessions(self)
+        # alpha.5 — boot-time persona discovery (#187 / nova-os-sdk#14).
+        self.personas = Personas(self)
 
         # .sync proxy — wired in Task 9
         from nova_os._sync import _SyncProxy
@@ -152,6 +155,13 @@ class Client:
                 return resp.json()
             except ValueError:
                 return resp.text
+
+        # 304 Not Modified — cache-validation success. No body. Surface
+        # as None so callers using If-None-Match can short-circuit:
+        #     manifest = await c.personas.list(if_none_match=etag)
+        #     if manifest is None: # cached version still current
+        if resp.status_code == 304:
+            return None
 
         # Error path — parse to typed exception.
         body: Any
