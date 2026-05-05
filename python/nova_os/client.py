@@ -66,11 +66,24 @@ class Client:
         from nova_os.resources.employees import Employees
         from nova_os.resources.messages import Messages
         from nova_os.resources.jobs import Jobs
+        from nova_os.resources.documents import Documents
+        from nova_os.resources.knowledge import Knowledge
+        from nova_os.resources.hooks import Hooks
+        from nova_os.resources.filesystem import Filesystem
+        from nova_os.resources.users import Users
+        from nova_os.resources.settings import Settings
 
         self.agents = Agents(self)
         self.employees = Employees(self)
         self.messages = Messages(self)
         self.jobs = Jobs(self)
+        # New resources landed alongside server PRs #189–#193 / OpenAPI alpha.3.
+        self.documents = Documents(self)
+        self.knowledge = Knowledge(self)
+        self.hooks = Hooks(self)
+        self.filesystem = Filesystem(self)
+        self.users = Users(self)
+        self.settings = Settings(self)
 
         # .sync proxy — wired in Task 9
         from nova_os._sync import _SyncProxy
@@ -98,19 +111,34 @@ class Client:
         json_body: Any | None = None,
         headers: dict[str, str] | None = None,
         idempotency_key: str | None = None,
+        files: dict[str, Any] | None = None,
+        form: dict[str, Any] | None = None,
+        raw_body: bytes | None = None,
+        extra_headers: dict[str, str] | None = None,
     ) -> Any:
+        """Low-level transport. Mutually-exclusive body modes:
+
+        - ``json_body`` — typical JSON request (most resources)
+        - ``files`` + optional ``form`` — multipart upload (Documents.upload)
+        - ``raw_body`` — application/octet-stream PUT (Filesystem.write)
+        """
         merged_headers = dict(headers or {})
+        if extra_headers:
+            merged_headers.update(extra_headers)
         if idempotency_key is not None:
             merged_headers["Idempotency-Key"] = idempotency_key
         try:
-            resp = await self._http.request(
-                method,
-                path,
-                params=params,
-                json=json_body,
-                headers=merged_headers,
-            )
-        except httpx.HTTPError as exc:
+            kwargs: dict[str, Any] = {"params": params, "headers": merged_headers}
+            if files is not None:
+                kwargs["files"] = files
+                if form:
+                    kwargs["data"] = form
+            elif raw_body is not None:
+                kwargs["content"] = raw_body
+            elif json_body is not None:
+                kwargs["json"] = json_body
+            resp = await self._http.request(method, path, **kwargs)
+        except httpx.HTTPError:
             # Network-level — let caller decide via with_retry whether to retry.
             raise
 
@@ -123,6 +151,35 @@ class Client:
                 return resp.text
 
         # Error path — parse to typed exception.
+        body: Any
+        try:
+            body = resp.json()
+        except ValueError:
+            body = resp.text
+        raise parse_error_response(resp.status_code, body)
+
+    async def _request_bytes(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+        extra_headers: dict[str, str] | None = None,
+    ) -> bytes:
+        """Like ``_request`` but returns raw response bytes — for
+        endpoints that stream files (e.g. Filesystem.read).
+        """
+        merged_headers = dict(extra_headers or {})
+        try:
+            resp = await self._http.request(
+                method, path, params=params, headers=merged_headers
+            )
+        except httpx.HTTPError:
+            raise
+
+        if 200 <= resp.status_code < 300:
+            return resp.content
+
         body: Any
         try:
             body = resp.json()
