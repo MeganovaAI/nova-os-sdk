@@ -20,7 +20,11 @@ Tracks Python surface added since `1.0.0`. Targets a `1.1.0` minor cut once the 
 
 ### Server-side notes for partners
 
-- `OPENAI_MODEL` now defaults to `gemini/gemini-2.5-flash` server-side (`nova-os#197` / PR #198). Partners running `docker run ghcr.io/meganovaai/nova-os` against the MegaNova gateway with no env var no longer hit the bare-`gpt-4o` 404 on first chat. Override via `-e OPENAI_MODEL=<vendor>/<model>` still wins. Default is gateway-safe per `validateModelShape` (`<provider>/<model>`).
+- **`OPENAI_MODEL` default** — now `gemini/gemini-2.5-flash` server-side (`nova-os#197` / PR #198). Partners running `docker run ghcr.io/meganovaai/nova-os` against the MegaNova gateway with no env var no longer hit the bare-`gpt-4o` 404 on first chat. Override via `-e OPENAI_MODEL=<vendor>/<model>` still wins. Default is gateway-safe per `validateModelShape` (`<provider>/<model>`).
+- **`OPENAI_API_BASE` default** — now `https://api.meganova.ai` server-side (`nova-os` PR #216). Bare `docker run` deployments using a MegaNova bearer token + `OPENAI_API_KEY=msk_...` work without further env-var configuration. Operators using OpenAI direct or self-hosted gateways override via `-e OPENAI_API_BASE=https://api.openai.com` (or your gateway URL) — same env var as before, only the unset behavior changes.
+- **`web_search_config` field rename** — `web_search_config.backend` → `web_search_config.primary_backend` and `web_search_config.fallback` → `web_search_config.fallback_chain` (`nova-os` PR #212, closes [#200](https://github.com/MeganovaAI/nova-os/issues/200)). Persona `web_search_config` is now resolved per-invocation on `skill_deep_research` (was silently ignored before). Non-breaking — zero personas in `data/agents/*.md` use the old names.
+- **`MEGANOVA_API_KEY` alias** — accepted as an alias for `MEGANOVA_CLOUD_KEY` (`nova-os` PR #215, closes [#214](https://github.com/MeganovaAI/nova-os/issues/214)). Once-only deprecation log via `sync.Once`. Tavily-primary `FallbackSearcher` no longer burns 5-15s of redundant Firecrawl fetches per multi-aspect query (closes [#213](https://github.com/MeganovaAI/nova-os/issues/213)).
+- **Admin-cred guardrail** — daemon refuses to start if `NOVA_OS_ADMIN_EMAIL` / `NOVA_OS_ADMIN_PASSWORD` match the leaked-default values, unless `NOVA_OS_ALLOW_INSECURE_DEFAULTS=1` is set (local dev / CI only). Not new — has been in every release tag — but a common first-time-pull surprise; partner pin docs should mention it.
 
 ## [1.0.0] — 2026-05-02
 
