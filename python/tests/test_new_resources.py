@@ -305,3 +305,76 @@ async def test_sessions_get():
     async with _make_client(handler) as c:
         s = await c.sessions.get("sess_lookup")
     assert s["id"] == "sess_lookup"
+
+
+# ── Personas (#187 server / nova-os-sdk#14 SDK) ────────────────────
+
+
+@pytest.mark.asyncio
+async def test_personas_list_returns_manifest():
+    def handler(req: httpx.Request) -> httpx.Response:
+        assert req.method == "GET"
+        assert req.url.path == "/agents/v1/personas"
+        return httpx.Response(
+            200,
+            json={
+                "manifest_version": "sha256:abc123",
+                "personas": [
+                    {"id": "intake", "display_name": "Intake", "capabilities": ["greet"],
+                     "triage": "always_brain", "emits_route_hint_kinds": ["render_inline"],
+                     "route_template_names": []},
+                ],
+            },
+        )
+
+    async with _make_client(handler) as c:
+        m = await c.personas.list()
+    assert m["manifest_version"] == "sha256:abc123"
+    assert len(m["personas"]) == 1
+    assert m["personas"][0]["triage"] == "always_brain"
+
+
+@pytest.mark.asyncio
+async def test_personas_list_returns_none_on_304():
+    captured = {}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        captured["if_none_match"] = req.headers.get("if-none-match")
+        return httpx.Response(304)  # cache hit, no body
+
+    async with _make_client(handler) as c:
+        result = await c.personas.list(if_none_match="sha256:abc123")
+    assert result is None
+    assert captured["if_none_match"] == "sha256:abc123"
+
+
+@pytest.mark.asyncio
+async def test_personas_get_returns_entry():
+    def handler(req: httpx.Request) -> httpx.Response:
+        assert req.url.path == "/agents/v1/personas/legal-assistant"
+        return httpx.Response(
+            200,
+            json={"id": "legal-assistant", "display_name": "Legal Assistant",
+                  "capabilities": ["clause-extract"], "triage": "conditional",
+                  "emits_route_hint_kinds": [], "route_template_names": []},
+        )
+
+    async with _make_client(handler) as c:
+        p = await c.personas.get("legal-assistant")
+    assert p["id"] == "legal-assistant"
+    assert p["triage"] == "conditional"
+
+
+@pytest.mark.asyncio
+async def test_personas_get_404_raises_persona_not_found():
+    from nova_os import PersonaNotFound
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            404, json={"error": "persona not found", "id": "ghost"}
+        )
+
+    async with _make_client(handler) as c:
+        with pytest.raises(PersonaNotFound) as exc_info:
+            await c.personas.get("ghost")
+    assert exc_info.value.persona_id == "ghost"

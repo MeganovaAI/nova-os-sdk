@@ -81,6 +81,7 @@ async for message in query(prompt="...", options=options):
 | `14_filesystem_seed.py` | `c.filesystem` — seed an agent's per-tenant workspace before its first turn |
 | `15_users_settings_admin.py` | `c.users` + `c.settings` — partner-admin onboarding flow |
 | `16_sessions_explicit.py` | `c.sessions` — explicit session lifecycle (per-ticket / per-batch isolation, session-default model override) |
+| `17_personas_discovery.py` | `c.personas` — boot-time persona-manifest discovery with ETag/If-None-Match cache validation |
 
 For full end-to-end vertical integrations (legaltech contract review,
 healthcare clinical-note triage, finance 10-K diff) see [`../../examples/`](../../examples/).

@@ -121,6 +121,20 @@ class InternalError(NovaOSError):
     """500 — server bug. Report at https://github.com/MeganovaAI/nova-os-sdk/issues."""
 
 
+class PersonaNotFound(NotFoundError):
+    """Raised when GET /agents/v1/personas/{id} 404s.
+
+    The persona-manifest endpoint uses a distinct error envelope
+    ``{"error": "persona not found", "id": "<requested>"}`` rather than
+    the standard partner Error type — this exception preserves the
+    requested id on ``.persona_id`` for caller convenience.
+    """
+
+    def __init__(self, persona_id: str, message: str = "persona not found"):
+        super().__init__(message)
+        self.persona_id = persona_id
+
+
 _TYPE_TO_CLASS: dict[str, type[NovaOSError]] = {
     "authentication_error": AuthenticationError,
     "permission_error": PermissionError,
@@ -141,6 +155,14 @@ def parse_error_response(status: int, body: Any) -> NovaOSError:
     """
     if not isinstance(body, dict):
         return NovaOSError(f"HTTP {status}: {body}", status=status)
+
+    # Persona-manifest endpoint uses a distinct envelope:
+    #     {"error": "persona not found", "id": "<requested>"}
+    # Detect it before the standard parser so c.personas.get() maps
+    # cleanly to PersonaNotFound without the resource having to fish
+    # at the body shape itself.
+    if status == 404 and "id" in body and body.get("error") == "persona not found":
+        return PersonaNotFound(body["id"], "persona not found")
 
     type_str = body.get("type", "")
     message = body.get("message", str(body))
