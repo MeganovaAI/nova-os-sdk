@@ -66,12 +66,14 @@ class Client:
         from nova_os.resources.employees import Employees
         from nova_os.resources.messages import Messages
         from nova_os.resources.jobs import Jobs
+
         from nova_os.resources.documents import Documents
         from nova_os.resources.knowledge import Knowledge
         from nova_os.resources.hooks import Hooks
         from nova_os.resources.filesystem import Filesystem
         from nova_os.resources.users import Users
         from nova_os.resources.settings import Settings
+        from nova_os.resources.sessions import Sessions
 
         self.agents = Agents(self)
         self.employees = Employees(self)
@@ -84,6 +86,7 @@ class Client:
         self.filesystem = Filesystem(self)
         self.users = Users(self)
         self.settings = Settings(self)
+        self.sessions = Sessions(self)
 
         # .sync proxy — wired in Task 9
         from nova_os._sync import _SyncProxy

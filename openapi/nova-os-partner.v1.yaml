@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Nova OS Partner API
-  version: 1.0.0-alpha.3
+  version: 1.0.0-alpha.4
   description: |
     Partner integration API for Nova OS. Mirrors Anthropic Managed Agents
     1:1 for the compat surface (Section 1.1 of the design); extends with
@@ -1113,6 +1113,27 @@ components:
         value:
           description: Setting value — type varies per key (string for model identifiers, int for thresholds, bool for feature flags).
 
+    # ── Sessions (#185) ──────────────────────────────────────────────
+    Session:
+      type: object
+      required: [id, agent_id]
+      properties:
+        id: { type: string, readOnly: true, description: "Format: sess_<uuid>." }
+        agent_id: { type: string }
+        environment_id: { type: string }
+        model:
+          type: string
+          description: Session-default LLM override; per-event model on the messages endpoint takes precedence.
+        created_at: { type: string, format: date-time, readOnly: true }
+
+    SessionCreate:
+      type: object
+      required: [agent_id]
+      properties:
+        agent_id: { type: string }
+        environment_id: { type: string }
+        model: { type: string }
+
   responses:
     BadRequest:
       description: Request validation failed.
@@ -1956,3 +1977,46 @@ paths:
               schema: { $ref: '#/components/schemas/SettingValue' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ── Sessions (#185) ────────────────────────────────────────────────
+  /v1/managed/sessions:
+    post:
+      operationId: createManagedSession
+      summary: Create a Nova OS native session
+      tags: [Sessions]
+      description: |
+        Native partner-prefix session create. Shares the SessionStore
+        with the Anthropic-compat /v1/sessions surface — state is
+        consistent across the two mounts. No `anthropic-beta` header
+        gate; partner-friendly response shape.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionCreate' }
+      responses:
+        '201':
+          description: Session created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/managed/sessions/{session_id}:
+    parameters:
+      - in: path
+        name: session_id
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getManagedSession
+      summary: Get a session by ID
+      tags: [Sessions]
+      responses:
+        '200':
+          description: Session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '404': { $ref: '#/components/responses/NotFound' }
