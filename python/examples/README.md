@@ -72,6 +72,9 @@ async for message in query(prompt="...", options=options):
 | `06_multi_model_fallback.py` | Per-employee `model_config` cascade, observe fallback fields |
 | `07_bundle_export_import.py` | Tenant onboarding via `.nova-bundle.zip` round-trip |
 | `08_async_job_long_running.py` | Submit async job, poll status, receive final result |
+| `09_streaming_messages.py` | `c.messages.stream(...)` minimum-lines example — token-on-the-wire latency for chat UIs |
+| `10_idempotency.py` | `idempotency_key=` on `create()` — safely retry across network failures, no duplicates |
+| `11_pagination.py` | `async for x in c.agents.list()` auto-pagination — page boundaries invisible to partner code |
 
 **Skipped:** `03_upload_knowledge.py` — the `knowledge` resource is not yet
 available server-side. This example will be added in a future release.
