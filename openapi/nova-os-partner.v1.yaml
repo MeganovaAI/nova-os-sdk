@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Nova OS Partner API
-  version: 1.0.0-alpha.2
+  version: 1.0.0-alpha.3
   description: |
     Partner integration API for Nova OS. Mirrors Anthropic Managed Agents
     1:1 for the compat surface (Section 1.1 of the design); extends with
@@ -921,6 +921,198 @@ components:
         next_cursor:
           type: string
 
+    # ── Documents (#175) ──────────────────────────────────────────────
+    Document:
+      type: object
+      required: [id, title]
+      properties:
+        id: { type: string, readOnly: true }
+        title: { type: string, description: File name or extracted title }
+        path: { type: string, description: Collection path (e.g. "contracts/2026") }
+        type: { type: string, description: Document type — pdf, docx, md, etc. }
+        size_bytes: { type: integer, format: int64, readOnly: true }
+        collection_id: { type: string, description: Parent collection (empty = root) }
+        metadata:
+          type: object
+          additionalProperties: { type: string }
+          description: Mime, pages, author, etc.
+        created_at: { type: string, format: date-time, readOnly: true }
+
+    DocumentList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Document' }
+        has_more: { type: boolean }
+        next_cursor: { type: string }
+
+    # ── Knowledge (#176) ──────────────────────────────────────────────
+    KnowledgeChunk:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string }
+        collection: { type: string }
+        document_id: { type: string }
+        score: { type: number, format: float }
+        metadata:
+          type: object
+          additionalProperties: true
+
+    KnowledgeSearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string }
+        collection:
+          type: string
+          description: Collection to search; empty = caller's own collection.
+        top_k: { type: integer, minimum: 1, maximum: 100, default: 5 }
+        threshold: { type: number, format: float, minimum: 0, maximum: 1 }
+
+    KnowledgeSearchResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/KnowledgeChunk' }
+
+    KnowledgeIngestRequest:
+      type: object
+      required: [content]
+      properties:
+        title: { type: string }
+        content: { type: string, description: Document text (already extracted) }
+        collection:
+          type: string
+          default: default
+          description: Target collection; defaults to "default".
+        metadata:
+          type: object
+          additionalProperties: true
+
+    KnowledgeCollectionList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { type: string }
+
+    # ── Hooks (#177, in-memory first slice) ──────────────────────────
+    HookEvent:
+      type: string
+      enum:
+        - SessionStart
+        - SessionEnd
+        - UserPromptSubmit
+        - PreToolUse
+        - PostToolUse
+        - PreInference
+        - PostInference
+        - Stop
+        - Error
+      description: |
+        The 9 canonical lifecycle events. Validated server-side at
+        registration time; unknown values return 400.
+
+    HookSubscription:
+      type: object
+      required: [id, event, target_url, enabled, created_at]
+      properties:
+        id: { type: string, readOnly: true }
+        event: { $ref: '#/components/schemas/HookEvent' }
+        target_url: { type: string, format: uri }
+        secret_env:
+          type: string
+          description: Env var name holding the HMAC shared secret on the partner side.
+        description: { type: string }
+        enabled: { type: boolean, default: true }
+        created_at: { type: string, format: date-time, readOnly: true }
+
+    HookSubscriptionCreate:
+      type: object
+      required: [event, target_url]
+      properties:
+        event: { $ref: '#/components/schemas/HookEvent' }
+        target_url: { type: string, format: uri }
+        secret_env: { type: string }
+        description: { type: string }
+        enabled: { type: boolean }
+
+    HookSubscriptionList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/HookSubscription' }
+
+    # ── Filesystem (#178, first slice) ───────────────────────────────
+    FileMeta:
+      type: object
+      required: [path, size, mtime]
+      properties:
+        path: { type: string, description: Agent-visible path including mount prefix (e.g. "/workspace/PLAN.md"). }
+        size: { type: integer, format: int64, description: Plaintext byte length. }
+        mtime: { type: string, format: date-time }
+        content_type: { type: string }
+        sha256: { type: string, description: Hex-encoded SHA-256 of the plaintext. Used for If-Match optimistic concurrency. }
+
+    FileMetaList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/FileMeta' }
+        has_more: { type: boolean, description: True when truncated by the limit query param. }
+
+    # ── Users (#179) ──────────────────────────────────────────────────
+    User:
+      type: object
+      required: [id, email, role]
+      properties:
+        id: { type: string, readOnly: true }
+        email: { type: string, format: email }
+        name: { type: string }
+        role:
+          type: string
+          enum: [admin, manager, developer, employee]
+        must_change_password: { type: boolean, readOnly: true }
+        created_at: { type: string, format: date-time, readOnly: true }
+
+    UserCreate:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+        name: { type: string }
+        role:
+          type: string
+          enum: [admin, manager, developer, employee]
+          default: employee
+
+    UserList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/User' }
+
+    # ── Settings (#179) ──────────────────────────────────────────────
+    SettingValue:
+      type: object
+      required: [key, value]
+      properties:
+        key: { type: string }
+        value:
+          description: Setting value — type varies per key (string for model identifiers, int for thresholds, bool for feature flags).
+
   responses:
     BadRequest:
       description: Request validation failed.
@@ -1370,3 +1562,397 @@ paths:
                 $ref: '#/components/schemas/StreamEvent'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  # ── Documents (#175) ────────────────────────────────────────────────
+  /v1/managed/documents:
+    get:
+      operationId: listDocuments
+      summary: List documents in a collection
+      tags: [Documents]
+      parameters:
+        - in: query
+          name: collection_id
+          schema: { type: string }
+          description: Collection to enumerate; empty = root.
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        '200':
+          description: Document list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DocumentList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/managed/documents/upload:
+    post:
+      operationId: uploadDocument
+      summary: Upload a document
+      tags: [Documents]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                collection_id:
+                  type: string
+                  description: Target collection; empty = root.
+      responses:
+        '201':
+          description: Document uploaded and auto-indexed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Document' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/managed/documents/{document_id}:
+    parameters:
+      - in: path
+        name: document_id
+        required: true
+        schema: { type: string }
+    delete:
+      operationId: deleteDocument
+      summary: Delete a document
+      tags: [Documents]
+      responses:
+        '204': { description: Deleted. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ── Knowledge (#176) ────────────────────────────────────────────────
+  /v1/managed/knowledge/search:
+    post:
+      operationId: searchKnowledge
+      summary: Hybrid search across the knowledge base
+      tags: [Knowledge]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/KnowledgeSearchRequest' }
+      responses:
+        '200':
+          description: Ranked passages.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KnowledgeSearchResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /v1/managed/knowledge/ingest:
+    post:
+      operationId: ingestKnowledge
+      summary: Ingest a document into a knowledge collection
+      tags: [Knowledge]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/KnowledgeIngestRequest' }
+      responses:
+        '201':
+          description: Document ingested.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ingested] }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /v1/managed/knowledge/collections:
+    get:
+      operationId: listKnowledgeCollections
+      summary: List every knowledge collection
+      tags: [Knowledge]
+      responses:
+        '200':
+          description: Collection name list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KnowledgeCollectionList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ── Hooks (#177) ────────────────────────────────────────────────────
+  /v1/managed/hooks:
+    get:
+      operationId: listHooks
+      summary: List lifecycle-hook subscriptions
+      tags: [Hooks]
+      responses:
+        '200':
+          description: Subscription list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HookSubscriptionList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createHook
+      summary: Register a lifecycle-hook subscription
+      tags: [Hooks]
+      description: |
+        Note: as of v0.1.5 the in-memory store accepts subscriptions but
+        the runtime hook bus does not yet bridge to it. Persistence and
+        bus bridge land in a follow-up; partners wiring integrations now
+        get a stable contract.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HookSubscriptionCreate' }
+      responses:
+        '201':
+          description: Subscription created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HookSubscription' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/managed/hooks/{hook_id}:
+    parameters:
+      - in: path
+        name: hook_id
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getHook
+      summary: Get a hook subscription
+      tags: [Hooks]
+      responses:
+        '200':
+          description: Subscription.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HookSubscription' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      operationId: deleteHook
+      summary: Deregister a hook subscription
+      tags: [Hooks]
+      description: Idempotent — returns 204 even if the subscription doesn't exist.
+      responses:
+        '204': { description: Deleted. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ── Filesystem (#178) ──────────────────────────────────────────────
+  /v1/managed/filesystem/{tenant_id}/{session_id}/files:
+    parameters:
+      - in: path
+        name: tenant_id
+        required: true
+        schema: { type: string }
+      - in: path
+        name: session_id
+        required: true
+        schema: { type: string }
+    get:
+      operationId: listFiles
+      summary: List files in a workspace
+      tags: [Filesystem]
+      parameters:
+        - in: query
+          name: mount
+          schema: { type: string, default: /workspace }
+        - in: query
+          name: glob
+          schema: { type: string }
+          description: filepath.Match pattern applied to the basename.
+        - in: query
+          name: recursive
+          schema: { type: string, enum: ["1", "true"] }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 1000, default: 100 }
+      responses:
+        '200':
+          description: File list with metadata.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileMetaList' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/managed/filesystem/{tenant_id}/{session_id}/files/{path}:
+    parameters:
+      - in: path
+        name: tenant_id
+        required: true
+        schema: { type: string }
+      - in: path
+        name: session_id
+        required: true
+        schema: { type: string }
+      - in: path
+        name: path
+        required: true
+        schema: { type: string }
+        description: |
+          File path within the workspace. URL-encoded; mount prefix is implicit.
+    get:
+      operationId: readFile
+      summary: Read a file's raw bytes
+      tags: [Filesystem]
+      responses:
+        '200':
+          description: File content (Content-Type from the file's stored metadata).
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: writeFile
+      summary: Write or overwrite a file
+      tags: [Filesystem]
+      parameters:
+        - in: header
+          name: If-Match
+          schema: { type: string }
+          description: SHA-256 of the current content for optimistic concurrency.
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+      responses:
+        '200':
+          description: File written.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '412':
+          description: If-Match precondition failed.
+        '507':
+          description: Quota exceeded.
+    delete:
+      operationId: deleteFile
+      summary: Delete a file
+      tags: [Filesystem]
+      description: Idempotent — returns 204 even if the file doesn't exist.
+      responses:
+        '204': { description: Deleted. }
+
+  # ── Users (#179) ────────────────────────────────────────────────────
+  /v1/managed/users:
+    get:
+      operationId: listUsers
+      summary: List users
+      tags: [Users]
+      responses:
+        '200':
+          description: User list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createUser
+      summary: Create a user (default password; trigger reset on first sign-in)
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserCreate' }
+      responses:
+        '201':
+          description: User created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/managed/users/{user_id}:
+    parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getUser
+      summary: Get a user
+      tags: [Users]
+      responses:
+        '200':
+          description: User.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      operationId: deleteUser
+      summary: Delete a user
+      tags: [Users]
+      responses:
+        '204': { description: Deleted. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ── Settings (#179) ────────────────────────────────────────────────
+  /v1/managed/settings:
+    get:
+      operationId: listSettings
+      summary: Read every platform setting
+      tags: [Settings]
+      responses:
+        '200':
+          description: Map of key → value. Value type varies per key.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/managed/settings/{key}:
+    parameters:
+      - in: path
+        name: key
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getSetting
+      summary: Read a single setting
+      tags: [Settings]
+      responses:
+        '200':
+          description: Setting value.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettingValue' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: putSetting
+      summary: Write a single setting
+      tags: [Settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties:
+                value:
+                  description: New value (type varies per key).
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettingValue' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
