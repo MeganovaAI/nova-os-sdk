@@ -162,6 +162,28 @@ nova-os-cli jobs create -f <job.json>
 nova-os-cli jobs cancel <job-id>
 ```
 
+### messages
+
+Smoke-test path matching the shape of `test-callback`. One short HTTP round-trip from the same auth/profile resolution as the rest of the CLI.
+
+```bash
+nova-os-cli messages send <agent-id> <prompt> \
+    [--end-user <id>] [--metadata '<json>'] [--model <vendor/model>] \
+    [--system <prompt>] [--max-tokens <n>] [--timeout 60]
+
+nova-os-cli messages stream <agent-id> <prompt> \
+    [--end-user <id>] [--metadata '<json>'] [--model <vendor/model>]
+```
+
+`send` returns the parsed `MessageResponse` JSON; `stream` opens an SSE connection and prints one event per line (pipe through `jq` for filtering). Both honor the same `NOVA_OS_URL` / `NOVA_OS_API_KEY` / `--profile` resolution as the rest of the CLI.
+
+Quick smoke test:
+
+```bash
+nova-os-cli messages send legal-assistant "What's clause 7.3 about?" --end-user demo-user
+nova-os-cli messages stream legal-assistant "Walk me through the agreement" | jq 'select(.type=="text")'
+```
+
 ### config
 
 ```bash
@@ -252,5 +274,5 @@ nova-os-cli version --json  # machine-readable
 
 ## Coming soon
 
-- `nova-os-cli sync --prune` — destructive sync (removes server-side resources absent from the folder)
+- `nova-os-cli sync --prune` — destructive sync (removes server-side resources absent from the folder); tracked at [`nova-os-sdk#13`](https://github.com/MeganovaAI/nova-os-sdk/issues/13)
 - Pre-built binaries for linux/darwin/windows (amd64 + arm64)
