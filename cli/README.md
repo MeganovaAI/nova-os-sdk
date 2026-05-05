@@ -230,7 +230,15 @@ nova-os-cli sync --watch ./data/
 nova-os-cli sync --dry-run ./data/
 ```
 
-Diffs `./data/employees/` and `./data/agents/` against the server, computes a forward-only plan (create/update), and executes it. Server-side resources missing from the folder are NOT deleted (destructive `--prune` is a planned future addition).
+Diffs `./data/employees/` and `./data/agents/` against the server, computes a plan (create/update by default, with optional `--prune` for destructive sync), and executes it.
+
+By default this is forward-only: server-side resources missing from the folder are NOT deleted. Pass `--prune` to also delete server-side resources whose ID is absent from the folder; pair with `--dry-run` first to preview the destructive set.
+
+```bash
+nova-os-cli sync ./data                      # forward-only
+nova-os-cli sync --prune --dry-run ./data    # preview destructive set
+nova-os-cli sync --prune ./data              # destructive — actually delete
+```
 
 ### test-callback (Mode B webhook smoke)
 
@@ -274,5 +282,4 @@ nova-os-cli version --json  # machine-readable
 
 ## Coming soon
 
-- `nova-os-cli sync --prune` — destructive sync (removes server-side resources absent from the folder); tracked at [`nova-os-sdk#13`](https://github.com/MeganovaAI/nova-os-sdk/issues/13)
 - Pre-built binaries for linux/darwin/windows (amd64 + arm64)

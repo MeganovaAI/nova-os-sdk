@@ -21,6 +21,7 @@ import (
 var (
 	syncFlagWatch bool
 	syncFlagDry   bool
+	syncFlagPrune bool
 )
 
 var syncCmd = &cobra.Command{
@@ -30,8 +31,8 @@ var syncCmd = &cobra.Command{
 (creates/updates), and executes it against the configured server.
 
 By default this is forward-only — server-side resources missing from the
-folder are NOT deleted. Add a --prune flag (when implemented) for destructive
-sync.`,
+folder are NOT deleted. Pass --prune to also delete server-side resources
+whose ID is absent from the folder (destructive; pair with --dry-run first).`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir := args[0]
@@ -50,6 +51,7 @@ sync.`,
 func init() {
 	syncCmd.Flags().BoolVar(&syncFlagWatch, "watch", false, "Re-run sync on filesystem changes (300ms debounce)")
 	syncCmd.Flags().BoolVar(&syncFlagDry, "dry-run", false, "Print the plan without executing")
+	syncCmd.Flags().BoolVar(&syncFlagPrune, "prune", false, "Delete server-side resources absent from the folder (destructive; pair with --dry-run first)")
 	rootCmd.AddCommand(syncCmd)
 }
 
@@ -57,8 +59,10 @@ func init() {
 type SyncResult struct {
 	EmployeesCreated int
 	EmployeesUpdated int
+	EmployeesPruned  int
 	AgentsCreated    int
 	AgentsUpdated    int
+	AgentsPruned     int
 	NoOps            int
 	Errors           []string
 }
@@ -93,9 +97,19 @@ func runOnce(cmd *cobra.Command, c *gen.ClientWithResponses, dir string) (SyncRe
 		}
 	}
 
-	cmd.Printf("sync: employees +%d ~%d  agents +%d ~%d  no-op %d  errors %d\n",
-		res.EmployeesCreated, res.EmployeesUpdated,
-		res.AgentsCreated, res.AgentsUpdated,
+	// --prune — destructive sync. After the create/update pass, list
+	// every server-side resource and DELETE the ones whose ID is not
+	// present in the folder. Forward-only sync does NOT do this; partners
+	// pair with --dry-run first to preview.
+	if syncFlagPrune {
+		if err := pruneAbsent(ctx, cmd, c, dir, &res); err != nil {
+			res.Errors = append(res.Errors, fmt.Sprintf("prune: %v", err))
+		}
+	}
+
+	cmd.Printf("sync: employees +%d ~%d -%d  agents +%d ~%d -%d  no-op %d  errors %d\n",
+		res.EmployeesCreated, res.EmployeesUpdated, res.EmployeesPruned,
+		res.AgentsCreated, res.AgentsUpdated, res.AgentsPruned,
 		res.NoOps, len(res.Errors))
 	for _, e := range res.Errors {
 		cmd.PrintErrln("  ERR " + e)
@@ -420,4 +434,134 @@ func runWatch(cmd *cobra.Command, c *gen.ClientWithResponses, dir string) error 
 			}
 		}
 	}
+}
+
+// pruneAbsent lists every server-side employee + agent and DELETEs the
+// ones whose ID is not present in the folder. Honors --dry-run by
+// printing the planned deletes without executing.
+//
+// Two-step lookup so the file-walk and the API list don't blur together
+// in error messages: first build the local-ID set from the folder, then
+// page through each server-side list and diff. Pagination cap of 1000
+// per page (the SDK pages internally for partners using c.agents.list,
+// but the CLI's generated client requires us to do it explicitly here).
+func pruneAbsent(ctx context.Context, cmd *cobra.Command, c *gen.ClientWithResponses, dir string, res *SyncResult) error {
+	localEmps, err := localIDs(filepath.Join(dir, "employees"),
+		func(fm map[string]any) string { id, _ := fm["id"].(string); return id })
+	if err != nil {
+		return fmt.Errorf("local employee scan: %w", err)
+	}
+	localAgents, err := localIDs(filepath.Join(dir, "agents"), agentID)
+	if err != nil {
+		return fmt.Errorf("local agent scan: %w", err)
+	}
+
+	// ── employees ──
+	var empCursor *string
+	for {
+		params := &gen.ListEmployeesParams{Cursor: empCursor}
+		resp, err := c.ListEmployeesWithResponse(ctx, params)
+		if err != nil {
+			return fmt.Errorf("list employees: %w", err)
+		}
+		if resp.JSON200 == nil {
+			return fmt.Errorf("list employees: status %d", resp.StatusCode())
+		}
+		for _, e := range resp.JSON200.Data {
+			if _, ok := localEmps[e.Id]; ok {
+				continue
+			}
+			if syncFlagDry {
+				cmd.Printf("  [dry-run] PRUNE employee %s\n", e.Id)
+				continue
+			}
+			delResp, err := c.DeleteEmployeeWithResponse(ctx, e.Id)
+			if err != nil {
+				res.Errors = append(res.Errors, fmt.Sprintf("delete employee %s: %v", e.Id, err))
+				continue
+			}
+			if delResp.StatusCode() >= 300 && delResp.StatusCode() != http.StatusNotFound {
+				res.Errors = append(res.Errors, fmt.Sprintf("delete employee %s: status %d", e.Id, delResp.StatusCode()))
+				continue
+			}
+			cmd.Printf("  PRUNED employee %s\n", e.Id)
+			res.EmployeesPruned++
+		}
+		if resp.JSON200.HasMore == nil || !*resp.JSON200.HasMore || resp.JSON200.NextCursor == nil {
+			break
+		}
+		empCursor = resp.JSON200.NextCursor
+	}
+
+	// ── agents ──
+	var agCursor *string
+	for {
+		params := &gen.ListAgentsParams{Cursor: agCursor}
+		resp, err := c.ListAgentsWithResponse(ctx, params)
+		if err != nil {
+			return fmt.Errorf("list agents: %w", err)
+		}
+		if resp.JSON200 == nil {
+			return fmt.Errorf("list agents: status %d", resp.StatusCode())
+		}
+		for _, a := range resp.JSON200.Data {
+			if _, ok := localAgents[a.Id]; ok {
+				continue
+			}
+			if syncFlagDry {
+				cmd.Printf("  [dry-run] PRUNE agent %s\n", a.Id)
+				continue
+			}
+			delResp, err := c.DeleteAgentWithResponse(ctx, a.Id)
+			if err != nil {
+				res.Errors = append(res.Errors, fmt.Sprintf("delete agent %s: %v", a.Id, err))
+				continue
+			}
+			if delResp.StatusCode() >= 300 && delResp.StatusCode() != http.StatusNotFound {
+				res.Errors = append(res.Errors, fmt.Sprintf("delete agent %s: status %d", a.Id, delResp.StatusCode()))
+				continue
+			}
+			cmd.Printf("  PRUNED agent %s\n", a.Id)
+			res.AgentsPruned++
+		}
+		if resp.JSON200.HasMore == nil || !*resp.JSON200.HasMore || resp.JSON200.NextCursor == nil {
+			break
+		}
+		agCursor = resp.JSON200.NextCursor
+	}
+
+	return nil
+}
+
+// localIDs walks a folder of .md files, parses the frontmatter, and
+// returns the set of IDs present locally. ``extractID`` lets the caller
+// pick which frontmatter key to use — employee files canonically use
+// `id`, agent files use `agent_id` (or fall through via agentID()).
+//
+// Files that fail to parse are silently skipped — the prune-side check
+// is "is this ID known?", not "is this file valid?" (the create/update
+// pass handles validation).
+func localIDs(dir string, extractID func(map[string]any) string) (map[string]struct{}, error) {
+	out := map[string]struct{}{}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		// Missing folder = empty local set; not an error.
+		if os.IsNotExist(err) {
+			return out, nil
+		}
+		return nil, err
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		fm, err := loadFrontmatter(filepath.Join(dir, e.Name()))
+		if err != nil {
+			continue
+		}
+		if id := extractID(fm); id != "" {
+			out[id] = struct{}{}
+		}
+	}
+	return out, nil
 }
