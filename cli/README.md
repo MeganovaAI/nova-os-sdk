@@ -184,6 +184,34 @@ nova-os-cli messages send legal-assistant "What's clause 7.3 about?" --end-user 
 nova-os-cli messages stream legal-assistant "Walk me through the agreement" | jq 'select(.type=="text")'
 ```
 
+### knowledge
+
+Hybrid search + ingest against the partner's knowledge collections. Backed by `/v1/managed/knowledge/*`.
+
+```bash
+nova-os-cli knowledge search <query> \
+    [--collection <name>] [--top-k 5] [--threshold 0.0]
+
+nova-os-cli knowledge ingest <content> \
+    [--title <title>] [--collection <name>]
+
+# Or read content from disk:
+nova-os-cli knowledge ingest -f document.md \
+    [--title <title>] [--collection <name>]
+
+nova-os-cli knowledge collections
+```
+
+`search` returns ranked passages (each with `content`, `score`, `collection`, `document_id`). `ingest` indexes a single document into a collection (defaults to `default`). `collections` lists every collection accessible via the partner's API key.
+
+Quick smoke test:
+
+```bash
+nova-os-cli knowledge ingest "Section 7.3: termination requires written notice" --title "Sample Clause" --collection case-files
+nova-os-cli knowledge search "termination" --collection case-files --top-k 3
+nova-os-cli knowledge collections
+```
+
 ### config
 
 ```bash
