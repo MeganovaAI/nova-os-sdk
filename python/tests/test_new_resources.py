@@ -258,3 +258,50 @@ async def test_settings_put_then_get():
         await c.settings.put("answer_model", "anthropic/claude-opus-4-7")
         got = await c.settings.get("answer_model")
     assert got == "anthropic/claude-opus-4-7"
+
+
+# ── Sessions (#185) ────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_sessions_create_minimum():
+    captured = {}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(req.content)
+        return httpx.Response(201, json={"id": "sess_123", "agent_id": "intake-specialist", "environment_id": "", "created_at": "2026-05-05T00:00:00Z"})
+
+    async with _make_client(handler) as c:
+        s = await c.sessions.create(agent_id="intake-specialist")
+    assert captured["body"] == {"agent_id": "intake-specialist"}
+    assert s["id"] == "sess_123"
+
+
+@pytest.mark.asyncio
+async def test_sessions_create_with_model_override():
+    captured = {}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(req.content)
+        return httpx.Response(201, json={"id": "sess_456", "agent_id": "x", "model": "anthropic/claude-opus-4-7"})
+
+    async with _make_client(handler) as c:
+        await c.sessions.create(
+            agent_id="x",
+            environment_id="env_test",
+            model="anthropic/claude-opus-4-7",
+        )
+    assert captured["body"]["model"] == "anthropic/claude-opus-4-7"
+    assert captured["body"]["environment_id"] == "env_test"
+
+
+@pytest.mark.asyncio
+async def test_sessions_get():
+    def handler(req: httpx.Request) -> httpx.Response:
+        assert req.method == "GET"
+        assert req.url.path == "/v1/managed/sessions/sess_lookup"
+        return httpx.Response(200, json={"id": "sess_lookup", "agent_id": "x"})
+
+    async with _make_client(handler) as c:
+        s = await c.sessions.get("sess_lookup")
+    assert s["id"] == "sess_lookup"
