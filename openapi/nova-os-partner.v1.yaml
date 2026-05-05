@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Nova OS Partner API
-  version: 1.0.0-alpha.1
+  version: 1.0.0-alpha.2
   description: |
     Partner integration API for Nova OS. Mirrors Anthropic Managed Agents
     1:1 for the compat surface (Section 1.1 of the design); extends with
@@ -263,6 +263,22 @@ components:
           minimum: 1
           maximum: 100
           default: 10
+        output_type:
+          $ref: '#/components/schemas/OutputTypeContract'
+          description: |
+            Optional structured-output contract. When set, every assistant
+            reply is validated against `schema` before return; on failure,
+            `violation_mode` controls behaviour (error / log / repair).
+        route_templates:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            URL templates Brain may fill into `navigate_to:` route hints.
+            Keys are template names (e.g. `case_detail`); values are URL
+            templates with `{placeholder}` segments (e.g.
+            `https://app.example.com/cases/{case_id}`). Validated at server
+            boot. v0.1.5+.
         created_at:
           type: string
           format: date-time
@@ -307,6 +323,12 @@ components:
           $ref: '#/components/schemas/CustomToolCallback'
         max_turns:
           type: integer
+        output_type:
+          $ref: '#/components/schemas/OutputTypeContract'
+        route_templates:
+          type: object
+          additionalProperties:
+            type: string
 
     AgentList:
       type: object
@@ -594,6 +616,22 @@ components:
         fallback_triggered:
           type: boolean
           description: Nova OS extension — true if a fallback model handled the request.
+        output_violations:
+          type: array
+          description: |
+            Nova OS extension — populated only when the agent declared an
+            `output_type` contract AND the reply failed validation AND the
+            agent's `violation_mode` is `log` or `repair` (with `error`,
+            the response is a 422 instead). Empty array means no violations.
+          items:
+            $ref: '#/components/schemas/OutputViolation'
+        route_hint:
+          $ref: '#/components/schemas/RouteHint'
+          description: |
+            Nova OS extension (v0.1.5+) — Brain's dispatch hint to the
+            partner UI. Always present on terminal replies; partners that
+            don't consume route hints can ignore the field. Three kinds:
+            `render_inline`, `navigate_to`, `ask_clarification`.
 
     StreamEventTextDelta:
       type: object
@@ -683,6 +721,20 @@ components:
         message_id:
           type: string
 
+    StreamEventRouteHint:
+      type: object
+      required: [type, route_hint]
+      description: |
+        Nova OS extension (v0.1.5+) — emitted exactly once per terminal
+        message right before `done`. Carries Brain's dispatch decision so
+        partner UIs can react before the full reply is rendered.
+      properties:
+        type:
+          type: string
+          enum: [route_hint]
+        route_hint:
+          $ref: '#/components/schemas/RouteHint'
+
     StreamEvent:
       oneOf:
         - $ref: '#/components/schemas/StreamEventTextDelta'
@@ -692,8 +744,101 @@ components:
         - $ref: '#/components/schemas/StreamEventThinking'
         - $ref: '#/components/schemas/StreamEventError'
         - $ref: '#/components/schemas/StreamEventDone'
+        - $ref: '#/components/schemas/StreamEventRouteHint'
       discriminator:
         propertyName: type
+
+    OutputTypeContract:
+      type: object
+      required: [schema]
+      description: |
+        Structured-output contract for agent replies. When set, Nova OS
+        validates every assistant reply against `schema` before return.
+        Server-side since v0.1.4.
+      properties:
+        schema:
+          $ref: '#/components/schemas/JSONSchemaObject'
+          description: JSON Schema 2020-12 the assistant reply must validate against.
+        violation_mode:
+          type: string
+          enum: [error, log, repair]
+          default: error
+          description: |
+            How to handle a reply that fails validation:
+            - `error` — return HTTP 422 with the violations.
+            - `log` — return the reply as-is plus `output_violations`; partner decides what to do.
+            - `repair` — re-prompt the model once with the schema in the system prompt;
+              return whichever attempt validates, plus `output_violations` from the first.
+
+    OutputViolation:
+      type: object
+      required: [path, message]
+      properties:
+        path:
+          type: string
+          description: JSON Pointer into the assistant reply where the violation occurred.
+        message:
+          type: string
+          description: Human-readable description of the failure (from the JSON Schema validator).
+        keyword:
+          type: string
+          description: The JSON Schema keyword that failed (e.g. `type`, `required`, `enum`).
+
+    RouteHintRenderInline:
+      type: object
+      required: [kind]
+      description: |
+        Brain decided the reply is the answer — render it inline in the
+        partner's chat UI. No navigation needed.
+      properties:
+        kind:
+          type: string
+          enum: [render_inline]
+
+    RouteHintNavigateTo:
+      type: object
+      required: [kind, template]
+      description: |
+        Brain decided the partner UI should navigate to a route. The
+        template name MUST match a key in the agent's `route_templates`;
+        the server interpolates `params` into the URL template.
+      properties:
+        kind:
+          type: string
+          enum: [navigate_to]
+        template:
+          type: string
+          description: Key into the agent's `route_templates` map.
+        params:
+          type: object
+          additionalProperties: true
+          description: Values to interpolate into the template's `{placeholder}` segments.
+
+    RouteHintAskClarification:
+      type: object
+      required: [kind, reason]
+      description: |
+        Brain decided more input is needed before answering — partner UI
+        should present a clarification prompt rather than rendering the
+        reply as final.
+      properties:
+        kind:
+          type: string
+          enum: [ask_clarification]
+        reason:
+          type: string
+          description: Short human-readable rationale (e.g. `missing_jurisdiction`).
+
+    RouteHint:
+      description: |
+        Brain's dispatch hint, present on every terminal reply (v0.1.5+).
+        Three kinds — partners switch on `kind` to decide UI behaviour.
+      oneOf:
+        - $ref: '#/components/schemas/RouteHintRenderInline'
+        - $ref: '#/components/schemas/RouteHintNavigateTo'
+        - $ref: '#/components/schemas/RouteHintAskClarification'
+      discriminator:
+        propertyName: kind
 
     CustomToolResultRequest:
       type: object
