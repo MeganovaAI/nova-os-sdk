@@ -30,7 +30,7 @@ Order of magnitude per 1K queries. Exact pricing varies by tier, region, and con
 
 | Backend | Cost | Quality | Best for |
 |---|---|---|---|
-| `meganova` | 50/day free, then $0.002/query | Natural-language + extraction in one call | Cost-conscious general-purpose; one-call extraction (no separate fetcher) |
+| `meganova` | 50/day free + $0.002/group overage | Natural-language + extraction in one call | Cost-conscious general-purpose; one-call extraction (no separate fetcher) |
 | `searxng` | Free (self-hosted) | Variable (depends on aggregated sources) | Air-gap deployments |
 | `brave` | Low | Good | Privacy-first, day-to-day queries |
 | `ceramic` | Mid | Good | Broad queries, especially with reformulator |
@@ -38,6 +38,25 @@ Order of magnitude per 1K queries. Exact pricing varies by tier, region, and con
 | `tavily` | High | Highest | Current-events queries, when freshness matters |
 
 A common partner pattern: `tavily` primary with `brave` fallback. Pays for Tavily on most queries, falls through to free Brave if Tavily quota exhausts.
+
+### MegaNova backend specifics
+
+Concrete numbers from the [API reference](https://docs.meganova.ai/api-reference/platform-api/search):
+
+| Concern | Value |
+|---|---|
+| Endpoint | `POST https://api.meganova.ai/v1/serverless/search` |
+| Free quota | 50 prompt-groups per day, per key |
+| Overage | `$0.002 per group` (a "group" is all sub-calls sharing the same `X-Request-Group-Id`) |
+| Tier requirement | `ENGINEER_TIER_2` — auto-granted on first $1 deposit; returns 403 below tier |
+| Per-key RPS | 10 req/s |
+| Per-key concurrency | 20 (paid) / 50 (enterprise) |
+| Latency (`enrich=false`) | 1–3 s P50 |
+| Latency (`enrich=true`) | 3–10 s P50, 15 s P95 |
+| `max_results` cap | 20 |
+| Failure mode | 5xx when all upstream sources exhausted — **not charged** |
+
+A "group" is the billing unit — Nova OS sends a single `X-Request-Group-Id` per persona invocation, so multi-aspect deep research counts as one group regardless of how many sub-queries fan out. Personas configured with high `max_results` and `enrich: true` should plan for the 3-10s P50 latency; pair with `reformulator: false` since MegaNova handles reformulation internally.
 
 ## Configuration
 
@@ -217,7 +236,7 @@ Each backend needs its own credential. Set as Nova OS env vars:
 | `tavily` | `TAVILY_API_KEY` | Required for `tavily` primary or fallback. |
 | `brave` | `BRAVE_API_KEY` | Required for `brave` primary or fallback. |
 | `exa` | `EXA_API_KEY` | Required for `exa` primary or fallback. |
-| `meganova` | `MEGANOVA_CLOUD_KEY` (or `MEGANOVA_API_KEY` alias) | Required for `meganova` primary. The alias was added in [`#214`](https://github.com/MeganovaAI/nova-os/issues/214) / [`#215`](https://github.com/MeganovaAI/nova-os/pull/215); both forms accepted, `CLOUD_KEY` is canonical. Engineer Tier 2 required at the MegaNova platform (auto-granted on first $1 deposit). See [meganova.ai/web-search](https://www.meganova.ai/web-search) for the underlying service terms. |
+| `meganova` | `MEGANOVA_CLOUD_KEY` (or `MEGANOVA_API_KEY` alias) | Required for `meganova` primary. The alias was added in [`#214`](https://github.com/MeganovaAI/nova-os/issues/214) / [`#215`](https://github.com/MeganovaAI/nova-os/pull/215); both forms accepted, `CLOUD_KEY` is canonical. Sent as `Authorization: Bearer <sk-...>` to the upstream API at `https://api.meganova.ai/v1/serverless/search`. Engineer Tier 2 required (auto-granted on first $1 deposit) — calls return 403 below tier. Service product page: [meganova.ai/web-search](https://www.meganova.ai/web-search); API reference: [docs.meganova.ai/api-reference/platform-api/search](https://docs.meganova.ai/api-reference/platform-api/search). |
 | `searxng` | `SEARXNG_URL` | Self-hosted SearXNG instance URL. No API key. |
 | `ceramic` | (none) | Built-in to the server. |
 
