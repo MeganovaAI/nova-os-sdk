@@ -14,36 +14,42 @@ T = TypeVar("T", bound="WebSearchConfig")
 
 @_attrs_define
 class WebSearchConfig:
-    """
-    Attributes:
-        backend (WebSearchBackend | Unset): Web search backend selection. `auto` uses Nova OS DefaultSearcher()
-            priority (Ceramic → Tavily → Brave → Exa → SearXNG, with reformulator
-            + Tavily fallback wrappers when configured).
-        fallback (list[WebSearchBackend] | Unset): Ordered fallback chain. Used on empty/error/off-topic results.
-        reformulator (bool | Unset): Wrap the search call with the LLM reformulator. Lifts Ceramic
-            42→70% on broad queries; only applied to keyword backends
-            (ceramic / searxng / exa), not bundled-extraction backends.
-             Default: True.
-        recency_terms (list[str] | Unset): Custom recency markers for the recency-intent escalator.
+    """Persona-level web-search configuration. Resolved per-invocation on
+    ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
+    Field names changed in nova-os PR #212 (closes #200) — old
+    ``backend`` / ``fallback`` are no longer accepted.
+
+        Attributes:
+            primary_backend (WebSearchBackend | Unset): Web search backend selection. `auto` uses Nova OS DefaultSearcher()
+                priority (Ceramic → Tavily → Brave → Exa → SearXNG, with reformulator
+                + Tavily fallback wrappers when configured).
+            fallback_chain (list[WebSearchBackend] | Unset): Ordered fallback chain. Used on empty/error/off-topic results.
+                Wraps the primary in a ``FallbackSearcher`` whose ``Name()``
+                renders as ``primary→fallback1→fallback2``.
+            reformulator (bool | Unset): Wrap the search call with the LLM reformulator. Lifts Ceramic
+                42→70% on broad queries; only applied to keyword backends
+                (ceramic / searxng / exa), not bundled-extraction backends.
+                 Default: True.
+            recency_terms (list[str] | Unset): Custom recency markers for the recency-intent escalator.
     """
 
-    backend: WebSearchBackend | Unset = UNSET
-    fallback: list[WebSearchBackend] | Unset = UNSET
+    primary_backend: WebSearchBackend | Unset = UNSET
+    fallback_chain: list[WebSearchBackend] | Unset = UNSET
     reformulator: bool | Unset = True
     recency_terms: list[str] | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        backend: str | Unset = UNSET
-        if not isinstance(self.backend, Unset):
-            backend = self.backend.value
+        primary_backend: str | Unset = UNSET
+        if not isinstance(self.primary_backend, Unset):
+            primary_backend = self.primary_backend.value
 
-        fallback: list[str] | Unset = UNSET
-        if not isinstance(self.fallback, Unset):
-            fallback = []
-            for fallback_item_data in self.fallback:
-                fallback_item = fallback_item_data.value
-                fallback.append(fallback_item)
+        fallback_chain: list[str] | Unset = UNSET
+        if not isinstance(self.fallback_chain, Unset):
+            fallback_chain = []
+            for fallback_chain_item_data in self.fallback_chain:
+                fallback_chain_item = fallback_chain_item_data.value
+                fallback_chain.append(fallback_chain_item)
 
         reformulator = self.reformulator
 
@@ -54,10 +60,10 @@ class WebSearchConfig:
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
-        if backend is not UNSET:
-            field_dict["backend"] = backend
-        if fallback is not UNSET:
-            field_dict["fallback"] = fallback
+        if primary_backend is not UNSET:
+            field_dict["primary_backend"] = primary_backend
+        if fallback_chain is not UNSET:
+            field_dict["fallback_chain"] = fallback_chain
         if reformulator is not UNSET:
             field_dict["reformulator"] = reformulator
         if recency_terms is not UNSET:
@@ -68,29 +74,29 @@ class WebSearchConfig:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
-        _backend = d.pop("backend", UNSET)
-        backend: WebSearchBackend | Unset
-        if isinstance(_backend, Unset):
-            backend = UNSET
+        _primary_backend = d.pop("primary_backend", UNSET)
+        primary_backend: WebSearchBackend | Unset
+        if isinstance(_primary_backend, Unset):
+            primary_backend = UNSET
         else:
-            backend = WebSearchBackend(_backend)
+            primary_backend = WebSearchBackend(_primary_backend)
 
-        _fallback = d.pop("fallback", UNSET)
-        fallback: list[WebSearchBackend] | Unset = UNSET
-        if _fallback is not UNSET:
-            fallback = []
-            for fallback_item_data in _fallback:
-                fallback_item = WebSearchBackend(fallback_item_data)
+        _fallback_chain = d.pop("fallback_chain", UNSET)
+        fallback_chain: list[WebSearchBackend] | Unset = UNSET
+        if _fallback_chain is not UNSET:
+            fallback_chain = []
+            for fallback_chain_item_data in _fallback_chain:
+                fallback_chain_item = WebSearchBackend(fallback_chain_item_data)
 
-                fallback.append(fallback_item)
+                fallback_chain.append(fallback_chain_item)
 
         reformulator = d.pop("reformulator", UNSET)
 
         recency_terms = cast(list[str], d.pop("recency_terms", UNSET))
 
         web_search_config = cls(
-            backend=backend,
-            fallback=fallback,
+            primary_backend=primary_backend,
+            fallback_chain=fallback_chain,
             reformulator=reformulator,
             recency_terms=recency_terms,
         )

@@ -5,21 +5,21 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.agent import Agent
-from ...models.agent_create import AgentCreate
 from ...models.error import Error
+from ...models.ingest_knowledge_response_201 import IngestKnowledgeResponse201
+from ...models.knowledge_ingest_request import KnowledgeIngestRequest
 from ...types import Response
 
 
 def _get_kwargs(
     *,
-    body: AgentCreate,
+    body: KnowledgeIngestRequest,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
 
     _kwargs: dict[str, Any] = {
         "method": "post",
-        "url": "/v1/managed/agents",
+        "url": "/v1/managed/knowledge/ingest",
     }
 
     _kwargs["json"] = body.to_dict()
@@ -30,9 +30,11 @@ def _get_kwargs(
     return _kwargs
 
 
-def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Agent | Error | None:
+def _parse_response(
+    *, client: AuthenticatedClient | Client, response: httpx.Response
+) -> Error | IngestKnowledgeResponse201 | None:
     if response.status_code == 201:
-        response_201 = Agent.from_dict(response.json())
+        response_201 = IngestKnowledgeResponse201.from_dict(response.json())
 
         return response_201
 
@@ -51,18 +53,15 @@ def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Res
 
         return response_403
 
-    if response.status_code == 429:
-        response_429 = Error.from_dict(response.json())
-
-        return response_429
-
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
         return None
 
 
-def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Response[Agent | Error]:
+def _build_response(
+    *, client: AuthenticatedClient | Client, response: httpx.Response
+) -> Response[Error | IngestKnowledgeResponse201]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -74,19 +73,19 @@ def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Res
 def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Response[Agent | Error]:
-    """Create an agent
+    body: KnowledgeIngestRequest,
+) -> Response[Error | IngestKnowledgeResponse201]:
+    """Ingest a document into a knowledge collection
 
     Args:
-        body (AgentCreate):
+        body (KnowledgeIngestRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Agent | Error]
+        Response[Error | IngestKnowledgeResponse201]
     """
 
     kwargs = _get_kwargs(
@@ -103,19 +102,19 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Agent | Error | None:
-    """Create an agent
+    body: KnowledgeIngestRequest,
+) -> Error | IngestKnowledgeResponse201 | None:
+    """Ingest a document into a knowledge collection
 
     Args:
-        body (AgentCreate):
+        body (KnowledgeIngestRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Agent | Error
+        Error | IngestKnowledgeResponse201
     """
 
     return sync_detailed(
@@ -127,19 +126,19 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Response[Agent | Error]:
-    """Create an agent
+    body: KnowledgeIngestRequest,
+) -> Response[Error | IngestKnowledgeResponse201]:
+    """Ingest a document into a knowledge collection
 
     Args:
-        body (AgentCreate):
+        body (KnowledgeIngestRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Agent | Error]
+        Response[Error | IngestKnowledgeResponse201]
     """
 
     kwargs = _get_kwargs(
@@ -154,19 +153,19 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Agent | Error | None:
-    """Create an agent
+    body: KnowledgeIngestRequest,
+) -> Error | IngestKnowledgeResponse201 | None:
+    """Ingest a document into a knowledge collection
 
     Args:
-        body (AgentCreate):
+        body (KnowledgeIngestRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Agent | Error
+        Error | IngestKnowledgeResponse201
     """
 
     return (

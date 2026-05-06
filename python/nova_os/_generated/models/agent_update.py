@@ -10,9 +10,11 @@ from ..models.agent_type import AgentType
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
+    from ..models.agent_update_route_templates import AgentUpdateRouteTemplates
     from ..models.custom_tool import CustomTool
     from ..models.custom_tool_callback import CustomToolCallback
     from ..models.model_config import ModelConfig
+    from ..models.output_type_contract import OutputTypeContract
     from ..models.skill import Skill
     from ..models.web_search_config import WebSearchConfig
 
@@ -35,10 +37,17 @@ class AgentUpdate:
         model_config (ModelConfig | Unset): Three-slot model configuration. Any slot may be omitted; resolution
             falls through per the spec (per-call → per-skill → per-agent →
             per-employee → server default).
-        web_search_config (WebSearchConfig | Unset):
+        web_search_config (WebSearchConfig | Unset): Persona-level web-search configuration. Resolved per-invocation on
+            ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
+            Field names changed in nova-os PR #212 (closes #200) — old
+            ``backend`` / ``fallback`` are no longer accepted.
         custom_tools (list[CustomTool] | Unset):
         callback (CustomToolCallback | Unset):
         max_turns (int | Unset):
+        output_type (OutputTypeContract | Unset): Structured-output contract for agent replies. When set, Nova OS
+            validates every assistant reply against `schema` before return.
+            Server-side since v0.1.4.
+        route_templates (AgentUpdateRouteTemplates | Unset):
     """
 
     type_: AgentType | Unset = UNSET
@@ -51,6 +60,8 @@ class AgentUpdate:
     custom_tools: list[CustomTool] | Unset = UNSET
     callback: CustomToolCallback | Unset = UNSET
     max_turns: int | Unset = UNSET
+    output_type: OutputTypeContract | Unset = UNSET
+    route_templates: AgentUpdateRouteTemplates | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -94,6 +105,14 @@ class AgentUpdate:
 
         max_turns = self.max_turns
 
+        output_type: dict[str, Any] | Unset = UNSET
+        if not isinstance(self.output_type, Unset):
+            output_type = self.output_type.to_dict()
+
+        route_templates: dict[str, Any] | Unset = UNSET
+        if not isinstance(self.route_templates, Unset):
+            route_templates = self.route_templates.to_dict()
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
@@ -117,14 +136,20 @@ class AgentUpdate:
             field_dict["callback"] = callback
         if max_turns is not UNSET:
             field_dict["max_turns"] = max_turns
+        if output_type is not UNSET:
+            field_dict["output_type"] = output_type
+        if route_templates is not UNSET:
+            field_dict["route_templates"] = route_templates
 
         return field_dict
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.agent_update_route_templates import AgentUpdateRouteTemplates
         from ..models.custom_tool import CustomTool
         from ..models.custom_tool_callback import CustomToolCallback
         from ..models.model_config import ModelConfig
+        from ..models.output_type_contract import OutputTypeContract
         from ..models.skill import Skill
         from ..models.web_search_config import WebSearchConfig
 
@@ -183,6 +208,20 @@ class AgentUpdate:
 
         max_turns = d.pop("max_turns", UNSET)
 
+        _output_type = d.pop("output_type", UNSET)
+        output_type: OutputTypeContract | Unset
+        if isinstance(_output_type, Unset):
+            output_type = UNSET
+        else:
+            output_type = OutputTypeContract.from_dict(_output_type)
+
+        _route_templates = d.pop("route_templates", UNSET)
+        route_templates: AgentUpdateRouteTemplates | Unset
+        if isinstance(_route_templates, Unset):
+            route_templates = UNSET
+        else:
+            route_templates = AgentUpdateRouteTemplates.from_dict(_route_templates)
+
         agent_update = cls(
             type_=type_,
             owner_employee=owner_employee,
@@ -194,6 +233,8 @@ class AgentUpdate:
             custom_tools=custom_tools,
             callback=callback,
             max_turns=max_turns,
+            output_type=output_type,
+            route_templates=route_templates,
         )
 
         agent_update.additional_properties = d
