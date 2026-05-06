@@ -12,8 +12,6 @@ Each template uses the runtime YAML frontmatter Nova OS's loader parses — `cp 
 
 | Persona | Vertical | What it does | Recommended skills |
 |---|---|---|---|
-| [`bi-director`](bi/bi-director.md) | BI | Executive-level BI summaries, multi-source reports | `skill_deep_research`, `skill_report` |
-| [`bi-market-analyst`](bi/bi-market-analyst.md) | BI | Market-research-flavored BI; competitive analysis | `skill_deep_research` |
 | [`content-strategist`](marketing/content-strategist.md) | Marketing | Editorial calendars, briefs, brand-voice review | `skill_deep_research` |
 | [`market-researcher`](marketing/market-researcher.md) | Marketing | Competitive analysis, trend reports, sizing | `skill_deep_research`, `skill_report` |
 | [`customer-support`](support/customer-support.md) | Support | Inquiry triage, troubleshooting, ticket summaries | — |
@@ -24,7 +22,9 @@ Each template uses the runtime YAML frontmatter Nova OS's loader parses — `cp 
 | [`compliance-officer`](finance/compliance-officer.md) | Finance | Policy interpretation, regulatory mapping, audit prep | `skill_deep_research` |
 | [`email-classifier`](communications/email-classifier.md) | Communications | Inbox triage, intent classification, response stubs | — |
 
-11 templates across 7 verticals.
+9 generic specialist templates across 6 verticals.
+
+**Vertical specialists not in this catalog** — BI, intake, legal-specialist, and other domain-specific personas tend to carry partner-tenant-specific phrasing (Quebec defaults, internal product names, custom KPI definitions). The Nova OS image bakes a generic `business-assistant` as the BI starting point; partners who want their own BI / intake / legal-specialist personas author them privately and install via the slice-2 CLI's external-source flags (`--from-file`, `--from-url`, `--from-repo <github-org>/<repo>/<path>`).
 
 ---
 
