@@ -615,7 +615,6 @@ func (e UserCreateRole) Valid() bool {
 const (
 	WebSearchBackendAuto     WebSearchBackend = "auto"
 	WebSearchBackendBrave    WebSearchBackend = "brave"
-	WebSearchBackendCeramic  WebSearchBackend = "ceramic"
 	WebSearchBackendExa      WebSearchBackend = "exa"
 	WebSearchBackendMeganova WebSearchBackend = "meganova"
 	WebSearchBackendSearxng  WebSearchBackend = "searxng"
@@ -628,8 +627,6 @@ func (e WebSearchBackend) Valid() bool {
 	case WebSearchBackendAuto:
 		return true
 	case WebSearchBackendBrave:
-		return true
-	case WebSearchBackendCeramic:
 		return true
 	case WebSearchBackendExa:
 		return true
@@ -1572,9 +1569,8 @@ type UserList struct {
 	Data []User `json:"data"`
 }
 
-// WebSearchBackend Web search backend selection. `auto` uses Nova OS DefaultSearcher()
-// priority (Ceramic → Tavily → Brave → Exa → SearXNG, with reformulator
-// + Tavily fallback wrappers when configured).
+// WebSearchBackend Web search backend selection. `auto` uses the server's default
+// priority order (operator-configured).
 type WebSearchBackend string
 
 // WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
@@ -1587,17 +1583,17 @@ type WebSearchConfig struct {
 	// renders as ``primary→fallback1→fallback2``.
 	FallbackChain *[]WebSearchBackend `json:"fallback_chain,omitempty"`
 
-	// PrimaryBackend Web search backend selection. `auto` uses Nova OS DefaultSearcher()
-	// priority (Ceramic → Tavily → Brave → Exa → SearXNG, with reformulator
-	// + Tavily fallback wrappers when configured).
+	// PrimaryBackend Web search backend selection. `auto` uses the server's default
+	// priority order (operator-configured).
 	PrimaryBackend *WebSearchBackend `json:"primary_backend,omitempty"`
 
 	// RecencyTerms Custom recency markers for the recency-intent escalator.
 	RecencyTerms *[]string `json:"recency_terms,omitempty"`
 
-	// Reformulator Wrap the search call with the LLM reformulator. Lifts Ceramic
-	// 42→70% on broad queries; only applied to keyword backends
-	// (ceramic / searxng / exa), not bundled-extraction backends.
+	// Reformulator Wrap the search call with the LLM reformulator. Improves
+	// retrieval quality on broad queries. Applied only to keyword
+	// backends; bundled-extraction backends handle reformulation
+	// internally.
 	Reformulator *bool `json:"reformulator,omitempty"`
 }
 

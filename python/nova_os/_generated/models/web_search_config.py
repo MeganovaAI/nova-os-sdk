@@ -20,15 +20,15 @@ class WebSearchConfig:
     ``backend`` / ``fallback`` are no longer accepted.
 
         Attributes:
-            primary_backend (WebSearchBackend | Unset): Web search backend selection. `auto` uses Nova OS DefaultSearcher()
-                priority (Ceramic → Tavily → Brave → Exa → SearXNG, with reformulator
-                + Tavily fallback wrappers when configured).
+            primary_backend (WebSearchBackend | Unset): Web search backend selection. `auto` uses the server's default
+                priority order (operator-configured).
             fallback_chain (list[WebSearchBackend] | Unset): Ordered fallback chain. Used on empty/error/off-topic results.
                 Wraps the primary in a ``FallbackSearcher`` whose ``Name()``
                 renders as ``primary→fallback1→fallback2``.
-            reformulator (bool | Unset): Wrap the search call with the LLM reformulator. Lifts Ceramic
-                42→70% on broad queries; only applied to keyword backends
-                (ceramic / searxng / exa), not bundled-extraction backends.
+            reformulator (bool | Unset): Wrap the search call with the LLM reformulator. Improves
+                retrieval quality on broad queries. Applied only to keyword
+                backends; bundled-extraction backends handle reformulation
+                internally.
                  Default: True.
             recency_terms (list[str] | Unset): Custom recency markers for the recency-intent escalator.
     """
