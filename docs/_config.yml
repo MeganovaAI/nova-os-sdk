@@ -1,0 +1,52 @@
+# GitHub Pages config for nova-os-sdk.meganova.ai
+#
+# Source-of-truth: https://github.com/MeganovaAI/nova-os-sdk/tree/main/docs
+# Site build:      Jekyll on GitHub Pages (no custom build pipeline)
+# Custom domain:   nova-os-sdk.meganova.ai (CNAME file in this directory)
+#
+# To enable on the repo:
+#   Settings → Pages → Source: "Deploy from a branch" → main / docs
+#   Settings → Pages → Custom domain: nova-os-sdk.meganova.ai
+#   Settings → Pages → Enforce HTTPS
+#   DNS: nova-os-sdk.meganova.ai CNAME → meganovaai.github.io
+#
+# Until DNS lands, the site is reachable at https://meganovaai.github.io/nova-os-sdk/
+
+title: Nova OS SDK
+description: Partner integration SDK for Nova OS — Anthropic Managed Agents compatible with multi-model + employee enhancements.
+url: https://nova-os-sdk.meganova.ai
+baseurl: ""
+
+theme: jekyll-theme-minimal
+github:
+  repository_url: https://github.com/MeganovaAI/nova-os-sdk
+
+# Exclude paths that shouldn't ship to the public site.
+exclude:
+  - superpowers/   # internal design specs + plans
+  - release-notes/v0.*.md   # pre-1.0 release-notes archive
+
+# Pretty URLs — drop the .html.
+permalink: pretty
+
+# Markdown processor.
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Plugins (allowed by GitHub Pages).
+plugins:
+  - jekyll-relative-links
+  - jekyll-optional-front-matter
+  - jekyll-readme-index
+  - jekyll-titles-from-headings
+
+# jekyll-relative-links — rewrite .md links so they resolve on the site.
+relative_links:
+  enabled: true
+  collections: true
+
+# jekyll-optional-front-matter — render plain .md files without front matter.
+optional_front_matter:
+  remove_originals: true
