@@ -19,7 +19,7 @@ Nova OS ships pluggable web-search with fallback chains. Six backends out of the
 | `brave` | Keyword | Privacy-first, decent freshness, no LLM-fluff. Pair with reformulator. |
 | `exa` | Keyword + neural | Strong on technical / academic queries. Neural ranking helps for paraphrased queries. |
 | `searxng` | Keyword aggregator | Self-hosted; aggregates Google / Bing / others. Good when partners want no third-party search dependency. |
-| `meganova` | Curated | MegaNova's own search index, scoped to legaltech / partner-relevant content. |
+| `meganova` | Bundled extraction | MegaNova's managed search API — natural-language query → ranked results with optional full-page text extraction in one round-trip. See [meganova.ai/web-search](https://www.meganova.ai/web-search). |
 | `auto` | (alias) | Falls through to server's `DefaultSearcher()` priority: Ceramic → Tavily → Brave → Exa → SearXNG with reformulator + Tavily-fallback wrappers. |
 
 `auto` is the right pick if you don't have a specific reason to override; the default order is tuned against operator experience.
@@ -30,7 +30,7 @@ Order of magnitude per 1K queries. Exact pricing varies by tier, region, and con
 
 | Backend | Cost | Quality | Best for |
 |---|---|---|---|
-| `meganova` | Lowest (self-hosted index) | Domain-curated | Vertical legaltech, MegaNova-internal |
+| `meganova` | 50/day free, then $0.002/query | Natural-language + extraction in one call | Cost-conscious general-purpose; one-call extraction (no separate fetcher) |
 | `searxng` | Free (self-hosted) | Variable (depends on aggregated sources) | Air-gap deployments |
 | `brave` | Low | Good | Privacy-first, day-to-day queries |
 | `ceramic` | Mid | Good | Broad queries, especially with reformulator |
@@ -160,15 +160,17 @@ A query mentioning "Bill 96 update" then biases toward fresh sources without the
 
 ## Common patterns
 
-### Cost-optimized legaltech partner
+### Cost-optimized partner (free-tier-first)
 
 ```yaml
 web_search_config:
-  primary_backend: meganova   # curated legal corpus, cheap
-  fallback_chain: [brave]     # fall through to general web on miss
+  primary_backend: meganova   # 50/day free + $0.002 overage, extraction included
+  fallback_chain: [brave]     # cheap fallback when MegaNova quota exhausts
   reformulator: true
   recency_terms: ["court ruling", "amendment"]
 ```
+
+The MegaNova backend bundles search + page extraction in one call, so the persona doesn't need a separate fetcher (similar to Tavily, but at a different price point). `recency_terms` example shown is for a legaltech partner; adjust for your domain.
 
 ### Air-gap deployment
 
@@ -215,7 +217,7 @@ Each backend needs its own credential. Set as Nova OS env vars:
 | `tavily` | `TAVILY_API_KEY` | Required for `tavily` primary or fallback. |
 | `brave` | `BRAVE_API_KEY` | Required for `brave` primary or fallback. |
 | `exa` | `EXA_API_KEY` | Required for `exa` primary or fallback. |
-| `meganova` | `MEGANOVA_CLOUD_KEY` (or `MEGANOVA_API_KEY` alias) | Required for `meganova` primary. The alias was added in [`#214`](https://github.com/MeganovaAI/nova-os/issues/214) / [`#215`](https://github.com/MeganovaAI/nova-os/pull/215); both forms accepted, `CLOUD_KEY` is canonical. |
+| `meganova` | `MEGANOVA_CLOUD_KEY` (or `MEGANOVA_API_KEY` alias) | Required for `meganova` primary. The alias was added in [`#214`](https://github.com/MeganovaAI/nova-os/issues/214) / [`#215`](https://github.com/MeganovaAI/nova-os/pull/215); both forms accepted, `CLOUD_KEY` is canonical. Engineer Tier 2 required at the MegaNova platform (auto-granted on first $1 deposit). See [meganova.ai/web-search](https://www.meganova.ai/web-search) for the underlying service terms. |
 | `searxng` | `SEARXNG_URL` | Self-hosted SearXNG instance URL. No API key. |
 | `ceramic` | (none) | Built-in to the server. |
 
