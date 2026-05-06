@@ -220,6 +220,7 @@ If a persona declares a backend with an unset credential, the server falls throu
 
 ## See also
 
+- [`comparing-search-backends.md`](comparing-search-backends.md) — pricing / latency / feature comparison vs the Anthropic Claude web search tool
 - [`anthropic-compat.md`](anthropic-compat.md) — `web_search_config` field on the agent endpoint
 - [`multi-model.md`](multi-model.md) — parallel concept for LLM model selection
 - [`getting-started.md`](getting-started.md) — front-door + scenario matrix

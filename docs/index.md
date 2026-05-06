@@ -19,7 +19,8 @@ Partner integration docs for [Nova OS](https://github.com/MeganovaAI/nova-os-sdk
 | [Getting Started](getting-started.md) | Front-door table, 5-minute first call, three drop-in compat surfaces, scenario matrix |
 | [Anthropic API Compatibility](anthropic-compat.md) | Endpoint-by-endpoint matrix, what's identical, what's extended, what's not implemented |
 | [Multi-Model Routing](multi-model.md) | Three slots (answer / planner / skill), five-level cascade, fallback semantics |
-| [Web Search Backends](web-search.md) | Six pluggable backends, cost-quality table, FallbackSearcher, reformulator, recency intent |
+| [Web Search Backends](web-search.md) | Five pluggable backends, cost-quality table, fallback chains, reformulator, recency intent |
+| [Comparing Search Backends](comparing-search-backends.md) | Side-by-side pricing / latency / features for each backend vs the Anthropic Claude tool |
 | [Custom Tools](custom-tools.md) | Mode A (SSE inline) + Mode B (webhook) end-to-end, HMAC signing, idempotency |
 | [Deployment](deployment.md) | Self-hosted vs cloud, three deploy shapes, reverse-proxy templates, observability |
 | [Scenarios](scenarios.md) | 10 lifecycle workflows traced end-to-end with wire-level detail |
