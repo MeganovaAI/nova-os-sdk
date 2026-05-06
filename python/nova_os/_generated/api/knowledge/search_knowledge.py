@@ -5,21 +5,21 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.agent import Agent
-from ...models.agent_create import AgentCreate
 from ...models.error import Error
+from ...models.knowledge_search_request import KnowledgeSearchRequest
+from ...models.knowledge_search_response import KnowledgeSearchResponse
 from ...types import Response
 
 
 def _get_kwargs(
     *,
-    body: AgentCreate,
+    body: KnowledgeSearchRequest,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
 
     _kwargs: dict[str, Any] = {
         "method": "post",
-        "url": "/v1/managed/agents",
+        "url": "/v1/managed/knowledge/search",
     }
 
     _kwargs["json"] = body.to_dict()
@@ -30,11 +30,13 @@ def _get_kwargs(
     return _kwargs
 
 
-def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Agent | Error | None:
-    if response.status_code == 201:
-        response_201 = Agent.from_dict(response.json())
+def _parse_response(
+    *, client: AuthenticatedClient | Client, response: httpx.Response
+) -> Error | KnowledgeSearchResponse | None:
+    if response.status_code == 200:
+        response_200 = KnowledgeSearchResponse.from_dict(response.json())
 
-        return response_201
+        return response_200
 
     if response.status_code == 400:
         response_400 = Error.from_dict(response.json())
@@ -51,18 +53,15 @@ def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Res
 
         return response_403
 
-    if response.status_code == 429:
-        response_429 = Error.from_dict(response.json())
-
-        return response_429
-
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
         return None
 
 
-def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Response[Agent | Error]:
+def _build_response(
+    *, client: AuthenticatedClient | Client, response: httpx.Response
+) -> Response[Error | KnowledgeSearchResponse]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -74,19 +73,19 @@ def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Res
 def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Response[Agent | Error]:
-    """Create an agent
+    body: KnowledgeSearchRequest,
+) -> Response[Error | KnowledgeSearchResponse]:
+    """Hybrid search across the knowledge base
 
     Args:
-        body (AgentCreate):
+        body (KnowledgeSearchRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Agent | Error]
+        Response[Error | KnowledgeSearchResponse]
     """
 
     kwargs = _get_kwargs(
@@ -103,19 +102,19 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Agent | Error | None:
-    """Create an agent
+    body: KnowledgeSearchRequest,
+) -> Error | KnowledgeSearchResponse | None:
+    """Hybrid search across the knowledge base
 
     Args:
-        body (AgentCreate):
+        body (KnowledgeSearchRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Agent | Error
+        Error | KnowledgeSearchResponse
     """
 
     return sync_detailed(
@@ -127,19 +126,19 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Response[Agent | Error]:
-    """Create an agent
+    body: KnowledgeSearchRequest,
+) -> Response[Error | KnowledgeSearchResponse]:
+    """Hybrid search across the knowledge base
 
     Args:
-        body (AgentCreate):
+        body (KnowledgeSearchRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Agent | Error]
+        Response[Error | KnowledgeSearchResponse]
     """
 
     kwargs = _get_kwargs(
@@ -154,19 +153,19 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Agent | Error | None:
-    """Create an agent
+    body: KnowledgeSearchRequest,
+) -> Error | KnowledgeSearchResponse | None:
+    """Hybrid search across the knowledge base
 
     Args:
-        body (AgentCreate):
+        body (KnowledgeSearchRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Agent | Error
+        Error | KnowledgeSearchResponse
     """
 
     return (

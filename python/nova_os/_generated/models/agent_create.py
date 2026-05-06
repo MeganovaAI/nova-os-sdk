@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-import datetime
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
-from dateutil.parser import isoparse
 
 from ..models.agent_type import AgentType
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
-    from ..models.agent_route_templates import AgentRouteTemplates
+    from ..models.agent_create_route_templates import AgentCreateRouteTemplates
     from ..models.custom_tool import CustomTool
     from ..models.custom_tool_callback import CustomToolCallback
     from ..models.model_config import ModelConfig
@@ -21,20 +19,20 @@ if TYPE_CHECKING:
     from ..models.web_search_config import WebSearchConfig
 
 
-T = TypeVar("T", bound="Agent")
+T = TypeVar("T", bound="AgentCreate")
 
 
 @_attrs_define
-class Agent:
+class AgentCreate:
     """
     Attributes:
         id (str):
         type_ (AgentType): Whether this agent dispatches to other skill agents (persona) or
             executes one skill directly (skill). Maps to nova-os internals;
             partners only see the discriminator.
-        owner_employee (str | Unset): Employee that owns this agent (cascades model_config + callback).
+        owner_employee (str | Unset):
         system_prompt (str | Unset):
-        capabilities (list[str] | Unset): Skill labels this persona can dispatch to.
+        capabilities (list[str] | Unset):
         skills (list[Skill] | Unset):
         model_config (ModelConfig | Unset): Three-slot model configuration. Any slot may be omitted; resolution
             falls through per the spec (per-call → per-skill → per-agent →
@@ -49,19 +47,10 @@ class Agent:
         output_type (OutputTypeContract | Unset): Structured-output contract for agent replies. When set, Nova OS
             validates every assistant reply against `schema` before return.
             Server-side since v0.1.4.
-        route_templates (AgentRouteTemplates | Unset): URL templates Brain may fill into `navigate_to:` route hints.
-            Keys are template names (e.g. `case_detail`); values are URL
-            template strings with `{placeholder}` segments (e.g.
-            `https://app.example.com/cases/{case_id}`). Validated at server
-            boot. v0.1.5+.
-
-            Note: declared as `additionalProperties: true` rather than
-            `additionalProperties: { type: string }` because openapi-python-
-            client 0.28.3 (#15) chokes on the Schema-object form. Partners
-            should still treat values as strings — server-side validation
-            rejects non-string values. See nova-os-sdk#15.
-        created_at (datetime.datetime | Unset):
-        updated_at (datetime.datetime | Unset):
+        route_templates (AgentCreateRouteTemplates | Unset): URL templates Brain may fill into `navigate_to:` route
+            hints.
+            Server-side validation rejects non-string values; see Agent
+            schema for the typed shape.
     """
 
     id: str
@@ -76,9 +65,7 @@ class Agent:
     callback: CustomToolCallback | Unset = UNSET
     max_turns: int | Unset = 10
     output_type: OutputTypeContract | Unset = UNSET
-    route_templates: AgentRouteTemplates | Unset = UNSET
-    created_at: datetime.datetime | Unset = UNSET
-    updated_at: datetime.datetime | Unset = UNSET
+    route_templates: AgentCreateRouteTemplates | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -130,14 +117,6 @@ class Agent:
         if not isinstance(self.route_templates, Unset):
             route_templates = self.route_templates.to_dict()
 
-        created_at: str | Unset = UNSET
-        if not isinstance(self.created_at, Unset):
-            created_at = self.created_at.isoformat()
-
-        updated_at: str | Unset = UNSET
-        if not isinstance(self.updated_at, Unset):
-            updated_at = self.updated_at.isoformat()
-
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -168,16 +147,12 @@ class Agent:
             field_dict["output_type"] = output_type
         if route_templates is not UNSET:
             field_dict["route_templates"] = route_templates
-        if created_at is not UNSET:
-            field_dict["created_at"] = created_at
-        if updated_at is not UNSET:
-            field_dict["updated_at"] = updated_at
 
         return field_dict
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
-        from ..models.agent_route_templates import AgentRouteTemplates
+        from ..models.agent_create_route_templates import AgentCreateRouteTemplates
         from ..models.custom_tool import CustomTool
         from ..models.custom_tool_callback import CustomToolCallback
         from ..models.model_config import ModelConfig
@@ -245,27 +220,13 @@ class Agent:
             output_type = OutputTypeContract.from_dict(_output_type)
 
         _route_templates = d.pop("route_templates", UNSET)
-        route_templates: AgentRouteTemplates | Unset
+        route_templates: AgentCreateRouteTemplates | Unset
         if isinstance(_route_templates, Unset):
             route_templates = UNSET
         else:
-            route_templates = AgentRouteTemplates.from_dict(_route_templates)
+            route_templates = AgentCreateRouteTemplates.from_dict(_route_templates)
 
-        _created_at = d.pop("created_at", UNSET)
-        created_at: datetime.datetime | Unset
-        if isinstance(_created_at, Unset):
-            created_at = UNSET
-        else:
-            created_at = isoparse(_created_at)
-
-        _updated_at = d.pop("updated_at", UNSET)
-        updated_at: datetime.datetime | Unset
-        if isinstance(_updated_at, Unset):
-            updated_at = UNSET
-        else:
-            updated_at = isoparse(_updated_at)
-
-        agent = cls(
+        agent_create = cls(
             id=id,
             type_=type_,
             owner_employee=owner_employee,
@@ -279,12 +240,10 @@ class Agent:
             max_turns=max_turns,
             output_type=output_type,
             route_templates=route_templates,
-            created_at=created_at,
-            updated_at=updated_at,
         )
 
-        agent.additional_properties = d
-        return agent
+        agent_create.additional_properties = d
+        return agent_create
 
     @property
     def additional_keys(self) -> list[str]:

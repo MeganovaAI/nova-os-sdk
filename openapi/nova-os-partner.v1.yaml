@@ -282,14 +282,19 @@ components:
             `violation_mode` controls behaviour (error / log / repair).
         route_templates:
           type: object
-          additionalProperties:
-            type: string
+          additionalProperties: true
           description: |
             URL templates Brain may fill into `navigate_to:` route hints.
             Keys are template names (e.g. `case_detail`); values are URL
-            templates with `{placeholder}` segments (e.g.
+            template strings with `{placeholder}` segments (e.g.
             `https://app.example.com/cases/{case_id}`). Validated at server
             boot. v0.1.5+.
+
+            Note: declared as `additionalProperties: true` rather than
+            `additionalProperties: { type: string }` because openapi-python-
+            client 0.28.3 (#15) chokes on the Schema-object form. Partners
+            should still treat values as strings — server-side validation
+            rejects non-string values. See nova-os-sdk#15.
         created_at:
           type: string
           format: date-time
@@ -300,9 +305,54 @@ components:
           readOnly: true
 
     AgentCreate:
-      allOf:
-        - $ref: '#/components/schemas/Agent'
+      # Flattened from `allOf: [Agent]` (nova-os-sdk#15) — openapi-python-client
+      # 0.28.3 chokes on `allOf` compositions that include freeform-object
+      # properties. Wire shape is identical to Agent at request time; this
+      # form is what oapi-codegen Go and openapi-python-client both accept.
+      type: object
       required: [id, type]
+      properties:
+        id:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+        type:
+          $ref: '#/components/schemas/AgentType'
+        owner_employee:
+          type: string
+        system_prompt:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+        model_config:
+          $ref: '#/components/schemas/ModelConfig'
+        web_search_config:
+          $ref: '#/components/schemas/WebSearchConfig'
+        custom_tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomTool'
+        callback:
+          $ref: '#/components/schemas/CustomToolCallback'
+        max_turns:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        output_type:
+          $ref: '#/components/schemas/OutputTypeContract'
+        route_templates:
+          type: object
+          additionalProperties: true
+          description: |
+            URL templates Brain may fill into `navigate_to:` route hints.
+            Server-side validation rejects non-string values; see Agent
+            schema for the typed shape.
 
     AgentUpdate:
       type: object

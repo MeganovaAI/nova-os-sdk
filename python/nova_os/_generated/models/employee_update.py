@@ -26,7 +26,10 @@ class EmployeeUpdate:
         model_config (ModelConfig | Unset): Three-slot model configuration. Any slot may be omitted; resolution
             falls through per the spec (per-call → per-skill → per-agent →
             per-employee → server default).
-        web_search_config (WebSearchConfig | Unset):
+        web_search_config (WebSearchConfig | Unset): Persona-level web-search configuration. Resolved per-invocation on
+            ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
+            Field names changed in nova-os PR #212 (closes #200) — old
+            ``backend`` / ``fallback`` are no longer accepted.
         callback (CustomToolCallback | Unset):
     """
 

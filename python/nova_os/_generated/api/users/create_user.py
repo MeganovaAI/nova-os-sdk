@@ -5,21 +5,21 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.agent import Agent
-from ...models.agent_create import AgentCreate
 from ...models.error import Error
+from ...models.user import User
+from ...models.user_create import UserCreate
 from ...types import Response
 
 
 def _get_kwargs(
     *,
-    body: AgentCreate,
+    body: UserCreate,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
 
     _kwargs: dict[str, Any] = {
         "method": "post",
-        "url": "/v1/managed/agents",
+        "url": "/v1/managed/users",
     }
 
     _kwargs["json"] = body.to_dict()
@@ -30,9 +30,9 @@ def _get_kwargs(
     return _kwargs
 
 
-def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Agent | Error | None:
+def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Error | User | None:
     if response.status_code == 201:
-        response_201 = Agent.from_dict(response.json())
+        response_201 = User.from_dict(response.json())
 
         return response_201
 
@@ -46,23 +46,13 @@ def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Res
 
         return response_401
 
-    if response.status_code == 403:
-        response_403 = Error.from_dict(response.json())
-
-        return response_403
-
-    if response.status_code == 429:
-        response_429 = Error.from_dict(response.json())
-
-        return response_429
-
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
         return None
 
 
-def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Response[Agent | Error]:
+def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Response[Error | User]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -74,19 +64,19 @@ def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Res
 def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Response[Agent | Error]:
-    """Create an agent
+    body: UserCreate,
+) -> Response[Error | User]:
+    """Create a user (default password; trigger reset on first sign-in)
 
     Args:
-        body (AgentCreate):
+        body (UserCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Agent | Error]
+        Response[Error | User]
     """
 
     kwargs = _get_kwargs(
@@ -103,19 +93,19 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Agent | Error | None:
-    """Create an agent
+    body: UserCreate,
+) -> Error | User | None:
+    """Create a user (default password; trigger reset on first sign-in)
 
     Args:
-        body (AgentCreate):
+        body (UserCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Agent | Error
+        Error | User
     """
 
     return sync_detailed(
@@ -127,19 +117,19 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Response[Agent | Error]:
-    """Create an agent
+    body: UserCreate,
+) -> Response[Error | User]:
+    """Create a user (default password; trigger reset on first sign-in)
 
     Args:
-        body (AgentCreate):
+        body (UserCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Agent | Error]
+        Response[Error | User]
     """
 
     kwargs = _get_kwargs(
@@ -154,19 +144,19 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient | Client,
-    body: AgentCreate,
-) -> Agent | Error | None:
-    """Create an agent
+    body: UserCreate,
+) -> Error | User | None:
+    """Create a user (default password; trigger reset on first sign-in)
 
     Args:
-        body (AgentCreate):
+        body (UserCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Agent | Error
+        Error | User
     """
 
     return (

@@ -10,6 +10,7 @@ from ...models.error import Error
 from ...models.stream_event_custom_tool_use import StreamEventCustomToolUse
 from ...models.stream_event_done import StreamEventDone
 from ...models.stream_event_error import StreamEventError
+from ...models.stream_event_route_hint import StreamEventRouteHint
 from ...models.stream_event_text_delta import StreamEventTextDelta
 from ...models.stream_event_thinking import StreamEventThinking
 from ...models.stream_event_tool_result import StreamEventToolResult
@@ -44,6 +45,7 @@ def _parse_response(
     | StreamEventCustomToolUse
     | StreamEventDone
     | StreamEventError
+    | StreamEventRouteHint
     | StreamEventTextDelta
     | StreamEventThinking
     | StreamEventToolResult
@@ -58,6 +60,7 @@ def _parse_response(
             StreamEventCustomToolUse
             | StreamEventDone
             | StreamEventError
+            | StreamEventRouteHint
             | StreamEventTextDelta
             | StreamEventThinking
             | StreamEventToolResult
@@ -111,11 +114,19 @@ def _parse_response(
                 return componentsschemas_stream_event_type_5
             except (TypeError, ValueError, AttributeError, KeyError):
                 pass
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                componentsschemas_stream_event_type_6 = StreamEventDone.from_dict(data)
+
+                return componentsschemas_stream_event_type_6
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
             if not isinstance(data, dict):
                 raise TypeError()
-            componentsschemas_stream_event_type_6 = StreamEventDone.from_dict(data)
+            componentsschemas_stream_event_type_7 = StreamEventRouteHint.from_dict(data)
 
-            return componentsschemas_stream_event_type_6
+            return componentsschemas_stream_event_type_7
 
         response_200 = _parse_response_200(response.text)
 
@@ -144,6 +155,7 @@ def _build_response(
     | StreamEventCustomToolUse
     | StreamEventDone
     | StreamEventError
+    | StreamEventRouteHint
     | StreamEventTextDelta
     | StreamEventThinking
     | StreamEventToolResult
@@ -167,6 +179,7 @@ def sync_detailed(
     | StreamEventCustomToolUse
     | StreamEventDone
     | StreamEventError
+    | StreamEventRouteHint
     | StreamEventTextDelta
     | StreamEventThinking
     | StreamEventToolResult
@@ -183,7 +196,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Error | StreamEventCustomToolUse | StreamEventDone | StreamEventError | StreamEventTextDelta | StreamEventThinking | StreamEventToolResult | StreamEventToolUse]
+        Response[Error | StreamEventCustomToolUse | StreamEventDone | StreamEventError | StreamEventRouteHint | StreamEventTextDelta | StreamEventThinking | StreamEventToolResult | StreamEventToolUse]
     """
 
     kwargs = _get_kwargs(
@@ -208,6 +221,7 @@ def sync(
     | StreamEventCustomToolUse
     | StreamEventDone
     | StreamEventError
+    | StreamEventRouteHint
     | StreamEventTextDelta
     | StreamEventThinking
     | StreamEventToolResult
@@ -225,7 +239,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Error | StreamEventCustomToolUse | StreamEventDone | StreamEventError | StreamEventTextDelta | StreamEventThinking | StreamEventToolResult | StreamEventToolUse
+        Error | StreamEventCustomToolUse | StreamEventDone | StreamEventError | StreamEventRouteHint | StreamEventTextDelta | StreamEventThinking | StreamEventToolResult | StreamEventToolUse
     """
 
     return sync_detailed(
@@ -245,6 +259,7 @@ async def asyncio_detailed(
     | StreamEventCustomToolUse
     | StreamEventDone
     | StreamEventError
+    | StreamEventRouteHint
     | StreamEventTextDelta
     | StreamEventThinking
     | StreamEventToolResult
@@ -261,7 +276,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Error | StreamEventCustomToolUse | StreamEventDone | StreamEventError | StreamEventTextDelta | StreamEventThinking | StreamEventToolResult | StreamEventToolUse]
+        Response[Error | StreamEventCustomToolUse | StreamEventDone | StreamEventError | StreamEventRouteHint | StreamEventTextDelta | StreamEventThinking | StreamEventToolResult | StreamEventToolUse]
     """
 
     kwargs = _get_kwargs(
@@ -284,6 +299,7 @@ async def asyncio(
     | StreamEventCustomToolUse
     | StreamEventDone
     | StreamEventError
+    | StreamEventRouteHint
     | StreamEventTextDelta
     | StreamEventThinking
     | StreamEventToolResult
@@ -301,7 +317,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Error | StreamEventCustomToolUse | StreamEventDone | StreamEventError | StreamEventTextDelta | StreamEventThinking | StreamEventToolResult | StreamEventToolUse
+        Error | StreamEventCustomToolUse | StreamEventDone | StreamEventError | StreamEventRouteHint | StreamEventTextDelta | StreamEventThinking | StreamEventToolResult | StreamEventToolUse
     """
 
     return (
