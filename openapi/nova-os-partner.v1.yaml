@@ -120,11 +120,10 @@ components:
 
     WebSearchBackend:
       type: string
-      enum: [ceramic, tavily, brave, exa, searxng, meganova, auto]
+      enum: [tavily, brave, exa, searxng, meganova, auto]
       description: |
-        Web search backend selection. `auto` uses Nova OS DefaultSearcher()
-        priority (Ceramic → Tavily → Brave → Exa → SearXNG, with reformulator
-        + Tavily fallback wrappers when configured).
+        Web search backend selection. `auto` uses the server's default
+        priority order (operator-configured).
 
     WebSearchConfig:
       type: object
@@ -152,9 +151,10 @@ components:
           type: boolean
           default: true
           description: |
-            Wrap the search call with the LLM reformulator. Lifts Ceramic
-            42→70% on broad queries; only applied to keyword backends
-            (ceramic / searxng / exa), not bundled-extraction backends.
+            Wrap the search call with the LLM reformulator. Improves
+            retrieval quality on broad queries. Applied only to keyword
+            backends; bundled-extraction backends handle reformulation
+            internally.
         recency_terms:
           type: array
           items:

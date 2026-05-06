@@ -21,7 +21,7 @@ The front door for partners adopting Nova OS. Use the table below to jump to the
 | **Sync a local folder of definitions to a server** | `nova-os-cli sync ./data/` (one-shot or `--watch`) | [`cli/README.md` → sync](../cli/README.md#sync-folder--server) |
 | **Use multi-model fallbacks** | Per-call / per-skill / per-agent / per-employee / server-default cascade | [`multi-model.md`](multi-model.md) |
 | **Add a custom tool with HTTP webhook fan-out** | Mode A (SSE inline) or Mode B (webhook) | [`custom-tools.md`](custom-tools.md) |
-| **Bring my own search backend** | Ceramic, Tavily, Brave, Exa, SearXNG, MegaNova with fallback chains | [`web-search.md`](web-search.md) |
+| **Bring my own search backend** | Tavily, Brave, Exa, SearXNG, MegaNova with fallback chains | [`web-search.md`](web-search.md) |
 | **Deploy to production** | Reverse proxy, TLS, Postgres, scaling notes | [`deployment.md`](deployment.md) |
 | **Pin a specific server version** | Track release tags + image digests | [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases) |
 
