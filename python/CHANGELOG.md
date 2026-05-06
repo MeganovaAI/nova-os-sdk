@@ -18,6 +18,10 @@ Tracks Python surface added since `1.0.0`. Targets a `1.1.0` minor cut once the 
 - **`PersonaNotFound`** typed error — subclass of `NotFoundError`, raised by `c.personas.get(persona_id)` on a 404 with the persona-envelope shape `{"error": "persona not found", "id": ...}`. `parse_error_response` detects the envelope.
 - Examples 16 (sessions) + 17 (personas discovery) under `python/examples/`.
 
+### Fixed
+
+- **Codegen-python CI gate unblocked** ([nova-os-sdk#15](https://github.com/MeganovaAI/nova-os-sdk/issues/15)). `openapi-python-client` 0.28.3 had been crashing on every push since `AgentCreate` landed as `allOf: [Agent]`, leaving `_generated/` permanently stale. Flattened `AgentCreate` to a duplicated property block (wire shape unchanged) and loosened `Agent.route_templates` from `additionalProperties: {type: string}` to `additionalProperties: true`. Codegen now produces full output for all 8 alpha.3-alpha.5 resources (`documents`, `filesystem`, `hooks`, `knowledge`, `personas`, `sessions`, `settings`, `users`) — previously these endpoints were declared in OpenAPI but never auto-generated, so `_generated/` only carried the v0.9.0 surface. Hand-written `nova_os/resources/*.py` public API unaffected; partner code keeps working.
+
 ### Server-side notes for partners
 
 - **`OPENAI_MODEL` default** — now `gemini/gemini-2.5-flash` server-side (`nova-os#197` / PR #198). Partners running `docker run ghcr.io/meganovaai/nova-os` against the MegaNova gateway with no env var no longer hit the bare-`gpt-4o` 404 on first chat. Override via `-e OPENAI_MODEL=<vendor>/<model>` still wins. Default is gateway-safe per `validateModelShape` (`<provider>/<model>`).
