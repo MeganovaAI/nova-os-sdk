@@ -22,6 +22,7 @@ The front door for partners adopting Nova OS. Use the table below to jump to the
 | **Use multi-model fallbacks** | Per-call / per-skill / per-agent / per-employee / server-default cascade | [`multi-model.md`](multi-model.md) |
 | **Add a custom tool with HTTP webhook fan-out** | Mode A (SSE inline) or Mode B (webhook) | [`custom-tools.md`](custom-tools.md) |
 | **Bring my own search backend** | Tavily, Brave, Exa, SearXNG, MegaNova with fallback chains | [`web-search.md`](web-search.md) |
+| **Compare search backends** | Pricing, latency, features for each option vs the Claude tool | [`comparing-search-backends.md`](comparing-search-backends.md) |
 | **Deploy to production** | Reverse proxy, TLS, Postgres, scaling notes | [`deployment.md`](deployment.md) |
 | **Pin a specific server version** | Track release tags + image digests | [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases) |
 
