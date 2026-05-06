@@ -2,6 +2,12 @@
 
 How to run Nova OS in production. For first-time install / evaluation, start with [`docs.meganova.ai/nova-os/install`](https://docs.meganova.ai/nova-os/install) — this doc covers what changes when you go from "kick the tires" to "production traffic."
 
+> ⚠️ **License Notice**
+>
+> The **Nova OS server** is provided for **evaluation and development use** under the Business Source License. **Production deployments require a commercial license** — contact contact@meganova.ai for pricing before pinning to production.
+>
+> The **SDK** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially regardless of the server's license tier.
+
 ## TL;DR
 
 - **Self-hosted is the v1 default.** Partner runs the binary; data never leaves your network.
