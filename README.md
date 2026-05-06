@@ -78,4 +78,8 @@ The first two are about meeting partners where they are. The third is the surfac
 
 ## License
 
-MIT.
+> ⚠️ **License Notice**
+>
+> The **Nova OS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
+>
+> The **SDK in this repository** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially.

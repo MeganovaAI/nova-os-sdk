@@ -2,6 +2,12 @@
 
 The front door for partners adopting Nova OS. Use the table below to jump to the doc that matches what you're trying to do — most adoption paths are 5-15 minutes.
 
+> ⚠️ **License Notice**
+>
+> The **Nova OS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
+>
+> The **SDK in this repository** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially.
+
 ## I want to…
 
 | Goal | Path | Doc |
