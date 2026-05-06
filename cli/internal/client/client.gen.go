@@ -709,12 +709,18 @@ type Agent struct {
 
 	// RouteTemplates URL templates Brain may fill into `navigate_to:` route hints.
 	// Keys are template names (e.g. `case_detail`); values are URL
-	// templates with `{placeholder}` segments (e.g.
+	// template strings with `{placeholder}` segments (e.g.
 	// `https://app.example.com/cases/{case_id}`). Validated at server
 	// boot. v0.1.5+.
-	RouteTemplates *map[string]string `json:"route_templates,omitempty"`
-	Skills         *[]Skill           `json:"skills,omitempty"`
-	SystemPrompt   *string            `json:"system_prompt,omitempty"`
+	//
+	// Note: declared as `additionalProperties: true` rather than
+	// `additionalProperties: { type: string }` because openapi-python-
+	// client 0.28.3 (#15) chokes on the Schema-object form. Partners
+	// should still treat values as strings — server-side validation
+	// rejects non-string values. See nova-os-sdk#15.
+	RouteTemplates *map[string]interface{} `json:"route_templates,omitempty"`
+	Skills         *[]Skill                `json:"skills,omitempty"`
+	SystemPrompt   *string                 `json:"system_prompt,omitempty"`
 
 	// Type Whether this agent dispatches to other skill agents (persona) or
 	// executes one skill directly (skill). Maps to nova-os internals;
@@ -730,7 +736,42 @@ type Agent struct {
 }
 
 // AgentCreate defines model for AgentCreate.
-type AgentCreate = Agent
+type AgentCreate struct {
+	Callback     *CustomToolCallback `json:"callback,omitempty"`
+	Capabilities *[]string           `json:"capabilities,omitempty"`
+	CustomTools  *[]CustomTool       `json:"custom_tools,omitempty"`
+	Id           string              `json:"id"`
+	MaxTurns     *int                `json:"max_turns,omitempty"`
+
+	// ModelConfig Three-slot model configuration. Any slot may be omitted; resolution
+	// falls through per the spec (per-call → per-skill → per-agent →
+	// per-employee → server default).
+	ModelConfig *ModelConfig `json:"model_config,omitempty"`
+
+	// OutputType Structured-output contract for agent replies. When set, Nova OS
+	// validates every assistant reply against `schema` before return.
+	// Server-side since v0.1.4.
+	OutputType    *OutputTypeContract `json:"output_type,omitempty"`
+	OwnerEmployee *string             `json:"owner_employee,omitempty"`
+
+	// RouteTemplates URL templates Brain may fill into `navigate_to:` route hints.
+	// Server-side validation rejects non-string values; see Agent
+	// schema for the typed shape.
+	RouteTemplates *map[string]interface{} `json:"route_templates,omitempty"`
+	Skills         *[]Skill                `json:"skills,omitempty"`
+	SystemPrompt   *string                 `json:"system_prompt,omitempty"`
+
+	// Type Whether this agent dispatches to other skill agents (persona) or
+	// executes one skill directly (skill). Maps to nova-os internals;
+	// partners only see the discriminator.
+	Type AgentType `json:"type"`
+
+	// WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
+	// ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
+	// Field names changed in nova-os PR #212 (closes #200) — old
+	// ``backend`` / ``fallback`` are no longer accepted.
+	WebSearchConfig *WebSearchConfig `json:"web_search_config,omitempty"`
+}
 
 // AgentList defines model for AgentList.
 type AgentList struct {
