@@ -53,7 +53,7 @@ For partners who need to operate Nova OS themselves:
 
 **OpenAPI alpha.5** — Partner-facing API surface continuing to grow toward the v1 freeze. The Python SDK \`__version__\` is stable at 1.0.0; \`OPENAPI_VERSION\` tracks the spec separately.
 
-**Server image** — `ghcr.io/meganovaai/nova-os:v0.1.5` (and `:latest`).
+**Server image** — `ghcr.io/meganovaai/nova-os:v0.1.6` (and `:latest`).
 
 See [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases) for the cadence.
 
