@@ -69,7 +69,7 @@ Image's 7 baked personas are always available; mounted templates layer on top.
 
 ### CLI convenience
 
-(Slice 2 — coming in nova-os-sdk@v0.1.7. Tracked separately.)
+(Slice 2 — coming in nova-os-sdk@v0.1.8. Tracked separately.)
 
 ```bash
 nova-os-sdk catalog list
