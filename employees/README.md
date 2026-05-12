@@ -36,7 +36,7 @@ Works in any environment (CI, ansible, docker-compose volumes, no-CLI hosts).
 
 ```bash
 # Pin to the SDK release matching your Nova OS version
-git clone --branch v0.1.6 https://github.com/MeganovaAI/nova-os-sdk
+git clone --branch v0.1.7 https://github.com/MeganovaAI/nova-os-sdk
 cd nova-os-sdk
 
 # Pick individual templates
@@ -58,7 +58,7 @@ Drop the cloned repo into a docker-compose volume:
 ```yaml
 services:
   nova-os:
-    image: ghcr.io/meganovaai/nova-os:v0.1.6
+    image: ghcr.io/meganovaai/nova-os:v0.1.7
     volumes:
       # Mount specific verticals you want
       - ./nova-os-sdk/employees/bi:/app/data/agents/bi
@@ -99,7 +99,7 @@ If you keep the original filename, future `git pull` of the SDK followed by re-c
 
 Templates use Nova OS's runtime YAML frontmatter shape (`agent_type: persona`, `brain: true`, `capabilities`, `skills`, `model`, `connectors`, etc.). Full schema: see [`docs/agents.md`](https://github.com/MeganovaAI/nova-os/blob/master/docs/agents.md) (in the nova-os repo).
 
-SDK release tags align with Nova OS release tags — `nova-os@v0.1.6` ↔ `nova-os-sdk@v0.1.6`. Pin via `git checkout v0.1.6` or by installing the matching CLI version. Nova OS's YAML loader is forward-tolerant (`omitempty`, missing fields zero-value), so older catalog content keeps working on newer Nova OS versions.
+SDK release tags align with Nova OS release tags — `nova-os@v0.1.7` ↔ `nova-os-sdk@v0.1.7`. Pin via `git checkout v0.1.7` or by installing the matching CLI version. Nova OS's YAML loader is forward-tolerant (`omitempty`, missing fields zero-value), so older catalog content keeps working on newer Nova OS versions.
 
 ---
 

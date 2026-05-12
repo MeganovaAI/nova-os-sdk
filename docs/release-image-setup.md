@@ -62,14 +62,14 @@ After the first successful push from this repo, GitHub will re-link the package'
 Once steps 1-4 are done, every subsequent release is one command:
 
 ```bash
-gh workflow run release-image.yml -R MeganovaAI/nova-os-sdk -f tag=v0.1.6
+gh workflow run release-image.yml -R MeganovaAI/nova-os-sdk -f tag=v0.1.7
 ```
 
-Or via the UI: **Actions → Release Docker image → Run workflow → tag: `v0.1.6`**.
+Or via the UI: **Actions → Release Docker image → Run workflow → tag: `v0.1.7`**.
 
-The workflow checks out `MeganovaAI/nova-os@v0.1.6`, builds the multi-arch image, and pushes:
+The workflow checks out `MeganovaAI/nova-os@v0.1.7`, builds the multi-arch image, and pushes:
 
-- `ghcr.io/meganovaai/nova-os:v0.1.6`
+- `ghcr.io/meganovaai/nova-os:v0.1.7`
 - `ghcr.io/meganovaai/nova-os:latest` (only for stable `vMAJOR.MINOR.PATCH` tags — RC / beta / alpha pre-releases skip the `:latest` move)
 
 The build summary at the end of the run includes the source commit SHA pinned in the image's OCI labels and `nova-os version` output.

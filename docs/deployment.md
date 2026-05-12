@@ -44,7 +44,7 @@ docker run -d --name nova-os \
   -e OPENAI_API_KEY="msk_live_..." \
   -e NOVA_OS_ADMIN_EMAIL="ops@partner.example" \
   -e NOVA_OS_ADMIN_PASSWORD="$(openssl rand -hex 16)" \
-  ghcr.io/meganovaai/nova-os:v0.1.6
+  ghcr.io/meganovaai/nova-os:v0.1.7
 ```
 
 Bind to `127.0.0.1` and let the reverse proxy expose it. Don't expose `:8900` to the public internet directly.
@@ -91,7 +91,7 @@ spec:
     spec:
       containers:
         - name: nova-os
-          image: ghcr.io/meganovaai/nova-os:v0.1.6
+          image: ghcr.io/meganovaai/nova-os:v0.1.7
           ports:
             - containerPort: 8900
           env:

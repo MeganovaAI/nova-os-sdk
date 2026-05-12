@@ -4,7 +4,7 @@ All notable changes to `nova-os-sdk` (Python) will be documented in this file.
 
 ## [Unreleased] — towards 1.1.0
 
-Tracks Python surface added since `1.0.0`. Targets a `1.1.0` minor cut once the partner-prefix wave settles. The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare the new server endpoints; the matching server build is `ghcr.io/meganovaai/nova-os:v0.1.6` (and `:latest`).
+Tracks Python surface added since `1.0.0`. Targets a `1.1.0` minor cut once the partner-prefix wave settles. The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare the new server endpoints; the matching server build is `ghcr.io/meganovaai/nova-os:v0.1.7` (and `:latest`).
 
 ### Added
 

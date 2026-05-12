@@ -39,18 +39,18 @@ docker run -d --name nova-os -p 8900:8900 \
   -e NOVA_OS_ADMIN_EMAIL="admin@example.com" \
   -e NOVA_OS_ADMIN_PASSWORD="changeme-please-12chars" \
   -e OPENAI_API_KEY="msk_..." \
-  ghcr.io/meganovaai/nova-os:v0.1.6
+  ghcr.io/meganovaai/nova-os:v0.1.7
 ```
 
 Defaults that "just work" against the MegaNova gateway: `OPENAI_API_BASE=https://api.meganova.ai`, `OPENAI_MODEL=gemini/gemini-2.5-flash`. Override either to use OpenAI direct or pick a different model.
 
-`v0.1.6` and `:latest` track each other. For partner-validation builds, use `:v0.1.6-week-YYYY-MM-DD` weekly tags. See [releases](https://docs.meganova.ai/nova-os/releases) for the cadence.
+`v0.1.7` and `:latest` track each other. For partner-validation builds, use `:v0.1.7-week-YYYY-MM-DD` weekly tags. See [releases](https://docs.meganova.ai/nova-os/releases) for the cadence.
 
 ### 2. Verify health
 
 ```bash
 curl http://localhost:8900/api/health
-# {"status":"ok","version":"v0.1.6","build_sha":"a161dd0..."}
+# {"status":"ok","version":"v0.1.7","build_sha":"0381f00..."}
 ```
 
 ### 3. First chat — pick your SDK surface
