@@ -52,3 +52,6 @@ build/
 
 # Local secrets
 .env.local
+
+# Local engineering notes (private-repo refs not for public distribution)
+CLAUDE.md
