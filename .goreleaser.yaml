@@ -128,3 +128,11 @@ release:
     name: nova-os-sdk
   prerelease: auto    # auto-detect rc/alpha/beta tags
   draft: false
+  # Overwrite assets if they already exist on the release. Prevents
+  # 422 "already_exists" failures when the release workflow re-fires
+  # after a force-replaced tag (annotation correction, retro-release
+  # body edit, etc.) where the prior run already uploaded same-named
+  # archives. Added 2026-05-14 after goreleaser-action@v6 + GitHub's
+  # release-asset API rejected re-uploads on the v0.1.7 tag-annotation
+  # force-replace run.
+  replace_existing_artifacts: true
