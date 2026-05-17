@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
@@ -49,7 +50,21 @@ field validation always matches what the server enforces — no code
 duplication, no drift. Unknown --set keys are rejected before any HTTP
 write, with a "did you mean…?" suggestion drawn from the schema.
 
+Two modes share the schema-driven validation core:
+
+  • Interactive (default when stdin is a terminal AND no --set flags
+    are given). Walks every schema field via a huh form; system_prompt
+    opens $EDITOR. Confirms via prompt before submitting.
+
+  • Scriptable / CI-friendly (when any --set / --set-list /
+    --system-prompt-file flag is given OR stdin isn't a terminal). All
+    fields must come from flags. --confirm is required for the actual
+    write; --dry-run prints the would-be markdown without submitting.
+
 Examples:
+  # Interactive: walk every schema field with a guided form
+  nova-os-cli agents edit my-frontdesk-agent
+
   # Scripted / CI-friendly: set fields explicitly, skip the confirm prompt
   nova-os-cli agents edit my-frontdesk-agent \
       --set model=anthropic/claude-opus-4-7 \
@@ -69,8 +84,8 @@ Examples:
       --set agent_type=skill \
       --confirm
 
-Interactive TUI mode (no flags → walks every schema field) is the next
-slice; tracked in nova-os-sdk#18.`,
+Template gallery + skill autocomplete via GET /api/skills + legacy-alias
+warnings are slice 3 (tracked in nova-os-sdk#18).`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAgentsEdit,
 }
@@ -101,17 +116,33 @@ func runAgentsEdit(cmd *cobra.Command, args []string) error {
 	}
 	fields := schemaFieldNames(schema)
 
-	body := map[string]any{"name": id}
-	if err := applySetFlags(editSetVals, editSetListVals, fields, body); err != nil {
-		return err
-	}
+	// Mode dispatch:
+	//   - any scriptable flag set → scriptable mode (CI / pipelines)
+	//   - else if stdin is a TTY → interactive (huh walk-through)
+	//   - else → error (no flags + no TTY would block forever on prompts)
+	hasScriptable := len(editSetVals) > 0 || len(editSetListVals) > 0 || editSystemPromptFile != ""
 
-	if editSystemPromptFile != "" {
-		data, err := os.ReadFile(editSystemPromptFile)
-		if err != nil {
-			return fmt.Errorf("read --system-prompt-file %q: %w", editSystemPromptFile, err)
+	var body map[string]any
+	switch {
+	case hasScriptable:
+		body = map[string]any{"name": id}
+		if err := applySetFlags(editSetVals, editSetListVals, fields, body); err != nil {
+			return err
 		}
-		body["system_prompt"] = string(data)
+		if editSystemPromptFile != "" {
+			data, err := os.ReadFile(editSystemPromptFile)
+			if err != nil {
+				return fmt.Errorf("read --system-prompt-file %q: %w", editSystemPromptFile, err)
+			}
+			body["system_prompt"] = string(data)
+		}
+	case isInteractive():
+		body, err = interactiveCollect(schema, id)
+		if err != nil {
+			return fmt.Errorf("interactive collect: %w", err)
+		}
+	default:
+		return fmt.Errorf("no scriptable flags given and stdin isn't a terminal — pass --set / --set-list / --system-prompt-file, or run from an interactive shell")
 	}
 
 	mdPreview, err := renderMarkdownPreview(body)
@@ -131,8 +162,28 @@ func runAgentsEdit(cmd *cobra.Command, args []string) error {
 	if editDryRun {
 		return nil
 	}
+	// In interactive mode, ask via huh confirm; in scriptable mode
+	// require the explicit --confirm flag (CI safety: no terminal to
+	// answer the prompt).
 	if !editConfirm {
-		return fmt.Errorf("submit requires --confirm (or pass --dry-run to inspect without writing)")
+		if !isInteractive() {
+			return fmt.Errorf("submit requires --confirm (or pass --dry-run to inspect without writing)")
+		}
+		var ok bool
+		if err := huh.NewConfirm().
+			Title("Submit to nova-os?").
+			Description(fmt.Sprintf("Will %s agent %q.",
+				map[bool]string{true: "CREATE", false: "UPDATE"}[editNew], id)).
+			Affirmative("Yes, submit").
+			Negative("No, abort").
+			Value(&ok).
+			Run(); err != nil {
+			return err
+		}
+		if !ok {
+			cmd.Println("aborted; nothing written")
+			return nil
+		}
 	}
 
 	c, err := newClient()
