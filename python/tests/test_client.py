@@ -8,6 +8,7 @@ import httpx
 import pytest
 
 from nova_os import Client
+from nova_os._retry import RetryConfig
 from nova_os.errors import NotFoundError, RateLimitedError
 
 
@@ -61,6 +62,29 @@ async def test_429_raises_rate_limited_with_retry_after() -> None:
 
 @pytest.mark.asyncio
 async def test_client_aclose_idempotent() -> None:
-    c = Client(base_url="https://test.local", api_key="k")
-    await c.aclose()
-    await c.aclose()  # second aclose must not raise
+	c = Client(base_url="https://test.local", api_key="k")
+	await c.aclose()
+	await c.aclose()  # second aclose must not raise
+
+
+@pytest.mark.asyncio
+async def test_get_retries_transient_5xx_before_returning_success() -> None:
+    calls = 0
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(503, json={"type": "internal_error", "message": "try again"})
+        return httpx.Response(200, json={"data": []})
+
+    async with Client(
+        base_url="https://test.local",
+        api_key="k",
+        transport=_mock_transport(handler),
+        retry_config=RetryConfig(max_attempts=2, base_delay_sec=0.001),
+    ) as c:
+        got = await c._request("GET", "/v1/agents")
+
+    assert got == {"data": []}
+    assert calls == 2

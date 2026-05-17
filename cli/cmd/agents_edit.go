@@ -1,6 +1,6 @@
 // Schema-driven guided agent authoring (nova-os-sdk#18).
 //
-// This subcommand consumes GET /v1/managed/agents/schema (kernel surface
+// This subcommand consumes GET /v1/agents/schema (kernel surface
 // shipped in MeganovaAI/nova-os#393) so the CLI knows which fields are
 // valid on an AgentDef without code-duplicating the field list. Operators
 // `--set key=value` (scalars) or `--set-list key=a,b,c` (string lists)
@@ -45,7 +45,7 @@ var agentsEditCmd = &cobra.Command{
 	Short: "Schema-driven agent authoring (consumes GET /v1/agents/schema)",
 	Long: `Guided agent authoring driven by the live AgentDef JSON Schema.
 
-The schema is fetched from GET /v1/managed/agents/schema at run time, so
+The schema is fetched from GET /v1/agents/schema at run time, so
 field validation always matches what the server enforces — no code
 duplication, no drift. Unknown --set keys are rejected before any HTTP
 write, with a "did you mean…?" suggestion drawn from the schema.
@@ -67,7 +67,7 @@ Examples:
 
   # Scripted / CI-friendly: set fields explicitly, skip the confirm prompt
   nova-os-cli agents edit my-frontdesk-agent \
-      --set model=anthropic/claude-opus-4-7 \
+      --set model=gemini/gemini-3.1-pro-preview \
       --set agent_type=persona \
       --set-list tools=knowledge_search,human_handoff \
       --system-prompt-file ./prompt.md \
@@ -75,7 +75,7 @@ Examples:
 
   # Inspect without writing
   nova-os-cli agents edit my-agent \
-      --set model=anthropic/claude-opus-4-7 \
+      --set model=gemini/gemini-3.1-pro-preview \
       --dry-run
 
   # Create a new agent (POST) instead of editing an existing one (PUT)
@@ -190,9 +190,10 @@ func runAgentsEdit(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	apiBody := agentEditAPIBody(body)
 	if editNew {
 		var createBody gen.CreateAgentJSONRequestBody
-		if err := mapToStruct(body, &createBody); err != nil {
+		if err := mapToStruct(apiBody, &createBody); err != nil {
 			return fmt.Errorf("marshal create body: %w", err)
 		}
 		resp, err := c.CreateAgentWithResponse(ctx, createBody)
@@ -205,7 +206,7 @@ func runAgentsEdit(cmd *cobra.Command, args []string) error {
 		cmd.Println("✓ created", id)
 	} else {
 		var updateBody gen.UpdateAgentJSONRequestBody
-		if err := mapToStruct(body, &updateBody); err != nil {
+		if err := mapToStruct(apiBody, &updateBody); err != nil {
 			return fmt.Errorf("marshal update body: %w", err)
 		}
 		resp, err := c.UpdateAgentWithResponse(ctx, id, updateBody)
@@ -220,18 +221,18 @@ func runAgentsEdit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// fetchAgentSchema does a raw GET on the partner-prefix agents/schema
-// endpoint. The OpenAPI spec doesn't yet declare this endpoint so the
-// generated client lacks a typed method; raw HTTP keeps the dependency
-// surface minimal until codegen catches up.
+// fetchAgentSchema does a raw GET on the beta-gated agents/schema
+// endpoint. The raw request keeps this helper decoupled from generated
+// client churn while still enforcing the same auth headers.
 func fetchAgentSchema(ctx context.Context, baseURL, apiKey string) (map[string]any, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		strings.TrimRight(baseURL, "/")+"/v1/managed/agents/schema", nil)
+		strings.TrimRight(baseURL, "/")+"/v1/agents/schema", nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("anthropic-beta", managedAgentsBetaHeader)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -250,6 +251,73 @@ func fetchAgentSchema(ctx context.Context, baseURL, apiKey string) (map[string]a
 		return nil, fmt.Errorf("parse schema JSON: %w", err)
 	}
 	return schema, nil
+}
+
+func agentEditAPIBody(body map[string]any) map[string]any {
+	out := make(map[string]any, len(body))
+	for k, v := range body {
+		out[k] = v
+	}
+	if v, ok := out["id"]; ok {
+		if _, exists := out["name"]; !exists {
+			out["name"] = v
+		}
+		delete(out, "id")
+	}
+	if v, ok := out["type"]; ok {
+		if _, exists := out["agent_type"]; !exists {
+			out["agent_type"] = v
+		}
+		delete(out, "type")
+	}
+	if v, ok := out["system_prompt"]; ok {
+		if _, exists := out["system"]; !exists {
+			out["system"] = v
+		}
+		delete(out, "system_prompt")
+	}
+	if v, ok := out["maxTurns"]; ok {
+		if _, exists := out["max_turns"]; !exists {
+			out["max_turns"] = v
+		}
+		delete(out, "maxTurns")
+	}
+	if v, ok := out["tools"]; ok {
+		out["tools"] = toolNamesForAPI(v)
+	}
+	return out
+}
+
+func toolNamesForAPI(v any) []string {
+	switch tools := v.(type) {
+	case []string:
+		return tools
+	case []map[string]any:
+		out := make([]string, 0, len(tools))
+		for _, t := range tools {
+			if name, _ := t["name"].(string); name != "" {
+				out = append(out, name)
+			}
+		}
+		return out
+	case []any:
+		out := make([]string, 0, len(tools))
+		for _, t := range tools {
+			switch item := t.(type) {
+			case string:
+				if item != "" {
+					out = append(out, item)
+				}
+			case map[string]any:
+				if name, _ := item["name"].(string); name != "" {
+					out = append(out, name)
+				}
+			}
+		}
+		return out
+	default:
+		return nil
+	}
 }
 
 // schemaFieldNames extracts the top-level property names from a JSON

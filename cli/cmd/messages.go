@@ -47,14 +47,14 @@ var messagesSendCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		body, err := buildMessageRequest(prompt, false)
+		body, err := buildMessageRequest(agentID, prompt, false)
 		if err != nil {
 			return err
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(msgTimeoutSec)*time.Second)
 		defer cancel()
 
-		resp, err := c.CreateMessageWithResponse(ctx, agentID, body, withEndUserHeader(msgEndUser))
+		resp, err := c.CreateMessageWithResponse(ctx, body, withEndUserHeader(msgEndUser))
 		if err != nil {
 			return fmt.Errorf("send message: %w", err)
 		}
@@ -81,7 +81,7 @@ var messagesStreamCmd = &cobra.Command{
 		// raw HTTP path so we can read SSE events line-by-line. The
 		// generated CreateMessageWithResponse swallows the body into
 		// JSON200; for streaming we need the raw http.Response.
-		body, err := buildMessageRequest(prompt, true)
+		body, err := buildMessageRequest(agentID, prompt, true)
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ var messagesStreamCmd = &cobra.Command{
 			return err
 		}
 		req, err := http.NewRequest("POST",
-			strings.TrimRight(url, "/")+"/v1/managed/agents/"+agentID+"/messages",
+			strings.TrimRight(url, "/")+"/v1/messages",
 			bytes.NewReader(bodyJSON))
 		if err != nil {
 			return err
@@ -144,7 +144,7 @@ var messagesStreamCmd = &cobra.Command{
 
 // buildMessageRequest constructs the MessageRequest body from the CLI
 // flag set. Shared by send + stream. Sets stream= per the caller.
-func buildMessageRequest(prompt string, stream bool) (gen.CreateMessageJSONRequestBody, error) {
+func buildMessageRequest(agentID, prompt string, stream bool) (gen.CreateMessageJSONRequestBody, error) {
 	var msg gen.Message
 	msg.Role = gen.RoleUser
 	if err := msg.Content.FromMessageContent0(prompt); err != nil {
@@ -171,6 +171,10 @@ func buildMessageRequest(prompt string, stream bool) (gen.CreateMessageJSONReque
 		}
 		body.Metadata = &meta
 	}
+	if body.Metadata == nil {
+		body.Metadata = &gen.MessageRequest_Metadata{}
+	}
+	body.Metadata.Set("agent_id", agentID)
 	return body, nil
 }
 
@@ -189,7 +193,7 @@ func init() {
 	for _, c := range []*cobra.Command{messagesSendCmd, messagesStreamCmd} {
 		c.Flags().StringVar(&msgEndUser, "end-user", "", "X-End-User identity for per-end-user memory scoping")
 		c.Flags().StringVar(&msgMetadata, "metadata", "", "JSON object passed as MessageRequest.metadata")
-		c.Flags().StringVar(&msgModel, "model", "", "Per-call model override (e.g. anthropic/claude-opus-4-7)")
+		c.Flags().StringVar(&msgModel, "model", "", "Per-call model override (e.g. gemini/gemini-3.1-pro-preview)")
 	}
 	messagesSendCmd.Flags().IntVar(&msgMaxTokens, "max-tokens", 0, "max_tokens cap (0 = server default)")
 	messagesSendCmd.Flags().StringVar(&msgSystem, "system", "", "Per-call system prompt override")

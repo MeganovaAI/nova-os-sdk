@@ -90,7 +90,7 @@ components:
       properties:
         primary:
           type: string
-          description: Model identifier in `<vendor>/<model>` shape (e.g., `anthropic/claude-opus-4-7`).
+          description: Model identifier in `<vendor>/<model>` shape (e.g., `gemini/gemini-3.1-pro-preview`).
           pattern: '^[a-z0-9_.-]+/[A-Za-z0-9_.:-]+$'
         fallback:
           type: array
@@ -237,159 +237,158 @@ components:
 
     Agent:
       type: object
-      required: [id, type]
+      required: [id, name]
       properties:
         id:
           type: string
           pattern: '^[a-z0-9-]+$'
-        type:
+          description: Slug generated from the agent name.
+        version:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        model:
+          type: string
+          description: Optional model override; empty means inherit the server tier default.
+        system:
+          type: string
+        tools:
+          type: array
+          items:
+            type: string
+        owner:
+          type: string
+          description: Owner email; defaults to the caller when omitted.
+        visibility:
+          type: string
+          enum: ["", private, public]
+        agent_type:
           $ref: '#/components/schemas/AgentType'
-        owner_employee:
-          type: string
-          description: Employee that owns this agent (cascades model_config + callback).
-        system_prompt:
-          type: string
+        brain:
+          type: boolean
         capabilities:
           type: array
           items:
             type: string
-          description: Skill labels this persona can dispatch to.
-        skills:
-          type: array
-          items:
-            $ref: '#/components/schemas/Skill'
-        model_config:
-          $ref: '#/components/schemas/ModelConfig'
-        web_search_config:
-          $ref: '#/components/schemas/WebSearchConfig'
-        custom_tools:
-          type: array
-          items:
-            $ref: '#/components/schemas/CustomTool'
-        callback:
-          $ref: '#/components/schemas/CustomToolCallback'
-          description: Agent-default callback for any custom_tool without its own.
         max_turns:
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 100
-          default: 10
         output_type:
           $ref: '#/components/schemas/OutputTypeContract'
-          description: |
-            Optional structured-output contract. When set, every assistant
-            reply is validated against `schema` before return; on failure,
-            `violation_mode` controls behaviour (error / log / repair).
-        route_templates:
+        knowledge_bindings:
+          type: array
+          items:
+            type: string
+        guardrails:
           type: object
           additionalProperties: true
-          description: |
-            URL templates Brain may fill into `navigate_to:` route hints.
-            Keys are template names (e.g. `case_detail`); values are URL
-            template strings with `{placeholder}` segments (e.g.
-            `https://app.example.com/cases/{case_id}`). Validated at server
-            boot. v0.1.5+.
-
-            Note: declared as `additionalProperties: true` rather than
-            `additionalProperties: { type: string }` because openapi-python-
-            client 0.28.3 (#15) chokes on the Schema-object form. Partners
-            should still treat values as strings — server-side validation
-            rejects non-string values. See nova-os-sdk#15.
+        filesystem:
+          type: object
+          additionalProperties: true
         created_at:
           type: string
           format: date-time
           readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
 
-    AgentCreate:
-      # Flattened from `allOf: [Agent]` (nova-os-sdk#15) — openapi-python-client
-      # 0.28.3 chokes on `allOf` compositions that include freeform-object
-      # properties. Wire shape is identical to Agent at request time; this
-      # form is what oapi-codegen Go and openapi-python-client both accept.
-      type: object
-      required: [id, type]
-      properties:
-        id:
-          type: string
-          pattern: '^[a-z0-9-]+$'
+        # Legacy SDK aliases kept optional for transition. The live Nova OS
+        # server accepts the canonical fields above.
         type:
           $ref: '#/components/schemas/AgentType'
+          deprecated: true
         owner_employee:
           type: string
+          deprecated: true
         system_prompt:
           type: string
+          deprecated: true
+
+    AgentCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        model:
+          type: string
+        system:
+          type: string
+        tools:
+          type: array
+          items:
+            type: string
+        owner:
+          type: string
+        visibility:
+          type: string
+          enum: ["", private, public]
+        filesystem:
+          type: object
+          additionalProperties: true
+        agent_type:
+          $ref: '#/components/schemas/AgentType'
+        brain:
+          type: boolean
         capabilities:
           type: array
           items:
             type: string
-        skills:
-          type: array
-          items:
-            $ref: '#/components/schemas/Skill'
-        model_config:
-          $ref: '#/components/schemas/ModelConfig'
-        web_search_config:
-          $ref: '#/components/schemas/WebSearchConfig'
-        custom_tools:
-          type: array
-          items:
-            $ref: '#/components/schemas/CustomTool'
-        callback:
-          $ref: '#/components/schemas/CustomToolCallback'
         max_turns:
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 100
-          default: 10
         output_type:
           $ref: '#/components/schemas/OutputTypeContract'
-        route_templates:
+        knowledge_bindings:
+          type: array
+          items:
+            type: string
+        guardrails:
           type: object
           additionalProperties: true
-          description: |
-            URL templates Brain may fill into `navigate_to:` route hints.
-            Server-side validation rejects non-string values; see Agent
-            schema for the typed shape.
 
     AgentUpdate:
       type: object
       description: Partial update; only the fields supplied are changed.
       properties:
-        type:
+        name:
+          type: string
+        model:
+          type: string
+        system:
+          type: string
+        tools:
+          type: array
+          items:
+            type: string
+        owner:
+          type: string
+        visibility:
+          type: string
+          enum: ["", private, public]
+        filesystem:
+          type: object
+          additionalProperties: true
+        agent_type:
           $ref: '#/components/schemas/AgentType'
-        owner_employee:
-          type: string
-        system_prompt:
-          type: string
+        brain:
+          type: boolean
         capabilities:
           type: array
           items:
             type: string
-        skills:
-          type: array
-          items:
-            $ref: '#/components/schemas/Skill'
-        model_config:
-          $ref: '#/components/schemas/ModelConfig'
-        web_search_config:
-          $ref: '#/components/schemas/WebSearchConfig'
-        custom_tools:
-          type: array
-          items:
-            $ref: '#/components/schemas/CustomTool'
-        callback:
-          $ref: '#/components/schemas/CustomToolCallback'
         max_turns:
           type: integer
         output_type:
           $ref: '#/components/schemas/OutputTypeContract'
-        route_templates:
-          type: object
-          additionalProperties:
+        knowledge_bindings:
+          type: array
+          items:
             type: string
+        guardrails:
+          type: object
+          additionalProperties: true
 
     AgentList:
       type: object
@@ -1298,7 +1297,7 @@ components:
             $ref: '#/components/schemas/Error'
 
 paths:
-  /v1/managed/agents:
+  /v1/agents:
     post:
       operationId: createAgent
       summary: Create an agent
@@ -1332,9 +1331,9 @@ paths:
           name: cursor
           schema: { type: string }
         - in: query
-          name: owner_employee
+          name: owner
           schema: { type: string }
-          description: Filter to agents owned by this employee.
+          description: Filter to agents owned by this email.
       responses:
         '200':
           description: Agent list.
@@ -1344,7 +1343,7 @@ paths:
                 $ref: '#/components/schemas/AgentList'
         '401': { $ref: '#/components/responses/Unauthorized' }
 
-  /v1/managed/agents/{agent_id}:
+  /v1/agents/{agent_id}:
     parameters:
       - in: path
         name: agent_id
@@ -1393,16 +1392,30 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /v1/managed/agents/{agent_id}/messages:
-    parameters:
-      - in: path
-        name: agent_id
-        required: true
-        schema: { type: string }
+  /v1/agents/schema:
+    get:
+      operationId: getAgentSchema
+      summary: Get the AgentDef JSON Schema
+      tags: [Agents]
+      responses:
+        '200':
+          description: AgentDef JSON Schema.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '426': { $ref: '#/components/responses/UpgradeRequired' }
+
+  /v1/messages:
     post:
       operationId: createMessage
-      summary: Send a message to an agent
+      summary: Send an Anthropic-compatible message
       description: |
+        Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+
         When `stream:false`, returns a single `MessageResponse`.
         When `stream:true`, returns SSE with one `event:` line + JSON
         payload per event. Event types defined by `StreamEvent`.

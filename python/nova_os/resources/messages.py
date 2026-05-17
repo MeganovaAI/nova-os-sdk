@@ -1,4 +1,4 @@
-"""Messages resource — /v1/managed/agents/{id}/messages."""
+"""Messages resource — /v1/messages."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ class Messages(Resource):
         metadata: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
     ) -> dict[str, Any]:
-        """POST /v1/managed/agents/{agent_id}/messages — non-streaming."""
+        """POST /v1/messages — non-streaming."""
         body: dict[str, Any] = {"messages": messages, "stream": False}
         if model is not None:
             body["model"] = model
@@ -43,11 +43,12 @@ class Messages(Resource):
             body["system"] = system
         if tools is not None:
             body["tools"] = tools
-        if metadata is not None:
-            body["metadata"] = metadata
+        merged_metadata = dict(metadata or {})
+        merged_metadata["agent_id"] = agent_id
+        body["metadata"] = merged_metadata
         return await self._client._request(
             "POST",
-            f"/v1/managed/agents/{agent_id}/messages",
+            "/v1/messages",
             json_body=body,
             idempotency_key=idempotency_key,
         )
@@ -90,6 +91,7 @@ class Messages(Resource):
             body["system"] = system
         if tools is not None:
             body["tools"] = tools
-        if metadata is not None:
-            body["metadata"] = metadata
+        merged_metadata = dict(metadata or {})
+        merged_metadata["agent_id"] = agent_id
+        body["metadata"] = merged_metadata
         return MessageStream(self._client, agent_id, body, message_id=message_id)

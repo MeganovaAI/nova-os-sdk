@@ -14,7 +14,7 @@ import (
 
 var agentsCmd = &cobra.Command{
 	Use:   "agents",
-	Short: "Manage agents (/v1/managed/agents)",
+	Short: "Manage agents (/v1/agents)",
 }
 
 var agentsOwnerEmployee string
@@ -30,7 +30,7 @@ var agentsListCmd = &cobra.Command{
 		ctx := context.Background()
 		params := &gen.ListAgentsParams{}
 		if agentsOwnerEmployee != "" {
-			params.OwnerEmployee = &agentsOwnerEmployee
+			params.Owner = &agentsOwnerEmployee
 		}
 		resp, err := c.ListAgentsWithResponse(ctx, params)
 		if err != nil {
@@ -77,9 +77,13 @@ var agentsCreateCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("read file: %w", err)
 		}
-		var body gen.CreateAgentJSONRequestBody
-		if err := json.Unmarshal(data, &body); err != nil {
+		var raw map[string]any
+		if err := json.Unmarshal(data, &raw); err != nil {
 			return fmt.Errorf("parse JSON: %w", err)
+		}
+		var body gen.CreateAgentJSONRequestBody
+		if err := mapToStruct(agentEditAPIBody(raw), &body); err != nil {
+			return fmt.Errorf("JSON doesn't fit the API schema: %w", err)
 		}
 		c, err := newClient()
 		if err != nil {
@@ -111,9 +115,13 @@ var agentsUpdateCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("read file: %w", err)
 		}
-		var body gen.UpdateAgentJSONRequestBody
-		if err := json.Unmarshal(data, &body); err != nil {
+		var raw map[string]any
+		if err := json.Unmarshal(data, &raw); err != nil {
 			return fmt.Errorf("parse JSON: %w", err)
+		}
+		var body gen.UpdateAgentJSONRequestBody
+		if err := mapToStruct(agentEditAPIBody(raw), &body); err != nil {
+			return fmt.Errorf("JSON doesn't fit the API schema: %w", err)
 		}
 		c, err := newClient()
 		if err != nil {
@@ -174,13 +182,19 @@ func printAgentList(cmd *cobra.Command, list *gen.AgentList) error {
 	}
 	tw := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
 	defer tw.Flush()
-	fmt.Fprintln(tw, "ID\tTYPE\tOWNER EMPLOYEE")
+	fmt.Fprintln(tw, "ID\tTYPE\tOWNER")
 	for _, a := range list.Data {
 		owner := ""
-		if a.OwnerEmployee != nil {
-			owner = *a.OwnerEmployee
+		if a.Owner != nil {
+			owner = *a.Owner
 		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", a.Id, string(a.Type), owner)
+		agentType := ""
+		if a.AgentType != nil {
+			agentType = string(*a.AgentType)
+		} else if a.Type != nil {
+			agentType = string(*a.Type)
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", a.Id, agentType, owner)
 	}
 	return nil
 }
@@ -192,11 +206,17 @@ func printAgent(cmd *cobra.Command, a *gen.Agent) error {
 		return nil
 	}
 	owner := ""
-	if a.OwnerEmployee != nil {
-		owner = *a.OwnerEmployee
+	if a.Owner != nil {
+		owner = *a.Owner
+	}
+	agentType := ""
+	if a.AgentType != nil {
+		agentType = string(*a.AgentType)
+	} else if a.Type != nil {
+		agentType = string(*a.Type)
 	}
 	cmd.Printf("ID:    %s\n", a.Id)
-	cmd.Printf("Type:  %s\n", string(a.Type))
+	cmd.Printf("Type:  %s\n", agentType)
 	cmd.Printf("Owner: %s\n", owner)
 	return nil
 }

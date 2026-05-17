@@ -2,12 +2,18 @@
 
 from .agent import Agent
 from .agent_create import AgentCreate
-from .agent_create_route_templates import AgentCreateRouteTemplates
+from .agent_create_filesystem import AgentCreateFilesystem
+from .agent_create_guardrails import AgentCreateGuardrails
+from .agent_create_visibility import AgentCreateVisibility
+from .agent_filesystem import AgentFilesystem
+from .agent_guardrails import AgentGuardrails
 from .agent_list import AgentList
-from .agent_route_templates import AgentRouteTemplates
 from .agent_type import AgentType
 from .agent_update import AgentUpdate
-from .agent_update_route_templates import AgentUpdateRouteTemplates
+from .agent_update_filesystem import AgentUpdateFilesystem
+from .agent_update_guardrails import AgentUpdateGuardrails
+from .agent_update_visibility import AgentUpdateVisibility
+from .agent_visibility import AgentVisibility
 from .bundle_import_result import BundleImportResult
 from .bundle_manifest import BundleManifest
 from .bundle_manifest_schema_version import BundleManifestSchemaVersion
@@ -28,6 +34,7 @@ from .error import Error
 from .error_type import ErrorType
 from .file_meta import FileMeta
 from .file_meta_list import FileMetaList
+from .get_agent_schema_response_200 import GetAgentSchemaResponse200
 from .hook_event import HookEvent
 from .hook_subscription import HookSubscription
 from .hook_subscription_create import HookSubscriptionCreate
@@ -120,12 +127,18 @@ from .web_search_config import WebSearchConfig
 __all__ = (
     "Agent",
     "AgentCreate",
-    "AgentCreateRouteTemplates",
+    "AgentCreateFilesystem",
+    "AgentCreateGuardrails",
+    "AgentCreateVisibility",
+    "AgentFilesystem",
+    "AgentGuardrails",
     "AgentList",
-    "AgentRouteTemplates",
     "AgentType",
     "AgentUpdate",
-    "AgentUpdateRouteTemplates",
+    "AgentUpdateFilesystem",
+    "AgentUpdateGuardrails",
+    "AgentUpdateVisibility",
+    "AgentVisibility",
     "BundleImportResult",
     "BundleManifest",
     "BundleManifestSchemaVersion",
@@ -146,6 +159,7 @@ __all__ = (
     "ErrorType",
     "FileMeta",
     "FileMetaList",
+    "GetAgentSchemaResponse200",
     "HookEvent",
     "HookSubscription",
     "HookSubscriptionCreate",

@@ -12,10 +12,10 @@ import (
 func TestSchemaFieldNames(t *testing.T) {
 	schema := map[string]any{
 		"properties": map[string]any{
-			"name":   map[string]any{"type": "string"},
-			"model":  map[string]any{"type": "string"},
-			"tools":  map[string]any{"type": "array"},
-			"brain":  map[string]any{"type": "boolean"},
+			"name":       map[string]any{"type": "string"},
+			"model":      map[string]any{"type": "string"},
+			"tools":      map[string]any{"type": "array"},
+			"brain":      map[string]any{"type": "boolean"},
 			"agent_type": map[string]any{"type": "string"},
 		},
 	}
@@ -176,11 +176,14 @@ func TestRenderMarkdownPreview_NoSystemPromptOmitsBody(t *testing.T) {
 
 func TestFetchAgentSchema_HappyPath(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/managed/agents/schema" {
+		if r.URL.Path != "/v1/agents/schema" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		if r.Header.Get("Authorization") != "Bearer test-key" {
 			t.Errorf("missing/wrong bearer header: %q", r.Header.Get("Authorization"))
+		}
+		if r.Header.Get("anthropic-beta") != "managed-agents-2026-04-01" {
+			t.Errorf("missing/wrong beta header: %q", r.Header.Get("anthropic-beta"))
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{

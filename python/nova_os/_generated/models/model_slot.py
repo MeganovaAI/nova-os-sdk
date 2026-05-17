@@ -15,7 +15,7 @@ T = TypeVar("T", bound="ModelSlot")
 class ModelSlot:
     """
     Attributes:
-        primary (str): Model identifier in `<vendor>/<model>` shape (e.g., `anthropic/claude-opus-4-7`).
+        primary (str): Model identifier in `<vendor>/<model>` shape (e.g., `gemini/gemini-3.1-pro-preview`).
         fallback (list[str] | Unset): Ordered fallback chain. Activates on rate-limit / 5xx / vendor outage /
             Vertex 400 schema-error before falling through to the next resolution level.
     """

@@ -31,16 +31,22 @@ The SDK targets a running Nova OS server. To stand one up yourself:
 | [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) | Step-by-step install guide: prerequisites, env vars, smoke tests, reverse-proxy templates. |
 | [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases) | Release notes + migration notes for each server version. |
 
-### One-liner evaluation
+### Minimal local evaluation
 
-Smallest possible local instance — single container, ephemeral state, fine for a kick-the-tires evaluation. **Not for production**:
+Smallest practical local instance — Nova OS plus a disposable Postgres. **Not for production**:
 
 ```bash
-docker run --rm -p 8900:8900 \
+docker network create nova-os-eval
+docker run --rm -d --name nova-os-pg --network nova-os-eval \
+  -e POSTGRES_USER=nova \
+  -e POSTGRES_PASSWORD=nova \
+  -e POSTGRES_DB=nova_os \
+  postgres:16
+docker run --rm --network nova-os-eval -p 8900:8900 \
   -e NOVA_OS_PUBLIC_URL=http://localhost:8900 \
   -e NOVA_OS_ADMIN_EMAIL=admin@example.com \
   -e NOVA_OS_ADMIN_PASSWORD=$(openssl rand -hex 16) \
-  -e NOVA_OS_DATABASE_URL=sqlite:///tmp/nova.db \
+  -e NOVA_OS_DATABASE_URL='postgres://nova:nova@nova-os-pg:5432/nova_os?sslmode=disable' \
   -e ANTHROPIC_API_KEY=sk-ant-... \
   ghcr.io/meganovaai/nova-os:v0.1.7
 ```
@@ -52,7 +58,7 @@ from nova_os import AnthropicCompatClient
 
 client = AnthropicCompatClient(base_url="http://localhost:8900", api_key="msk_eval_...")
 msg = client.messages.create(
-    model="anthropic/claude-opus-4-7",
+    model="gemini/gemini-3.1-pro-preview",
     max_tokens=256,
     messages=[{"role": "user", "content": "Hello, Nova OS!"}],
 )

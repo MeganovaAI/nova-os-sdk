@@ -6,16 +6,12 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="AgentCreateRouteTemplates")
+T = TypeVar("T", bound="AgentUpdateGuardrails")
 
 
 @_attrs_define
-class AgentCreateRouteTemplates:
-    """URL templates Brain may fill into `navigate_to:` route hints.
-    Server-side validation rejects non-string values; see Agent
-    schema for the typed shape.
-
-    """
+class AgentUpdateGuardrails:
+    """ """
 
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -29,10 +25,10 @@ class AgentCreateRouteTemplates:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
-        agent_create_route_templates = cls()
+        agent_update_guardrails = cls()
 
-        agent_create_route_templates.additional_properties = d
-        return agent_create_route_templates
+        agent_update_guardrails.additional_properties = d
+        return agent_update_guardrails
 
     @property
     def additional_keys(self) -> list[str]:

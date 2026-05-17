@@ -1,6 +1,5 @@
 from http import HTTPStatus
 from typing import Any
-from urllib.parse import quote
 
 import httpx
 
@@ -13,7 +12,6 @@ from ...types import Response
 
 
 def _get_kwargs(
-    agent_id: str,
     *,
     body: MessageRequest,
 ) -> dict[str, Any]:
@@ -21,9 +19,7 @@ def _get_kwargs(
 
     _kwargs: dict[str, Any] = {
         "method": "post",
-        "url": "/v1/managed/agents/{agent_id}/messages".format(
-            agent_id=quote(str(agent_id), safe=""),
-        ),
+        "url": "/v1/messages",
     }
 
     _kwargs["json"] = body.to_dict()
@@ -85,19 +81,19 @@ def _build_response(
 
 
 def sync_detailed(
-    agent_id: str,
     *,
     client: AuthenticatedClient | Client,
     body: MessageRequest,
 ) -> Response[Error | MessageResponse]:
-    """Send a message to an agent
+    """Send an Anthropic-compatible message
 
-     When `stream:false`, returns a single `MessageResponse`.
+     Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+
+    When `stream:false`, returns a single `MessageResponse`.
     When `stream:true`, returns SSE with one `event:` line + JSON
     payload per event. Event types defined by `StreamEvent`.
 
     Args:
-        agent_id (str):
         body (MessageRequest):
 
     Raises:
@@ -109,7 +105,6 @@ def sync_detailed(
     """
 
     kwargs = _get_kwargs(
-        agent_id=agent_id,
         body=body,
     )
 
@@ -121,19 +116,19 @@ def sync_detailed(
 
 
 def sync(
-    agent_id: str,
     *,
     client: AuthenticatedClient | Client,
     body: MessageRequest,
 ) -> Error | MessageResponse | None:
-    """Send a message to an agent
+    """Send an Anthropic-compatible message
 
-     When `stream:false`, returns a single `MessageResponse`.
+     Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+
+    When `stream:false`, returns a single `MessageResponse`.
     When `stream:true`, returns SSE with one `event:` line + JSON
     payload per event. Event types defined by `StreamEvent`.
 
     Args:
-        agent_id (str):
         body (MessageRequest):
 
     Raises:
@@ -145,26 +140,25 @@ def sync(
     """
 
     return sync_detailed(
-        agent_id=agent_id,
         client=client,
         body=body,
     ).parsed
 
 
 async def asyncio_detailed(
-    agent_id: str,
     *,
     client: AuthenticatedClient | Client,
     body: MessageRequest,
 ) -> Response[Error | MessageResponse]:
-    """Send a message to an agent
+    """Send an Anthropic-compatible message
 
-     When `stream:false`, returns a single `MessageResponse`.
+     Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+
+    When `stream:false`, returns a single `MessageResponse`.
     When `stream:true`, returns SSE with one `event:` line + JSON
     payload per event. Event types defined by `StreamEvent`.
 
     Args:
-        agent_id (str):
         body (MessageRequest):
 
     Raises:
@@ -176,7 +170,6 @@ async def asyncio_detailed(
     """
 
     kwargs = _get_kwargs(
-        agent_id=agent_id,
         body=body,
     )
 
@@ -186,19 +179,19 @@ async def asyncio_detailed(
 
 
 async def asyncio(
-    agent_id: str,
     *,
     client: AuthenticatedClient | Client,
     body: MessageRequest,
 ) -> Error | MessageResponse | None:
-    """Send a message to an agent
+    """Send an Anthropic-compatible message
 
-     When `stream:false`, returns a single `MessageResponse`.
+     Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+
+    When `stream:false`, returns a single `MessageResponse`.
     When `stream:true`, returns SSE with one `event:` line + JSON
     payload per event. Event types defined by `StreamEvent`.
 
     Args:
-        agent_id (str):
         body (MessageRequest):
 
     Raises:
@@ -211,7 +204,6 @@ async def asyncio(
 
     return (
         await asyncio_detailed(
-            agent_id=agent_id,
             client=client,
             body=body,
         )

@@ -13,7 +13,7 @@ from typing import Any, Optional
 import httpx
 
 from nova_os.errors import parse_error_response
-from nova_os._retry import RetryConfig
+from nova_os._retry import RetryConfig, with_retry
 from nova_os._version import __version__, OPENAPI_VERSION
 
 
@@ -133,19 +133,30 @@ class Client:
             merged_headers.update(extra_headers)
         if idempotency_key is not None:
             merged_headers["Idempotency-Key"] = idempotency_key
+        kwargs: dict[str, Any] = {"params": params, "headers": merged_headers}
+        if files is not None:
+            kwargs["files"] = files
+            if form:
+                kwargs["data"] = form
+        elif raw_body is not None:
+            kwargs["content"] = raw_body
+        elif json_body is not None:
+            kwargs["json"] = json_body
+
+        async def send_once() -> httpx.Response:
+            response = await self._http.request(method, path, **kwargs)
+            if method.upper() in {"GET", "PUT", "DELETE"} and 500 <= response.status_code < 600:
+                response.raise_for_status()
+            return response
+
         try:
-            kwargs: dict[str, Any] = {"params": params, "headers": merged_headers}
-            if files is not None:
-                kwargs["files"] = files
-                if form:
-                    kwargs["data"] = form
-            elif raw_body is not None:
-                kwargs["content"] = raw_body
-            elif json_body is not None:
-                kwargs["json"] = json_body
-            resp = await self._http.request(method, path, **kwargs)
+            if method.upper() in {"GET", "PUT", "DELETE"}:
+                resp = await with_retry(send_once, self._retry_config)
+            else:
+                resp = await self._http.request(method, path, **kwargs)
+        except httpx.HTTPStatusError as exc:
+            resp = exc.response
         except httpx.HTTPError:
-            # Network-level — let caller decide via with_retry whether to retry.
             raise
 
         if 200 <= resp.status_code < 300:

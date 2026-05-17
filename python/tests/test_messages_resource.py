@@ -20,7 +20,7 @@ async def test_messages_create_basic() -> None:
 
     def handler(req: httpx.Request) -> httpx.Response:
         assert req.method == "POST"
-        assert req.url.path == "/v1/managed/agents/my-agent/messages"
+        assert req.url.path == "/v1/messages"
         captured["body"] = json.loads(req.content)
         return httpx.Response(200, json={"id": "msg_123", "role": "assistant", "content": "Hello!"})
 
@@ -35,6 +35,7 @@ async def test_messages_create_basic() -> None:
     # stream: false must always be sent
     assert captured["body"]["stream"] is False
     assert captured["body"]["messages"] == [{"role": "user", "content": "Hello"}]
+    assert captured["body"]["metadata"]["agent_id"] == "my-agent"
 
 
 @pytest.mark.asyncio
@@ -55,7 +56,7 @@ async def test_messages_create_with_metadata_brain_flag() -> None:
         )
 
     assert resp["id"] == "msg_456"
-    assert captured["body"]["metadata"] == {"brain": True, "stream_events": True}
+    assert captured["body"]["metadata"] == {"brain": True, "stream_events": True, "agent_id": "my-agent"}
     assert captured["body"]["model"] == "gemini/gemini-2.5-flash"
     assert captured["body"]["max_tokens"] == 1024
     # Optional fields NOT passed should be absent from the body

@@ -23,6 +23,48 @@ const (
 	BearerAuthScopes = "bearerAuth.Scopes"
 )
 
+// Defines values for AgentVisibility.
+const (
+	AgentVisibilityEmpty   AgentVisibility = ""
+	AgentVisibilityPrivate AgentVisibility = "private"
+	AgentVisibilityPublic  AgentVisibility = "public"
+)
+
+// Valid indicates whether the value is a known member of the AgentVisibility enum.
+func (e AgentVisibility) Valid() bool {
+	switch e {
+	case AgentVisibilityEmpty:
+		return true
+	case AgentVisibilityPrivate:
+		return true
+	case AgentVisibilityPublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentCreateVisibility.
+const (
+	AgentCreateVisibilityEmpty   AgentCreateVisibility = ""
+	AgentCreateVisibilityPrivate AgentCreateVisibility = "private"
+	AgentCreateVisibilityPublic  AgentCreateVisibility = "public"
+)
+
+// Valid indicates whether the value is a known member of the AgentCreateVisibility enum.
+func (e AgentCreateVisibility) Valid() bool {
+	switch e {
+	case AgentCreateVisibilityEmpty:
+		return true
+	case AgentCreateVisibilityPrivate:
+		return true
+	case AgentCreateVisibilityPublic:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentType.
 const (
 	AgentTypePersona AgentType = "persona"
@@ -35,6 +77,27 @@ func (e AgentType) Valid() bool {
 	case AgentTypePersona:
 		return true
 	case AgentTypeSkill:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentUpdateVisibility.
+const (
+	AgentUpdateVisibilityEmpty   AgentUpdateVisibility = ""
+	AgentUpdateVisibilityPrivate AgentUpdateVisibility = "private"
+	AgentUpdateVisibilityPublic  AgentUpdateVisibility = "public"
+)
+
+// Valid indicates whether the value is a known member of the AgentUpdateVisibility enum.
+func (e AgentUpdateVisibility) Valid() bool {
+	switch e {
+	case AgentUpdateVisibilityEmpty:
+		return true
+	case AgentUpdateVisibilityPrivate:
+		return true
+	case AgentUpdateVisibilityPublic:
 		return true
 	default:
 		return false
@@ -682,93 +745,77 @@ func (e ListFilesParamsRecursive) Valid() bool {
 
 // Agent defines model for Agent.
 type Agent struct {
-	Callback *CustomToolCallback `json:"callback,omitempty"`
+	// AgentType Whether this agent dispatches to other skill agents (persona) or
+	// executes one skill directly (skill). Maps to nova-os internals;
+	// partners only see the discriminator.
+	AgentType    *AgentType              `json:"agent_type,omitempty"`
+	Brain        *bool                   `json:"brain,omitempty"`
+	Capabilities *[]string               `json:"capabilities,omitempty"`
+	CreatedAt    *time.Time              `json:"created_at,omitempty"`
+	Filesystem   *map[string]interface{} `json:"filesystem,omitempty"`
+	Guardrails   *map[string]interface{} `json:"guardrails,omitempty"`
 
-	// Capabilities Skill labels this persona can dispatch to.
-	Capabilities *[]string     `json:"capabilities,omitempty"`
-	CreatedAt    *time.Time    `json:"created_at,omitempty"`
-	CustomTools  *[]CustomTool `json:"custom_tools,omitempty"`
-	Id           string        `json:"id"`
-	MaxTurns     *int          `json:"max_turns,omitempty"`
+	// Id Slug generated from the agent name.
+	Id                string    `json:"id"`
+	KnowledgeBindings *[]string `json:"knowledge_bindings,omitempty"`
+	MaxTurns          *int      `json:"max_turns,omitempty"`
 
-	// ModelConfig Three-slot model configuration. Any slot may be omitted; resolution
-	// falls through per the spec (per-call → per-skill → per-agent →
-	// per-employee → server default).
-	ModelConfig *ModelConfig `json:"model_config,omitempty"`
+	// Model Optional model override; empty means inherit the server tier default.
+	Model *string `json:"model,omitempty"`
+	Name  string  `json:"name"`
 
 	// OutputType Structured-output contract for agent replies. When set, Nova OS
 	// validates every assistant reply against `schema` before return.
 	// Server-side since v0.1.4.
 	OutputType *OutputTypeContract `json:"output_type,omitempty"`
 
-	// OwnerEmployee Employee that owns this agent (cascades model_config + callback).
+	// Owner Owner email; defaults to the caller when omitted.
+	Owner *string `json:"owner,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	OwnerEmployee *string `json:"owner_employee,omitempty"`
-
-	// RouteTemplates URL templates Brain may fill into `navigate_to:` route hints.
-	// Keys are template names (e.g. `case_detail`); values are URL
-	// template strings with `{placeholder}` segments (e.g.
-	// `https://app.example.com/cases/{case_id}`). Validated at server
-	// boot. v0.1.5+.
-	//
-	// Note: declared as `additionalProperties: true` rather than
-	// `additionalProperties: { type: string }` because openapi-python-
-	// client 0.28.3 (#15) chokes on the Schema-object form. Partners
-	// should still treat values as strings — server-side validation
-	// rejects non-string values. See nova-os-sdk#15.
-	RouteTemplates *map[string]interface{} `json:"route_templates,omitempty"`
-	Skills         *[]Skill                `json:"skills,omitempty"`
-	SystemPrompt   *string                 `json:"system_prompt,omitempty"`
+	System        *string `json:"system,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	SystemPrompt *string   `json:"system_prompt,omitempty"`
+	Tools        *[]string `json:"tools,omitempty"`
 
 	// Type Whether this agent dispatches to other skill agents (persona) or
 	// executes one skill directly (skill). Maps to nova-os internals;
 	// partners only see the discriminator.
-	Type      AgentType  `json:"type"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
-
-	// WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
-	// ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
-	// Field names changed in nova-os PR #212 (closes #200) — old
-	// ``backend`` / ``fallback`` are no longer accepted.
-	WebSearchConfig *WebSearchConfig `json:"web_search_config,omitempty"`
+	Type       *AgentType       `json:"type,omitempty"`
+	Version    *int             `json:"version,omitempty"`
+	Visibility *AgentVisibility `json:"visibility,omitempty"`
 }
+
+// AgentVisibility defines model for Agent.Visibility.
+type AgentVisibility string
 
 // AgentCreate defines model for AgentCreate.
 type AgentCreate struct {
-	Callback     *CustomToolCallback `json:"callback,omitempty"`
-	Capabilities *[]string           `json:"capabilities,omitempty"`
-	CustomTools  *[]CustomTool       `json:"custom_tools,omitempty"`
-	Id           string              `json:"id"`
-	MaxTurns     *int                `json:"max_turns,omitempty"`
-
-	// ModelConfig Three-slot model configuration. Any slot may be omitted; resolution
-	// falls through per the spec (per-call → per-skill → per-agent →
-	// per-employee → server default).
-	ModelConfig *ModelConfig `json:"model_config,omitempty"`
+	// AgentType Whether this agent dispatches to other skill agents (persona) or
+	// executes one skill directly (skill). Maps to nova-os internals;
+	// partners only see the discriminator.
+	AgentType         *AgentType              `json:"agent_type,omitempty"`
+	Brain             *bool                   `json:"brain,omitempty"`
+	Capabilities      *[]string               `json:"capabilities,omitempty"`
+	Filesystem        *map[string]interface{} `json:"filesystem,omitempty"`
+	Guardrails        *map[string]interface{} `json:"guardrails,omitempty"`
+	KnowledgeBindings *[]string               `json:"knowledge_bindings,omitempty"`
+	MaxTurns          *int                    `json:"max_turns,omitempty"`
+	Model             *string                 `json:"model,omitempty"`
+	Name              string                  `json:"name"`
 
 	// OutputType Structured-output contract for agent replies. When set, Nova OS
 	// validates every assistant reply against `schema` before return.
 	// Server-side since v0.1.4.
-	OutputType    *OutputTypeContract `json:"output_type,omitempty"`
-	OwnerEmployee *string             `json:"owner_employee,omitempty"`
-
-	// RouteTemplates URL templates Brain may fill into `navigate_to:` route hints.
-	// Server-side validation rejects non-string values; see Agent
-	// schema for the typed shape.
-	RouteTemplates *map[string]interface{} `json:"route_templates,omitempty"`
-	Skills         *[]Skill                `json:"skills,omitempty"`
-	SystemPrompt   *string                 `json:"system_prompt,omitempty"`
-
-	// Type Whether this agent dispatches to other skill agents (persona) or
-	// executes one skill directly (skill). Maps to nova-os internals;
-	// partners only see the discriminator.
-	Type AgentType `json:"type"`
-
-	// WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
-	// ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
-	// Field names changed in nova-os PR #212 (closes #200) — old
-	// ``backend`` / ``fallback`` are no longer accepted.
-	WebSearchConfig *WebSearchConfig `json:"web_search_config,omitempty"`
+	OutputType *OutputTypeContract    `json:"output_type,omitempty"`
+	Owner      *string                `json:"owner,omitempty"`
+	System     *string                `json:"system,omitempty"`
+	Tools      *[]string              `json:"tools,omitempty"`
+	Visibility *AgentCreateVisibility `json:"visibility,omitempty"`
 }
+
+// AgentCreateVisibility defines model for AgentCreate.Visibility.
+type AgentCreateVisibility string
 
 // AgentList defines model for AgentList.
 type AgentList struct {
@@ -784,36 +831,31 @@ type AgentType string
 
 // AgentUpdate Partial update; only the fields supplied are changed.
 type AgentUpdate struct {
-	Callback     *CustomToolCallback `json:"callback,omitempty"`
-	Capabilities *[]string           `json:"capabilities,omitempty"`
-	CustomTools  *[]CustomTool       `json:"custom_tools,omitempty"`
-	MaxTurns     *int                `json:"max_turns,omitempty"`
-
-	// ModelConfig Three-slot model configuration. Any slot may be omitted; resolution
-	// falls through per the spec (per-call → per-skill → per-agent →
-	// per-employee → server default).
-	ModelConfig *ModelConfig `json:"model_config,omitempty"`
+	// AgentType Whether this agent dispatches to other skill agents (persona) or
+	// executes one skill directly (skill). Maps to nova-os internals;
+	// partners only see the discriminator.
+	AgentType         *AgentType              `json:"agent_type,omitempty"`
+	Brain             *bool                   `json:"brain,omitempty"`
+	Capabilities      *[]string               `json:"capabilities,omitempty"`
+	Filesystem        *map[string]interface{} `json:"filesystem,omitempty"`
+	Guardrails        *map[string]interface{} `json:"guardrails,omitempty"`
+	KnowledgeBindings *[]string               `json:"knowledge_bindings,omitempty"`
+	MaxTurns          *int                    `json:"max_turns,omitempty"`
+	Model             *string                 `json:"model,omitempty"`
+	Name              *string                 `json:"name,omitempty"`
 
 	// OutputType Structured-output contract for agent replies. When set, Nova OS
 	// validates every assistant reply against `schema` before return.
 	// Server-side since v0.1.4.
-	OutputType     *OutputTypeContract `json:"output_type,omitempty"`
-	OwnerEmployee  *string             `json:"owner_employee,omitempty"`
-	RouteTemplates *map[string]string  `json:"route_templates,omitempty"`
-	Skills         *[]Skill            `json:"skills,omitempty"`
-	SystemPrompt   *string             `json:"system_prompt,omitempty"`
-
-	// Type Whether this agent dispatches to other skill agents (persona) or
-	// executes one skill directly (skill). Maps to nova-os internals;
-	// partners only see the discriminator.
-	Type *AgentType `json:"type,omitempty"`
-
-	// WebSearchConfig Persona-level web-search configuration. Resolved per-invocation on
-	// ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
-	// Field names changed in nova-os PR #212 (closes #200) — old
-	// ``backend`` / ``fallback`` are no longer accepted.
-	WebSearchConfig *WebSearchConfig `json:"web_search_config,omitempty"`
+	OutputType *OutputTypeContract    `json:"output_type,omitempty"`
+	Owner      *string                `json:"owner,omitempty"`
+	System     *string                `json:"system,omitempty"`
+	Tools      *[]string              `json:"tools,omitempty"`
+	Visibility *AgentUpdateVisibility `json:"visibility,omitempty"`
 }
+
+// AgentUpdateVisibility defines model for AgentUpdate.Visibility.
+type AgentUpdateVisibility string
 
 // BundleImportResult defines model for BundleImportResult.
 type BundleImportResult struct {
@@ -826,22 +868,6 @@ type BundleImportResult struct {
 // ContentBlock defines model for ContentBlock.
 type ContentBlock struct {
 	union json.RawMessage
-}
-
-// CustomTool defines model for CustomTool.
-type CustomTool struct {
-	Callback *CustomToolCallback `json:"callback,omitempty"`
-
-	// Description Free-text description shown to the LLM via the tool definition.
-	Description *string `json:"description,omitempty"`
-
-	// InputSchema A subset of JSON Schema Draft 2020-12 used for tool input schemas.
-	// Vertex AI rejects `type:array` without `items` — the SDK validator
-	// enforces `items` is present everywhere on write.
-	InputSchema JSONSchemaObject `json:"input_schema"`
-
-	// Name Lowercase snake_case identifier; unique within the agent.
-	Name string `json:"name"`
 }
 
 // CustomToolCallback defines model for CustomToolCallback.
@@ -1228,7 +1254,7 @@ type ModelSlot struct {
 	// Vertex 400 schema-error before falling through to the next resolution level.
 	Fallback *[]string `json:"fallback,omitempty"`
 
-	// Primary Model identifier in `<vendor>/<model>` shape (e.g., `anthropic/claude-opus-4-7`).
+	// Primary Model identifier in `<vendor>/<model>` shape (e.g., `gemini/gemini-3.1-pro-preview`).
 	Primary string `json:"primary"`
 }
 
@@ -1382,13 +1408,6 @@ type SettingValue struct {
 
 	// Value Setting value — type varies per key (string for model identifiers, int for thresholds, bool for feature flags).
 	Value interface{} `json:"value"`
-}
-
-// Skill defines model for Skill.
-type Skill struct {
-	// Model Per-skill model override (highest priority below per-call).
-	Model *string `json:"model,omitempty"`
-	Name  string  `json:"name"`
 }
 
 // StreamEvent defines model for StreamEvent.
@@ -1626,8 +1645,8 @@ type ListAgentsParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 
-	// OwnerEmployee Filter to agents owned by this employee.
-	OwnerEmployee *string `form:"owner_employee,omitempty" json:"owner_employee,omitempty"`
+	// Owner Filter to agents owned by this email.
+	Owner *string `form:"owner,omitempty" json:"owner,omitempty"`
 }
 
 // ListJobsParams defines parameters for ListJobs.
@@ -1705,17 +1724,14 @@ type PutSettingJSONBody struct {
 // CreateAgentJSONRequestBody defines body for CreateAgent for application/json ContentType.
 type CreateAgentJSONRequestBody = AgentCreate
 
+// UpdateAgentJSONRequestBody defines body for UpdateAgent for application/json ContentType.
+type UpdateAgentJSONRequestBody = AgentUpdate
+
 // CreateJobJSONRequestBody defines body for CreateJob for application/json ContentType.
 type CreateJobJSONRequestBody = JobCreate
 
 // SubmitCustomToolResultJSONRequestBody defines body for SubmitCustomToolResult for application/json ContentType.
 type SubmitCustomToolResultJSONRequestBody = CustomToolResultRequest
-
-// UpdateAgentJSONRequestBody defines body for UpdateAgent for application/json ContentType.
-type UpdateAgentJSONRequestBody = AgentUpdate
-
-// CreateMessageJSONRequestBody defines body for CreateMessage for application/json ContentType.
-type CreateMessageJSONRequestBody = MessageRequest
 
 // UploadDocumentMultipartRequestBody defines body for UploadDocument for multipart/form-data ContentType.
 type UploadDocumentMultipartRequestBody UploadDocumentMultipartBody
@@ -1743,6 +1759,9 @@ type PutSettingJSONRequestBody PutSettingJSONBody
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserCreate
+
+// CreateMessageJSONRequestBody defines body for CreateMessage for application/json ContentType.
+type CreateMessageJSONRequestBody = MessageRequest
 
 // Getter for additional properties for MessageRequest_Metadata. Returns the specified
 // element and whether it was found
@@ -2560,6 +2579,20 @@ type ClientInterface interface {
 
 	CreateAgent(ctx context.Context, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAgentSchema request
+	GetAgentSchema(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteAgent request
+	DeleteAgent(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAgent request
+	GetAgent(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAgentWithBody request with any body
+	UpdateAgentWithBody(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateAgent(ctx context.Context, agentId string, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListJobs request
 	ListJobs(ctx context.Context, params *ListJobsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2581,22 +2614,6 @@ type ClientInterface interface {
 	SubmitCustomToolResultWithBody(ctx context.Context, messageId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	SubmitCustomToolResult(ctx context.Context, messageId string, body SubmitCustomToolResultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteAgent request
-	DeleteAgent(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetAgent request
-	GetAgent(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateAgentWithBody request with any body
-	UpdateAgentWithBody(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateAgent(ctx context.Context, agentId string, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateMessageWithBody request with any body
-	CreateMessageWithBody(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateMessage(ctx context.Context, agentId string, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListDocuments request
 	ListDocuments(ctx context.Context, params *ListDocumentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2703,6 +2720,11 @@ type ClientInterface interface {
 
 	// GetUser request
 	GetUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateMessageWithBody request with any body
+	CreateMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListPersonas(ctx context.Context, params *ListPersonasParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2755,6 +2777,66 @@ func (c *Client) CreateAgentWithBody(ctx context.Context, contentType string, bo
 
 func (c *Client) CreateAgent(ctx context.Context, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateAgentRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAgentSchema(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentSchemaRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteAgent(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAgentRequest(c.Server, agentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAgent(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentRequest(c.Server, agentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateAgentWithBody(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAgentRequestWithBody(c.Server, agentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateAgent(ctx context.Context, agentId string, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAgentRequest(c.Server, agentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2851,78 +2933,6 @@ func (c *Client) SubmitCustomToolResultWithBody(ctx context.Context, messageId s
 
 func (c *Client) SubmitCustomToolResult(ctx context.Context, messageId string, body SubmitCustomToolResultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubmitCustomToolResultRequest(c.Server, messageId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteAgent(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteAgentRequest(c.Server, agentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetAgent(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAgentRequest(c.Server, agentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateAgentWithBody(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateAgentRequestWithBody(c.Server, agentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateAgent(ctx context.Context, agentId string, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateAgentRequest(c.Server, agentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateMessageWithBody(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateMessageRequestWithBody(c.Server, agentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateMessage(ctx context.Context, agentId string, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateMessageRequest(c.Server, agentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3389,6 +3399,30 @@ func (c *Client) GetUser(ctx context.Context, userId string, reqEditors ...Reque
 	return c.Client.Do(req)
 }
 
+func (c *Client) CreateMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMessageRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMessageRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // NewListPersonasRequest generates requests for ListPersonas
 func NewListPersonasRequest(server string, params *ListPersonasParams) (*http.Request, error) {
 	var err error
@@ -3474,7 +3508,7 @@ func NewListAgentsRequest(server string, params *ListAgentsParams) (*http.Reques
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/managed/agents")
+	operationPath := fmt.Sprintf("/v1/agents")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -3519,9 +3553,9 @@ func NewListAgentsRequest(server string, params *ListAgentsParams) (*http.Reques
 
 		}
 
-		if params.OwnerEmployee != nil {
+		if params.Owner != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner_employee", *params.OwnerEmployee, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner", *params.Owner, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -3566,7 +3600,7 @@ func NewCreateAgentRequestWithBody(server string, contentType string, body io.Re
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/managed/agents")
+	operationPath := fmt.Sprintf("/v1/agents")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -3577,6 +3611,148 @@ func NewCreateAgentRequestWithBody(server string, contentType string, body io.Re
 	}
 
 	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetAgentSchemaRequest generates requests for GetAgentSchema
+func NewGetAgentSchemaRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/schema")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeleteAgentRequest generates requests for DeleteAgent
+func NewDeleteAgentRequest(server string, agentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAgentRequest generates requests for GetAgent
+func NewGetAgentRequest(server string, agentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateAgentRequest calls the generic UpdateAgent builder with application/json body
+func NewUpdateAgentRequest(server string, agentId string, body UpdateAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateAgentRequestWithBody(server, agentId, "application/json", bodyReader)
+}
+
+// NewUpdateAgentRequestWithBody generates requests for UpdateAgent with any type of body
+func NewUpdateAgentRequestWithBody(server string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -3868,168 +4044,6 @@ func NewSubmitCustomToolResultRequestWithBody(server string, messageId string, c
 	}
 
 	operationPath := fmt.Sprintf("/v1/managed/agents/messages/%s/custom_tool_results", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteAgentRequest generates requests for DeleteAgent
-func NewDeleteAgentRequest(server string, agentId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/managed/agents/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetAgentRequest generates requests for GetAgent
-func NewGetAgentRequest(server string, agentId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/managed/agents/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateAgentRequest calls the generic UpdateAgent builder with application/json body
-func NewUpdateAgentRequest(server string, agentId string, body UpdateAgentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateAgentRequestWithBody(server, agentId, "application/json", bodyReader)
-}
-
-// NewUpdateAgentRequestWithBody generates requests for UpdateAgent with any type of body
-func NewUpdateAgentRequestWithBody(server string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/managed/agents/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateMessageRequest calls the generic CreateMessage builder with application/json body
-func NewCreateMessageRequest(server string, agentId string, body CreateMessageJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateMessageRequestWithBody(server, agentId, "application/json", bodyReader)
-}
-
-// NewCreateMessageRequestWithBody generates requests for CreateMessage with any type of body
-func NewCreateMessageRequestWithBody(server string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/managed/agents/%s/messages", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -5335,6 +5349,46 @@ func NewGetUserRequest(server string, userId string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewCreateMessageRequest calls the generic CreateMessage builder with application/json body
+func NewCreateMessageRequest(server string, body CreateMessageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateMessageRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateMessageRequestWithBody generates requests for CreateMessage with any type of body
+func NewCreateMessageRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/messages")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -5392,6 +5446,20 @@ type ClientWithResponsesInterface interface {
 
 	CreateAgentWithResponse(ctx context.Context, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentResponse, error)
 
+	// GetAgentSchemaWithResponse request
+	GetAgentSchemaWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAgentSchemaResponse, error)
+
+	// DeleteAgentWithResponse request
+	DeleteAgentWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error)
+
+	// GetAgentWithResponse request
+	GetAgentWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*GetAgentResponse, error)
+
+	// UpdateAgentWithBodyWithResponse request with any body
+	UpdateAgentWithBodyWithResponse(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error)
+
+	UpdateAgentWithResponse(ctx context.Context, agentId string, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error)
+
 	// ListJobsWithResponse request
 	ListJobsWithResponse(ctx context.Context, params *ListJobsParams, reqEditors ...RequestEditorFn) (*ListJobsResponse, error)
 
@@ -5413,22 +5481,6 @@ type ClientWithResponsesInterface interface {
 	SubmitCustomToolResultWithBodyWithResponse(ctx context.Context, messageId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitCustomToolResultResponse, error)
 
 	SubmitCustomToolResultWithResponse(ctx context.Context, messageId string, body SubmitCustomToolResultJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitCustomToolResultResponse, error)
-
-	// DeleteAgentWithResponse request
-	DeleteAgentWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error)
-
-	// GetAgentWithResponse request
-	GetAgentWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*GetAgentResponse, error)
-
-	// UpdateAgentWithBodyWithResponse request with any body
-	UpdateAgentWithBodyWithResponse(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error)
-
-	UpdateAgentWithResponse(ctx context.Context, agentId string, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error)
-
-	// CreateMessageWithBodyWithResponse request with any body
-	CreateMessageWithBodyWithResponse(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
-
-	CreateMessageWithResponse(ctx context.Context, agentId string, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
 
 	// ListDocumentsWithResponse request
 	ListDocumentsWithResponse(ctx context.Context, params *ListDocumentsParams, reqEditors ...RequestEditorFn) (*ListDocumentsResponse, error)
@@ -5535,6 +5587,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetUserWithResponse request
 	GetUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*GetUserResponse, error)
+
+	// CreateMessageWithBodyWithResponse request with any body
+	CreateMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
+
+	CreateMessageWithResponse(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
 }
 
 type ListPersonasResponse struct {
@@ -5625,6 +5682,103 @@ func (r CreateAgentResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAgentSchemaResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]interface{}
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON426      *UpgradeRequired
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAgentSchemaResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAgentSchemaResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Agent
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Agent
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -5766,105 +5920,6 @@ func (r SubmitCustomToolResultResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r SubmitCustomToolResultResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteAgentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteAgentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteAgentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetAgentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Agent
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAgentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAgentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateAgentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Agent
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateAgentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateAgentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateMessageResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *MessageResponse
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON404      *NotFound
-	JSON426      *UpgradeRequired
-	JSON429      *RateLimited
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateMessageResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateMessageResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -6575,6 +6630,33 @@ func (r GetUserResponse) StatusCode() int {
 	return 0
 }
 
+type CreateMessageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MessageResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON426      *UpgradeRequired
+	JSON429      *RateLimited
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateMessageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateMessageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // ListPersonasWithResponse request returning *ListPersonasResponse
 func (c *ClientWithResponses) ListPersonasWithResponse(ctx context.Context, params *ListPersonasParams, reqEditors ...RequestEditorFn) (*ListPersonasResponse, error) {
 	rsp, err := c.ListPersonas(ctx, params, reqEditors...)
@@ -6617,6 +6699,50 @@ func (c *ClientWithResponses) CreateAgentWithResponse(ctx context.Context, body 
 		return nil, err
 	}
 	return ParseCreateAgentResponse(rsp)
+}
+
+// GetAgentSchemaWithResponse request returning *GetAgentSchemaResponse
+func (c *ClientWithResponses) GetAgentSchemaWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAgentSchemaResponse, error) {
+	rsp, err := c.GetAgentSchema(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentSchemaResponse(rsp)
+}
+
+// DeleteAgentWithResponse request returning *DeleteAgentResponse
+func (c *ClientWithResponses) DeleteAgentWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error) {
+	rsp, err := c.DeleteAgent(ctx, agentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAgentResponse(rsp)
+}
+
+// GetAgentWithResponse request returning *GetAgentResponse
+func (c *ClientWithResponses) GetAgentWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*GetAgentResponse, error) {
+	rsp, err := c.GetAgent(ctx, agentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAgentResponse(rsp)
+}
+
+// UpdateAgentWithBodyWithResponse request with arbitrary body returning *UpdateAgentResponse
+func (c *ClientWithResponses) UpdateAgentWithBodyWithResponse(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error) {
+	rsp, err := c.UpdateAgentWithBody(ctx, agentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAgentResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateAgentWithResponse(ctx context.Context, agentId string, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error) {
+	rsp, err := c.UpdateAgent(ctx, agentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAgentResponse(rsp)
 }
 
 // ListJobsWithResponse request returning *ListJobsResponse
@@ -6687,58 +6813,6 @@ func (c *ClientWithResponses) SubmitCustomToolResultWithResponse(ctx context.Con
 		return nil, err
 	}
 	return ParseSubmitCustomToolResultResponse(rsp)
-}
-
-// DeleteAgentWithResponse request returning *DeleteAgentResponse
-func (c *ClientWithResponses) DeleteAgentWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error) {
-	rsp, err := c.DeleteAgent(ctx, agentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteAgentResponse(rsp)
-}
-
-// GetAgentWithResponse request returning *GetAgentResponse
-func (c *ClientWithResponses) GetAgentWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*GetAgentResponse, error) {
-	rsp, err := c.GetAgent(ctx, agentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAgentResponse(rsp)
-}
-
-// UpdateAgentWithBodyWithResponse request with arbitrary body returning *UpdateAgentResponse
-func (c *ClientWithResponses) UpdateAgentWithBodyWithResponse(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error) {
-	rsp, err := c.UpdateAgentWithBody(ctx, agentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateAgentResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateAgentWithResponse(ctx context.Context, agentId string, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error) {
-	rsp, err := c.UpdateAgent(ctx, agentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateAgentResponse(rsp)
-}
-
-// CreateMessageWithBodyWithResponse request with arbitrary body returning *CreateMessageResponse
-func (c *ClientWithResponses) CreateMessageWithBodyWithResponse(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
-	rsp, err := c.CreateMessageWithBody(ctx, agentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateMessageResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateMessageWithResponse(ctx context.Context, agentId string, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
-	rsp, err := c.CreateMessage(ctx, agentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateMessageResponse(rsp)
 }
 
 // ListDocumentsWithResponse request returning *ListDocumentsResponse
@@ -7075,6 +7149,23 @@ func (c *ClientWithResponses) GetUserWithResponse(ctx context.Context, userId st
 	return ParseGetUserResponse(rsp)
 }
 
+// CreateMessageWithBodyWithResponse request with arbitrary body returning *CreateMessageResponse
+func (c *ClientWithResponses) CreateMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
+	rsp, err := c.CreateMessageWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateMessageResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateMessageWithResponse(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
+	rsp, err := c.CreateMessage(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateMessageResponse(rsp)
+}
+
 // ParseListPersonasResponse parses an HTTP response from a ListPersonasWithResponse call
 func ParseListPersonasResponse(rsp *http.Response) (*ListPersonasResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -7215,6 +7306,173 @@ func ParseCreateAgentResponse(rsp *http.Response) (*CreateAgentResponse, error) 
 			return nil, err
 		}
 		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAgentSchemaResponse parses an HTTP response from a GetAgentSchemaWithResponse call
+func ParseGetAgentSchemaResponse(rsp *http.Response) (*GetAgentSchemaResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAgentSchemaResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 426:
+		var dest UpgradeRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON426 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteAgentResponse parses an HTTP response from a DeleteAgentWithResponse call
+func ParseDeleteAgentResponse(rsp *http.Response) (*DeleteAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAgentResponse parses an HTTP response from a GetAgentWithResponse call
+func ParseGetAgentResponse(rsp *http.Response) (*GetAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Agent
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateAgentResponse parses an HTTP response from a UpdateAgentWithResponse call
+func ParseUpdateAgentResponse(rsp *http.Response) (*UpdateAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Agent
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -7434,190 +7692,6 @@ func ParseSubmitCustomToolResultResponse(rsp *http.Response) (*SubmitCustomToolR
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteAgentResponse parses an HTTP response from a DeleteAgentWithResponse call
-func ParseDeleteAgentResponse(rsp *http.Response) (*DeleteAgentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteAgentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetAgentResponse parses an HTTP response from a GetAgentWithResponse call
-func ParseGetAgentResponse(rsp *http.Response) (*GetAgentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAgentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Agent
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateAgentResponse parses an HTTP response from a UpdateAgentWithResponse call
-func ParseUpdateAgentResponse(rsp *http.Response) (*UpdateAgentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateAgentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Agent
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateMessageResponse parses an HTTP response from a CreateMessageWithResponse call
-func ParseCreateMessageResponse(rsp *http.Response) (*CreateMessageResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateMessageResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest MessageResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 426:
-		var dest UpgradeRequired
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON426 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest RateLimited
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case rsp.StatusCode == 200:
-		// Content-type (text/event-stream) unsupported
 
 	}
 
@@ -8684,6 +8758,70 @@ func ParseGetUserResponse(rsp *http.Response) (*GetUserResponse, error) {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateMessageResponse parses an HTTP response from a CreateMessageWithResponse call
+func ParseCreateMessageResponse(rsp *http.Response) (*CreateMessageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateMessageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MessageResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 426:
+		var dest UpgradeRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON426 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (text/event-stream) unsupported
 
 	}
 

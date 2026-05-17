@@ -6,24 +6,12 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="AgentRouteTemplates")
+T = TypeVar("T", bound="AgentGuardrails")
 
 
 @_attrs_define
-class AgentRouteTemplates:
-    """URL templates Brain may fill into `navigate_to:` route hints.
-    Keys are template names (e.g. `case_detail`); values are URL
-    template strings with `{placeholder}` segments (e.g.
-    `https://app.example.com/cases/{case_id}`). Validated at server
-    boot. v0.1.5+.
-
-    Note: declared as `additionalProperties: true` rather than
-    `additionalProperties: { type: string }` because openapi-python-
-    client 0.28.3 (#15) chokes on the Schema-object form. Partners
-    should still treat values as strings — server-side validation
-    rejects non-string values. See nova-os-sdk#15.
-
-    """
+class AgentGuardrails:
+    """ """
 
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -37,10 +25,10 @@ class AgentRouteTemplates:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
-        agent_route_templates = cls()
+        agent_guardrails = cls()
 
-        agent_route_templates.additional_properties = d
-        return agent_route_templates
+        agent_guardrails.additional_properties = d
+        return agent_guardrails
 
     @property
     def additional_keys(self) -> list[str]:

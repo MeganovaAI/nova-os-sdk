@@ -308,7 +308,7 @@ func buildEmployeeUpdateBody(fm map[string]any) (gen.UpdateEmployeeJSONRequestBo
 }
 
 func buildAgentCreateBody(fm map[string]any) (gen.CreateAgentJSONRequestBody, error) {
-	jsonBytes, err := json.Marshal(fm)
+	jsonBytes, err := json.Marshal(agentEditAPIBody(fm))
 	if err != nil {
 		return gen.CreateAgentJSONRequestBody{}, err
 	}
@@ -320,7 +320,7 @@ func buildAgentCreateBody(fm map[string]any) (gen.CreateAgentJSONRequestBody, er
 }
 
 func buildAgentUpdateBody(fm map[string]any) (gen.UpdateAgentJSONRequestBody, error) {
-	jsonBytes, err := json.Marshal(fm)
+	jsonBytes, err := json.Marshal(agentEditAPIBody(fm))
 	if err != nil {
 		return gen.UpdateAgentJSONRequestBody{}, err
 	}
@@ -363,16 +363,7 @@ func stripReadOnly(doc map[string]any) map[string]any {
 
 // newSyncClient is a thin wrapper around the generated NewClientWithResponses.
 func newSyncClient() (*gen.ClientWithResponses, error) {
-	url, apiKey, err := globalConfig()
-	if err != nil {
-		return nil, err
-	}
-	return gen.NewClientWithResponses(url, gen.WithRequestEditorFn(
-		func(_ context.Context, req *http.Request) error {
-			req.Header.Set("Authorization", "Bearer "+apiKey)
-			return nil
-		},
-	))
+	return newClient()
 }
 
 // watchDebounce is the quiescence window before a batch of filesystem
@@ -534,7 +525,7 @@ func pruneAbsent(ctx context.Context, cmd *cobra.Command, c *gen.ClientWithRespo
 }
 
 // localIDs walks a folder of .md files, parses the frontmatter, and
-// returns the set of IDs present locally. ``extractID`` lets the caller
+// returns the set of IDs present locally. “extractID“ lets the caller
 // pick which frontmatter key to use — employee files canonically use
 // `id`, agent files use `agent_id` (or fall through via agentID()).
 //

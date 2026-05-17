@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 
@@ -16,7 +18,13 @@ def _mock_transport(handler):
 async def test_create_agent_returns_agent_dict() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         assert req.method == "POST"
-        assert req.url.path == "/v1/managed/agents"
+        assert req.url.path == "/v1/agents"
+        assert req.headers["anthropic-beta"] == "managed-agents-2026-04-01"
+        body = json.loads(req.content)
+        assert body["name"] == "marketing-assistant"
+        assert body["agent_type"] == "skill"
+        assert "id" not in body
+        assert "type" not in body
         return httpx.Response(201, json={"id": "marketing-assistant", "type": "skill"})
 
     async with Client("https://t.local", "k", transport=_mock_transport(handler)) as c:
@@ -30,7 +38,8 @@ async def test_create_agent_returns_agent_dict() -> None:
 async def test_get_agent() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         assert req.method == "GET"
-        assert req.url.path == "/v1/managed/agents/foo"
+        assert req.url.path == "/v1/agents/foo"
+        assert req.headers["anthropic-beta"] == "managed-agents-2026-04-01"
         return httpx.Response(200, json={"id": "foo", "type": "skill"})
 
     async with Client("https://t.local", "k", transport=_mock_transport(handler)) as c:

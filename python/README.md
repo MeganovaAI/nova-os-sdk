@@ -29,7 +29,7 @@ async with Client(base_url="https://nova.partner.com", api_key="...") as c:
 # can switch base_url and ship without any other code changes.
 client = AnthropicCompatClient(base_url="https://nova.partner.com", api_key="...")
 msg = client.messages.create(
-    model="anthropic/claude-opus-4-7",
+    model="gemini/gemini-3.1-pro-preview",
     messages=[{"role": "user", "content": "hello"}],
     max_tokens=256,
 )
@@ -41,7 +41,7 @@ async def fetch_invoice(input, ctx): ...
 app.include_router(router.fastapi_router(), prefix="/nova/cb")
 ```
 
-See `python/examples/` for 7 worked examples covering every public surface.
+See `python/examples/` for 21 worked examples covering every public surface.
 
 ## Model names — vendor prefix required for the gateway
 
@@ -49,10 +49,9 @@ When Nova OS routes through the MegaNova gateway (the default for cloud + most s
 
 | Right | Wrong (returns `model_not_found`) |
 |---|---|
-| `anthropic/claude-opus-4-7` | `claude-opus-4-7` |
+| `gemini/gemini-3.1-pro-preview` | `gemini-3.1-pro-preview` |
 | `anthropic/claude-sonnet-4-6` | `claude-sonnet-4-6` |
 | `anthropic/claude-haiku-4-5-20251001` | `claude-haiku-4-5-20251001` |
-| `gemini/gemini-3-pro-preview` | `gemini-3-pro-preview` |
 | `openai/gpt-5` | `gpt-5` |
 
 This applies to:
@@ -60,7 +59,7 @@ This applies to:
 - `model_config.{answer,planner,skill}.primary` in agent + employee YAML
 - The `model:` field in agent markdown frontmatter
 
-**For partners using the Anthropic SDK directly:** the SDK's natural default (`claude-opus-4-7` without prefix) won't resolve through the gateway. Either pin to a prefixed model in your config (`ANTHROPIC_HIGH_MODEL=anthropic/claude-opus-4-7`) or add a translation layer that prefixes bare Anthropic model names with `anthropic/` when routing through Nova OS.
+**For partners using the Anthropic SDK directly:** the SDK's natural default (`claude-opus-4-7` without prefix) won't resolve through the gateway. Either pin to a gateway-safe prefixed model in your config (for example, `ANTHROPIC_HIGH_MODEL=gemini/gemini-3.1-pro-preview`) or add a translation layer that prefixes bare Anthropic model names with `anthropic/` when routing through Nova OS.
 
 The `agent_inference_model` and `ollama_embed_model` settings are exempt — they route to a local Ollama and use `<tag>:<version>` shape (e.g. `gemma4:e4b`).
 

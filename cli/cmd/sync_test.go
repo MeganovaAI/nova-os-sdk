@@ -179,13 +179,17 @@ func TestSync_CreatesNewAgent(t *testing.T) {
 	created := false
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/v1/agents") && r.Header.Get("anthropic-beta") != managedAgentsBetaHeader {
+			t.Errorf("anthropic-beta header = %q, want %q", r.Header.Get("anthropic-beta"), managedAgentsBetaHeader)
+		}
 		switch {
 		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/agents/"):
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode(map[string]any{"message": "not found"})
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/agents"):
 			created = true
-			agent := gen.Agent{Id: "intake", Type: gen.AgentTypeSkill}
+			agentType := gen.AgentTypeSkill
+			agent := gen.Agent{Id: "intake", Name: "intake", AgentType: &agentType}
 			w.WriteHeader(http.StatusCreated)
 			json.NewEncoder(w).Encode(agent)
 		default:
@@ -286,30 +290,35 @@ func TestSync_PruneDeletesAbsentResources(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/v1/agents") && r.Header.Get("anthropic-beta") != managedAgentsBetaHeader {
+			t.Errorf("anthropic-beta header = %q, want %q", r.Header.Get("anthropic-beta"), managedAgentsBetaHeader)
+		}
 		switch {
 		// GET /v1/managed/employees — server lists frontdesk + stale-emp.
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/managed/employees":
 			json.NewEncoder(w).Encode(gen.EmployeeList{
 				Data: []gen.Employee{{Id: "frontdesk"}, {Id: "stale-emp"}},
 			})
-		// GET /v1/managed/agents — server lists intake + stale-agent.
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/managed/agents":
+		// GET /v1/agents — server lists intake + stale-agent.
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/agents":
+			agentType := gen.AgentTypeSkill
 			json.NewEncoder(w).Encode(gen.AgentList{
-				Data: []gen.Agent{{Id: "intake", Type: gen.AgentTypeSkill}, {Id: "stale-agent", Type: gen.AgentTypeSkill}},
+				Data: []gen.Agent{{Id: "intake", Name: "intake", AgentType: &agentType}, {Id: "stale-agent", Name: "stale-agent", AgentType: &agentType}},
 			})
 		// GET /v1/managed/employees/{id} → returns the requested entry
 		// so the create/update pass nops on local IDs.
 		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/v1/managed/employees/"):
 			id := strings.TrimPrefix(r.URL.Path, "/v1/managed/employees/")
 			json.NewEncoder(w).Encode(gen.Employee{Id: id, DisplayName: ptrStr("Front Desk")})
-		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/v1/managed/agents/"):
-			id := strings.TrimPrefix(r.URL.Path, "/v1/managed/agents/")
-			json.NewEncoder(w).Encode(gen.Agent{Id: id, Type: gen.AgentTypeSkill})
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/v1/agents/"):
+			id := strings.TrimPrefix(r.URL.Path, "/v1/agents/")
+			agentType := gen.AgentTypeSkill
+			json.NewEncoder(w).Encode(gen.Agent{Id: id, Name: id, AgentType: &agentType})
 		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/v1/managed/employees/"):
 			deletedEmps = append(deletedEmps, strings.TrimPrefix(r.URL.Path, "/v1/managed/employees/"))
 			w.WriteHeader(http.StatusNoContent)
-		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/v1/managed/agents/"):
-			deletedAgents = append(deletedAgents, strings.TrimPrefix(r.URL.Path, "/v1/managed/agents/"))
+		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/v1/agents/"):
+			deletedAgents = append(deletedAgents, strings.TrimPrefix(r.URL.Path, "/v1/agents/"))
 			w.WriteHeader(http.StatusNoContent)
 		// PUT — accepted no-op for whichever upstream (the create/update
 		// pass may PUT local resources whose minimal GET shape differs
@@ -365,7 +374,7 @@ func TestSync_PruneDryRunDoesNotDelete(t *testing.T) {
 			json.NewEncoder(w).Encode(gen.EmployeeList{
 				Data: []gen.Employee{{Id: "stale-emp"}},
 			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/managed/agents":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/agents":
 			json.NewEncoder(w).Encode(gen.AgentList{Data: []gen.Agent{}})
 		case r.Method == http.MethodDelete:
 			deleted = true

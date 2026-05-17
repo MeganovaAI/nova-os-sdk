@@ -6,17 +6,14 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.agent_create_visibility import AgentCreateVisibility
 from ..models.agent_type import AgentType
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
-    from ..models.agent_create_route_templates import AgentCreateRouteTemplates
-    from ..models.custom_tool import CustomTool
-    from ..models.custom_tool_callback import CustomToolCallback
-    from ..models.model_config import ModelConfig
+    from ..models.agent_create_filesystem import AgentCreateFilesystem
+    from ..models.agent_create_guardrails import AgentCreateGuardrails
     from ..models.output_type_contract import OutputTypeContract
-    from ..models.skill import Skill
-    from ..models.web_search_config import WebSearchConfig
 
 
 T = TypeVar("T", bound="AgentCreate")
@@ -26,86 +23,72 @@ T = TypeVar("T", bound="AgentCreate")
 class AgentCreate:
     """
     Attributes:
-        id (str):
-        type_ (AgentType): Whether this agent dispatches to other skill agents (persona) or
+        name (str):
+        model (str | Unset):
+        system (str | Unset):
+        tools (list[str] | Unset):
+        owner (str | Unset):
+        visibility (AgentCreateVisibility | Unset):
+        filesystem (AgentCreateFilesystem | Unset):
+        agent_type (AgentType | Unset): Whether this agent dispatches to other skill agents (persona) or
             executes one skill directly (skill). Maps to nova-os internals;
             partners only see the discriminator.
-        owner_employee (str | Unset):
-        system_prompt (str | Unset):
+        brain (bool | Unset):
         capabilities (list[str] | Unset):
-        skills (list[Skill] | Unset):
-        model_config (ModelConfig | Unset): Three-slot model configuration. Any slot may be omitted; resolution
-            falls through per the spec (per-call → per-skill → per-agent →
-            per-employee → server default).
-        web_search_config (WebSearchConfig | Unset): Persona-level web-search configuration. Resolved per-invocation on
-            ``skill_deep_research`` via ``searchctx.WebSearchConfigFromContext``.
-            Field names changed in nova-os PR #212 (closes #200) — old
-            ``backend`` / ``fallback`` are no longer accepted.
-        custom_tools (list[CustomTool] | Unset):
-        callback (CustomToolCallback | Unset):
-        max_turns (int | Unset):  Default: 10.
+        max_turns (int | Unset):
         output_type (OutputTypeContract | Unset): Structured-output contract for agent replies. When set, Nova OS
             validates every assistant reply against `schema` before return.
             Server-side since v0.1.4.
-        route_templates (AgentCreateRouteTemplates | Unset): URL templates Brain may fill into `navigate_to:` route
-            hints.
-            Server-side validation rejects non-string values; see Agent
-            schema for the typed shape.
+        knowledge_bindings (list[str] | Unset):
+        guardrails (AgentCreateGuardrails | Unset):
     """
 
-    id: str
-    type_: AgentType
-    owner_employee: str | Unset = UNSET
-    system_prompt: str | Unset = UNSET
+    name: str
+    model: str | Unset = UNSET
+    system: str | Unset = UNSET
+    tools: list[str] | Unset = UNSET
+    owner: str | Unset = UNSET
+    visibility: AgentCreateVisibility | Unset = UNSET
+    filesystem: AgentCreateFilesystem | Unset = UNSET
+    agent_type: AgentType | Unset = UNSET
+    brain: bool | Unset = UNSET
     capabilities: list[str] | Unset = UNSET
-    skills: list[Skill] | Unset = UNSET
-    model_config: ModelConfig | Unset = UNSET
-    web_search_config: WebSearchConfig | Unset = UNSET
-    custom_tools: list[CustomTool] | Unset = UNSET
-    callback: CustomToolCallback | Unset = UNSET
-    max_turns: int | Unset = 10
+    max_turns: int | Unset = UNSET
     output_type: OutputTypeContract | Unset = UNSET
-    route_templates: AgentCreateRouteTemplates | Unset = UNSET
+    knowledge_bindings: list[str] | Unset = UNSET
+    guardrails: AgentCreateGuardrails | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        id = self.id
+        name = self.name
 
-        type_ = self.type_.value
+        model = self.model
 
-        owner_employee = self.owner_employee
+        system = self.system
 
-        system_prompt = self.system_prompt
+        tools: list[str] | Unset = UNSET
+        if not isinstance(self.tools, Unset):
+            tools = self.tools
+
+        owner = self.owner
+
+        visibility: str | Unset = UNSET
+        if not isinstance(self.visibility, Unset):
+            visibility = self.visibility.value
+
+        filesystem: dict[str, Any] | Unset = UNSET
+        if not isinstance(self.filesystem, Unset):
+            filesystem = self.filesystem.to_dict()
+
+        agent_type: str | Unset = UNSET
+        if not isinstance(self.agent_type, Unset):
+            agent_type = self.agent_type.value
+
+        brain = self.brain
 
         capabilities: list[str] | Unset = UNSET
         if not isinstance(self.capabilities, Unset):
             capabilities = self.capabilities
-
-        skills: list[dict[str, Any]] | Unset = UNSET
-        if not isinstance(self.skills, Unset):
-            skills = []
-            for skills_item_data in self.skills:
-                skills_item = skills_item_data.to_dict()
-                skills.append(skills_item)
-
-        model_config: dict[str, Any] | Unset = UNSET
-        if not isinstance(self.model_config, Unset):
-            model_config = self.model_config.to_dict()
-
-        web_search_config: dict[str, Any] | Unset = UNSET
-        if not isinstance(self.web_search_config, Unset):
-            web_search_config = self.web_search_config.to_dict()
-
-        custom_tools: list[dict[str, Any]] | Unset = UNSET
-        if not isinstance(self.custom_tools, Unset):
-            custom_tools = []
-            for custom_tools_item_data in self.custom_tools:
-                custom_tools_item = custom_tools_item_data.to_dict()
-                custom_tools.append(custom_tools_item)
-
-        callback: dict[str, Any] | Unset = UNSET
-        if not isinstance(self.callback, Unset):
-            callback = self.callback.to_dict()
 
         max_turns = self.max_turns
 
@@ -113,102 +96,91 @@ class AgentCreate:
         if not isinstance(self.output_type, Unset):
             output_type = self.output_type.to_dict()
 
-        route_templates: dict[str, Any] | Unset = UNSET
-        if not isinstance(self.route_templates, Unset):
-            route_templates = self.route_templates.to_dict()
+        knowledge_bindings: list[str] | Unset = UNSET
+        if not isinstance(self.knowledge_bindings, Unset):
+            knowledge_bindings = self.knowledge_bindings
+
+        guardrails: dict[str, Any] | Unset = UNSET
+        if not isinstance(self.guardrails, Unset):
+            guardrails = self.guardrails.to_dict()
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "id": id,
-                "type": type_,
+                "name": name,
             }
         )
-        if owner_employee is not UNSET:
-            field_dict["owner_employee"] = owner_employee
-        if system_prompt is not UNSET:
-            field_dict["system_prompt"] = system_prompt
+        if model is not UNSET:
+            field_dict["model"] = model
+        if system is not UNSET:
+            field_dict["system"] = system
+        if tools is not UNSET:
+            field_dict["tools"] = tools
+        if owner is not UNSET:
+            field_dict["owner"] = owner
+        if visibility is not UNSET:
+            field_dict["visibility"] = visibility
+        if filesystem is not UNSET:
+            field_dict["filesystem"] = filesystem
+        if agent_type is not UNSET:
+            field_dict["agent_type"] = agent_type
+        if brain is not UNSET:
+            field_dict["brain"] = brain
         if capabilities is not UNSET:
             field_dict["capabilities"] = capabilities
-        if skills is not UNSET:
-            field_dict["skills"] = skills
-        if model_config is not UNSET:
-            field_dict["model_config"] = model_config
-        if web_search_config is not UNSET:
-            field_dict["web_search_config"] = web_search_config
-        if custom_tools is not UNSET:
-            field_dict["custom_tools"] = custom_tools
-        if callback is not UNSET:
-            field_dict["callback"] = callback
         if max_turns is not UNSET:
             field_dict["max_turns"] = max_turns
         if output_type is not UNSET:
             field_dict["output_type"] = output_type
-        if route_templates is not UNSET:
-            field_dict["route_templates"] = route_templates
+        if knowledge_bindings is not UNSET:
+            field_dict["knowledge_bindings"] = knowledge_bindings
+        if guardrails is not UNSET:
+            field_dict["guardrails"] = guardrails
 
         return field_dict
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
-        from ..models.agent_create_route_templates import AgentCreateRouteTemplates
-        from ..models.custom_tool import CustomTool
-        from ..models.custom_tool_callback import CustomToolCallback
-        from ..models.model_config import ModelConfig
+        from ..models.agent_create_filesystem import AgentCreateFilesystem
+        from ..models.agent_create_guardrails import AgentCreateGuardrails
         from ..models.output_type_contract import OutputTypeContract
-        from ..models.skill import Skill
-        from ..models.web_search_config import WebSearchConfig
 
         d = dict(src_dict)
-        id = d.pop("id")
+        name = d.pop("name")
 
-        type_ = AgentType(d.pop("type"))
+        model = d.pop("model", UNSET)
 
-        owner_employee = d.pop("owner_employee", UNSET)
+        system = d.pop("system", UNSET)
 
-        system_prompt = d.pop("system_prompt", UNSET)
+        tools = cast(list[str], d.pop("tools", UNSET))
+
+        owner = d.pop("owner", UNSET)
+
+        _visibility = d.pop("visibility", UNSET)
+        visibility: AgentCreateVisibility | Unset
+        if isinstance(_visibility, Unset):
+            visibility = UNSET
+        else:
+            visibility = AgentCreateVisibility(_visibility)
+
+        _filesystem = d.pop("filesystem", UNSET)
+        filesystem: AgentCreateFilesystem | Unset
+        if isinstance(_filesystem, Unset):
+            filesystem = UNSET
+        else:
+            filesystem = AgentCreateFilesystem.from_dict(_filesystem)
+
+        _agent_type = d.pop("agent_type", UNSET)
+        agent_type: AgentType | Unset
+        if isinstance(_agent_type, Unset):
+            agent_type = UNSET
+        else:
+            agent_type = AgentType(_agent_type)
+
+        brain = d.pop("brain", UNSET)
 
         capabilities = cast(list[str], d.pop("capabilities", UNSET))
-
-        _skills = d.pop("skills", UNSET)
-        skills: list[Skill] | Unset = UNSET
-        if _skills is not UNSET:
-            skills = []
-            for skills_item_data in _skills:
-                skills_item = Skill.from_dict(skills_item_data)
-
-                skills.append(skills_item)
-
-        _model_config = d.pop("model_config", UNSET)
-        model_config: ModelConfig | Unset
-        if isinstance(_model_config, Unset):
-            model_config = UNSET
-        else:
-            model_config = ModelConfig.from_dict(_model_config)
-
-        _web_search_config = d.pop("web_search_config", UNSET)
-        web_search_config: WebSearchConfig | Unset
-        if isinstance(_web_search_config, Unset):
-            web_search_config = UNSET
-        else:
-            web_search_config = WebSearchConfig.from_dict(_web_search_config)
-
-        _custom_tools = d.pop("custom_tools", UNSET)
-        custom_tools: list[CustomTool] | Unset = UNSET
-        if _custom_tools is not UNSET:
-            custom_tools = []
-            for custom_tools_item_data in _custom_tools:
-                custom_tools_item = CustomTool.from_dict(custom_tools_item_data)
-
-                custom_tools.append(custom_tools_item)
-
-        _callback = d.pop("callback", UNSET)
-        callback: CustomToolCallback | Unset
-        if isinstance(_callback, Unset):
-            callback = UNSET
-        else:
-            callback = CustomToolCallback.from_dict(_callback)
 
         max_turns = d.pop("max_turns", UNSET)
 
@@ -219,27 +191,30 @@ class AgentCreate:
         else:
             output_type = OutputTypeContract.from_dict(_output_type)
 
-        _route_templates = d.pop("route_templates", UNSET)
-        route_templates: AgentCreateRouteTemplates | Unset
-        if isinstance(_route_templates, Unset):
-            route_templates = UNSET
+        knowledge_bindings = cast(list[str], d.pop("knowledge_bindings", UNSET))
+
+        _guardrails = d.pop("guardrails", UNSET)
+        guardrails: AgentCreateGuardrails | Unset
+        if isinstance(_guardrails, Unset):
+            guardrails = UNSET
         else:
-            route_templates = AgentCreateRouteTemplates.from_dict(_route_templates)
+            guardrails = AgentCreateGuardrails.from_dict(_guardrails)
 
         agent_create = cls(
-            id=id,
-            type_=type_,
-            owner_employee=owner_employee,
-            system_prompt=system_prompt,
+            name=name,
+            model=model,
+            system=system,
+            tools=tools,
+            owner=owner,
+            visibility=visibility,
+            filesystem=filesystem,
+            agent_type=agent_type,
+            brain=brain,
             capabilities=capabilities,
-            skills=skills,
-            model_config=model_config,
-            web_search_config=web_search_config,
-            custom_tools=custom_tools,
-            callback=callback,
             max_turns=max_turns,
             output_type=output_type,
-            route_templates=route_templates,
+            knowledge_bindings=knowledge_bindings,
+            guardrails=guardrails,
         )
 
         agent_create.additional_properties = d

@@ -28,6 +28,7 @@ async def test_stream_yields_events() -> None:
 
     def handler(req: httpx.Request) -> httpx.Response:
         assert req.method == "POST"
+        assert req.url.path == "/v1/messages"
         return httpx.Response(
             200,
             headers={"Content-Type": "text/event-stream"},

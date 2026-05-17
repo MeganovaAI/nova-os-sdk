@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
@@ -169,9 +170,20 @@ func newClient() (*gen.ClientWithResponses, error) {
 	return gen.NewClientWithResponses(url, gen.WithRequestEditorFn(
 		func(_ context.Context, req *http.Request) error {
 			req.Header.Set("Authorization", "Bearer "+apiKey)
+			if requiresManagedAgentsBeta(req.URL.Path) {
+				req.Header.Set("anthropic-beta", managedAgentsBetaHeader)
+			}
 			return nil
 		},
 	))
+}
+
+const managedAgentsBetaHeader = "managed-agents-2026-04-01"
+
+func requiresManagedAgentsBeta(path string) bool {
+	return strings.HasPrefix(path, "/v1/agents") ||
+		strings.HasPrefix(path, "/v1/environments") ||
+		strings.HasPrefix(path, "/v1/sessions")
 }
 
 func printEmployeeList(cmd *cobra.Command, list *gen.EmployeeList) error {

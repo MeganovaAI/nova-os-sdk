@@ -233,7 +233,7 @@ Walks `./data/employees/*.md` and `./data/agents/*.md`, runs the rule chain on e
 Rules checked:
 
 - Frontmatter parses cleanly
-- `model_config.{answer,planner,skill}.primary` matches `<vendor>/<model>` shape (e.g. `anthropic/claude-opus-4-7`)
+- `model_config.{answer,planner,skill}.primary` matches `<vendor>/<model>` shape (e.g. `gemini/gemini-3.1-pro-preview`)
 - `custom_tools[].input_schema` recursively contains no `type: array` without `items` (catches the deterministic Vertex AI 400 class before runtime)
 - `callback.url` is HTTPS (localhost is allowed for dev)
 - `agent.owner_employee` references resolve within the validated folder

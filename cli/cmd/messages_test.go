@@ -17,11 +17,11 @@ import (
 
 func TestMessagesSend_PostsJSONBodyAndPrintsResponse(t *testing.T) {
 	captured := struct {
-		method    string
-		path      string
-		body      []byte
-		auth      string
-		endUser   string
+		method  string
+		path    string
+		body    []byte
+		auth    string
+		endUser string
 	}{}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +60,7 @@ func TestMessagesSend_PostsJSONBodyAndPrintsResponse(t *testing.T) {
 	if captured.method != "POST" {
 		t.Errorf("method = %q, want POST", captured.method)
 	}
-	if captured.path != "/v1/managed/agents/intake-specialist/messages" {
+	if captured.path != "/v1/messages" {
 		t.Errorf("path = %q", captured.path)
 	}
 	if captured.auth != "Bearer test-key" {
@@ -87,6 +87,10 @@ func TestMessagesSend_PostsJSONBodyAndPrintsResponse(t *testing.T) {
 	}
 	if body["stream"] != false {
 		t.Errorf("stream = %v, want false on send", body["stream"])
+	}
+	metadata, _ := body["metadata"].(map[string]any)
+	if metadata["agent_id"] != "intake-specialist" {
+		t.Errorf("metadata.agent_id = %v", metadata["agent_id"])
 	}
 
 	got := out.String()

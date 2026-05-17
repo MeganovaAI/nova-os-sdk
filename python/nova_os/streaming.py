@@ -1,4 +1,4 @@
-"""Streaming context manager for /v1/managed/agents/{id}/messages.
+"""Streaming context manager for /v1/messages.
 
 Mode A custom-tool inline: partners hold an open SSE connection, intercept
 `custom_tool_use` events, compute results, and submit them via
@@ -50,7 +50,7 @@ class MessageStream:
     async def __aenter__(self) -> "MessageStream":
         self._response_cm = self._client._http.stream(
             "POST",
-            f"/v1/managed/agents/{self._agent_id}/messages",
+            "/v1/messages",
             json=self._body,
         )
         self._response = await self._response_cm.__aenter__()
