@@ -187,7 +187,7 @@ For your own verification:
 ```python
 # 1. Health check
 curl https://nova-os.your-company.example/api/health
-# {"status":"ok","version":"v0.1.7","build_sha":"4def1dfd..."}
+# {"status":"ok","agents_available":67,"agents_registered":67,"circuit_breakers_open":0}
 
 # 2. Bare Messages API
 python python/examples/01_basic_chat.py

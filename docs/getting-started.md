@@ -50,7 +50,7 @@ Defaults that "just work" against the MegaNova gateway: `OPENAI_API_BASE=https:/
 
 ```bash
 curl http://localhost:8900/api/health
-# {"status":"ok","version":"v0.1.7","build_sha":"4def1dfd..."}
+# {"status":"ok","agents_available":67,"agents_registered":67,"circuit_breakers_open":0}
 ```
 
 ### 3. First chat — pick your SDK surface
