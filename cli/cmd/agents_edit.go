@@ -35,6 +35,7 @@ var (
 	editSetVals          []string
 	editSetListVals      []string
 	editSystemPromptFile string
+	editTemplate         string
 	editDryRun           bool
 	editConfirm          bool
 	editNew              bool
@@ -84,8 +85,22 @@ Examples:
       --set agent_type=skill \
       --confirm
 
-Template gallery + skill autocomplete via GET /api/skills + legacy-alias
-warnings are slice 3 (tracked in nova-os-sdk#18).`,
+Slice 3 polish (all active):
+
+  • --template <name> seeds the body from a baked starter persona
+    (customer-support, legal-assistant, data-analyst, dev-assistant).
+    --set / interactive input overrides template values per field.
+
+  • Skill autocomplete — interactive mode's tools field is a multi-
+    select populated from GET /api/skills; scriptable mode validates
+    --set-list tools=... items against the live skill catalog with a
+    "did you mean…?" suggestion. Falls back to free-text input + a
+    once-per-run warning when /api/skills is unreachable.
+
+  • Legacy-alias auto-mapping — --set skills=..., --set id=...,
+    --set type=..., --set max_turns=... all auto-map to their canonical
+    field names (tools / name / agent_type / maxTurns) with a once-per-
+    run deprecation warning citing the schema's x-deprecation-target.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAgentsEdit,
 }
@@ -94,6 +109,7 @@ func init() {
 	agentsEditCmd.Flags().StringSliceVar(&editSetVals, "set", nil, "Set a scalar field — repeatable: --set key=value")
 	agentsEditCmd.Flags().StringSliceVar(&editSetListVals, "set-list", nil, "Set a list field — repeatable: --set-list key=a,b,c")
 	agentsEditCmd.Flags().StringVar(&editSystemPromptFile, "system-prompt-file", "", "Path to a file whose contents become the agent's system_prompt body")
+	agentsEditCmd.Flags().StringVar(&editTemplate, "template", "", "Seed body from a starter persona (customer-support|legal-assistant|data-analyst|dev-assistant). --set / interactive overrides template values.")
 	agentsEditCmd.Flags().BoolVar(&editDryRun, "dry-run", false, "Print the would-be markdown + JSON body without submitting")
 	agentsEditCmd.Flags().BoolVar(&editConfirm, "confirm", false, "Skip the interactive confirmation prompt (required for scripted submit)")
 	agentsEditCmd.Flags().BoolVar(&editNew, "new", false, "Create a new agent (POST) instead of updating an existing one (PUT)")
@@ -115,18 +131,41 @@ func runAgentsEdit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("fetch agent schema: %w", err)
 	}
 	fields := schemaFieldNames(schema)
+	aliases := legacyAliases(schema)
+	warner := newAliasWarner(cmd.ErrOrStderr(), deprecationTarget(schema))
+
+	// Skills are fetched best-effort: drives the `tools` multi-select in
+	// interactive mode + validates `tools` items in scriptable mode.
+	// Endpoint unreachable / non-200 → fall back to free-text input with
+	// a once-per-run warning. Authoring never blocks on this.
+	skills, skillsErr := fetchSkills(ctx, url, apiKey)
+	if skillsErr != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(),
+			"⚠ /api/skills unreachable (%v); tools field falls back to free-text input + skipped validation.\n",
+			skillsErr,
+		)
+		skills = nil
+	}
 
 	// Mode dispatch:
-	//   - any scriptable flag set → scriptable mode (CI / pipelines)
+	//   - any scriptable flag set OR --template given → scriptable mode
 	//   - else if stdin is a TTY → interactive (huh walk-through)
 	//   - else → error (no flags + no TTY would block forever on prompts)
-	hasScriptable := len(editSetVals) > 0 || len(editSetListVals) > 0 || editSystemPromptFile != ""
+	hasScriptable := len(editSetVals) > 0 || len(editSetListVals) > 0 || editSystemPromptFile != "" || editTemplate != ""
 
 	var body map[string]any
 	switch {
 	case hasScriptable:
 		body = map[string]any{"name": id}
-		if err := applySetFlags(editSetVals, editSetListVals, fields, body); err != nil {
+		if editTemplate != "" {
+			tmpl, err := loadTemplate(editTemplate)
+			if err != nil {
+				return err
+			}
+			applyTemplate(tmpl, body)
+			body["name"] = id // template's own name field never wins over positional arg
+		}
+		if err := applySetFlags(editSetVals, editSetListVals, fields, aliases, warner, body); err != nil {
 			return err
 		}
 		if editSystemPromptFile != "" {
@@ -136,13 +175,27 @@ func runAgentsEdit(cmd *cobra.Command, args []string) error {
 			}
 			body["system_prompt"] = string(data)
 		}
+		if names := extractToolNames(body); len(names) > 0 {
+			if err := validateSkillNames(names, skills); err != nil {
+				return err
+			}
+		}
 	case isInteractive():
-		body, err = interactiveCollect(schema, id)
+		seed := map[string]any{"name": id}
+		if editTemplate != "" {
+			tmpl, err := loadTemplate(editTemplate)
+			if err != nil {
+				return err
+			}
+			applyTemplate(tmpl, seed)
+			seed["name"] = id
+		}
+		body, err = interactiveCollect(schema, skills, id, seed)
 		if err != nil {
 			return fmt.Errorf("interactive collect: %w", err)
 		}
 	default:
-		return fmt.Errorf("no scriptable flags given and stdin isn't a terminal — pass --set / --set-list / --system-prompt-file, or run from an interactive shell")
+		return fmt.Errorf("no scriptable flags given and stdin isn't a terminal — pass --set / --set-list / --system-prompt-file / --template, or run from an interactive shell")
 	}
 
 	mdPreview, err := renderMarkdownPreview(body)
@@ -336,17 +389,27 @@ func schemaFieldNames(schema map[string]any) []string {
 // rejecting any key the schema doesn't declare. `tools` is the one
 // special-case: schema declares it as []{name: string}; --set-list
 // tools=a,b expands to [{name:a},{name:b}].
-func applySetFlags(setVals, setListVals []string, fields []string, body map[string]any) error {
+//
+// aliases (legacy → canonical) and warner (once-per-key deprecation
+// emitter) handle the schema's x-legacy-aliases extension: operators
+// can still pass --set skills=... or --set id=... and get an auto-
+// mapped result plus a one-line warning citing the deprecation target.
+// Both nil = no alias handling (used by older test paths).
+func applySetFlags(setVals, setListVals []string, fields []string, aliases map[string]string, warner *aliasWarner, body map[string]any) error {
 	for _, kv := range setVals {
 		k, v, ok := strings.Cut(kv, "=")
 		if !ok {
 			return fmt.Errorf("--set requires key=value, got %q", kv)
 		}
 		k = strings.TrimSpace(k)
-		if err := validateField(k, fields); err != nil {
+		canonical, wasLegacy := mapAlias(k, aliases)
+		if wasLegacy {
+			warner.warn(k, canonical)
+		}
+		if err := validateField(canonical, fields); err != nil {
 			return err
 		}
-		body[k] = v
+		body[canonical] = v
 	}
 	for _, kv := range setListVals {
 		k, v, ok := strings.Cut(kv, "=")
@@ -354,18 +417,22 @@ func applySetFlags(setVals, setListVals []string, fields []string, body map[stri
 			return fmt.Errorf("--set-list requires key=a,b,c, got %q", kv)
 		}
 		k = strings.TrimSpace(k)
-		if err := validateField(k, fields); err != nil {
+		canonical, wasLegacy := mapAlias(k, aliases)
+		if wasLegacy {
+			warner.warn(k, canonical)
+		}
+		if err := validateField(canonical, fields); err != nil {
 			return err
 		}
 		items := splitTrim(v, ",")
-		if k == "tools" {
+		if canonical == "tools" {
 			tools := make([]map[string]any, len(items))
 			for i, item := range items {
 				tools[i] = map[string]any{"name": item}
 			}
-			body[k] = tools
+			body[canonical] = tools
 		} else {
-			body[k] = items
+			body[canonical] = items
 		}
 	}
 	return nil

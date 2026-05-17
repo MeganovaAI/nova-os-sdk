@@ -62,6 +62,7 @@ func TestApplySetFlags_Scalar(t *testing.T) {
 		[]string{"model=anthropic/claude-opus-4-7", "agent_type=persona"},
 		nil,
 		fields,
+		nil, nil,
 		body,
 	)
 	if err != nil {
@@ -78,7 +79,7 @@ func TestApplySetFlags_Scalar(t *testing.T) {
 func TestApplySetFlags_List(t *testing.T) {
 	fields := []string{"capabilities", "name"}
 	body := map[string]any{}
-	err := applySetFlags(nil, []string{"capabilities=intake, triage, routing"}, fields, body)
+	err := applySetFlags(nil, []string{"capabilities=intake, triage, routing"}, fields, nil, nil, body)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -95,7 +96,7 @@ func TestApplySetFlags_List(t *testing.T) {
 func TestApplySetFlags_ToolsExpandsToObjectShape(t *testing.T) {
 	fields := []string{"name", "tools"}
 	body := map[string]any{}
-	err := applySetFlags(nil, []string{"tools=knowledge_search,human_handoff"}, fields, body)
+	err := applySetFlags(nil, []string{"tools=knowledge_search,human_handoff"}, fields, nil, nil, body)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -111,7 +112,7 @@ func TestApplySetFlags_ToolsExpandsToObjectShape(t *testing.T) {
 func TestApplySetFlags_RejectsUnknownField(t *testing.T) {
 	fields := []string{"model", "name"}
 	body := map[string]any{}
-	err := applySetFlags([]string{"made_up_field=value"}, nil, fields, body)
+	err := applySetFlags([]string{"made_up_field=value"}, nil, fields, nil, nil, body)
 	if err == nil {
 		t.Fatalf("expected reject for unknown field")
 	}
@@ -123,7 +124,7 @@ func TestApplySetFlags_RejectsUnknownField(t *testing.T) {
 func TestApplySetFlags_RejectsMalformed(t *testing.T) {
 	fields := []string{"name"}
 	body := map[string]any{}
-	err := applySetFlags([]string{"no_equals_sign"}, nil, fields, body)
+	err := applySetFlags([]string{"no_equals_sign"}, nil, fields, nil, nil, body)
 	if err == nil {
 		t.Fatalf("expected reject for malformed --set")
 	}
