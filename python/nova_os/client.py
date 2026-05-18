@@ -182,6 +182,39 @@ class Client:
             body = resp.text
         raise parse_error_response(resp.status_code, body)
 
+    # ----- Synthetic-customer simulator surface (Track 1.3 / 1.4) -----
+
+    def simulate(
+        self,
+        target_agent_id: str,
+        archetype: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Run a synthetic-customer simulation. Sync surface.
+
+        See :func:`nova_os.simulator.simulate` for the full signature
+        and contract. This shortcut binds ``self`` as the client so
+        partners call ``c.simulate(target_id, archetype)`` directly.
+
+        Returns a :class:`~nova_os.simulator.SimulationResult`.
+        """
+        from nova_os.simulator.simulate import simulate as _simulate
+
+        return _simulate(self, target_agent_id, archetype, **kwargs)
+
+    async def async_simulate(
+        self,
+        target_agent_id: str,
+        archetype: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Async variant of :meth:`simulate`. Same contract; awaits
+        the loop directly without going through ``anyio.run``.
+        """
+        from nova_os.simulator.simulate import async_simulate as _async_simulate
+
+        return await _async_simulate(self, target_agent_id, archetype, **kwargs)
+
     async def _request_bytes(
         self,
         method: str,

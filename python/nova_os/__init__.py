@@ -21,7 +21,13 @@ from nova_os.errors import (
 )
 from nova_os.callbacks import WebhookRouter
 from nova_os.streaming import MessageStream
-from nova_os.simulator import Archetype, ArchetypeValidationError
+from nova_os.simulator import (
+    Archetype,
+    ArchetypeValidationError,
+    SimulationResult,
+    Turn,
+    simulate,
+)
 
 __all__ = [
     "__version__",
@@ -43,4 +49,7 @@ __all__ = [
     "MessageStream",
     "Archetype",
     "ArchetypeValidationError",
+    "SimulationResult",
+    "Turn",
+    "simulate",
 ]
