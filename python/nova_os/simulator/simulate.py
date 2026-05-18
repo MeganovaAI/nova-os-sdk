@@ -51,6 +51,7 @@ def simulate(
     simulator_system_prompt: str | None = None,
     metadata: dict[str, Any] | None = None,
     target_api_key: str | None = None,
+    target_model: str | None = None,
 ) -> SimulationResult:
     """Run a synthetic-customer simulation against ``target_agent_id``.
 
@@ -91,6 +92,14 @@ def simulate(
         Reserved — surfaced for symmetry with the public signature.
         v1 piggybacks on the client's default bearer; per-call key
         rotation is a v2 feature.
+    target_model:
+        Optional gateway model string (``<provider>/<name>``) to use
+        on the target side. /v1/messages is Anthropic-spec and requires
+        ``model`` on every request — the kernel does not fall through
+        to the target agent's baked model. When ``None``, the SDK
+        auto-discovers via one ``client.agents.get(target_agent_id)``
+        round-trip at simulate-start. Pass this explicitly to skip the
+        discovery call (e.g. in tests with mocked HTTP).
 
     Returns
     -------
@@ -115,6 +124,7 @@ def simulate(
             simulator_system_prompt=simulator_system_prompt,
             metadata=metadata,
             target_api_key=target_api_key,
+            target_model=target_model,
         )
     )
 
@@ -129,6 +139,7 @@ async def async_simulate(
     simulator_system_prompt: str | None = None,
     metadata: dict[str, Any] | None = None,
     target_api_key: str | None = None,
+    target_model: str | None = None,
 ) -> SimulationResult:
     """Async variant of :func:`simulate`. Same contract."""
 
@@ -162,6 +173,18 @@ async def async_simulate(
         simulator_system_prompt=prompt,
     )
 
+    # 6. Resolve target model. Caller can pin it via the ``target_model``
+    # parameter (skips the round-trip — useful in tests with mocked HTTP and
+    # in production deployments where the partner already knows the target's
+    # model). When None, fetch via one ``client.agents.get`` round-trip.
+    # Required because /v1/messages is Anthropic-spec and demands ``model``
+    # on every request — kernel doesn't fall through to baked agent model.
+    effective_target_model = (
+        target_model
+        if target_model is not None
+        else await _fetch_target_model(client, target_agent_id)
+    )
+
     try:
         result = await run_loop(
             client,
@@ -171,6 +194,7 @@ async def async_simulate(
             simulator_system_prompt=prompt,
             effective_max_turns=effective_max_turns,
             simulator_model=effective_model,
+            target_model=effective_target_model,
             session_id=session_id,
             metadata=metadata,
             target_api_key=target_api_key,
@@ -236,6 +260,25 @@ def _new_session_id() -> str:
     return str(uuid.uuid4())
 
 
+async def _fetch_target_model(client: "Client", target_agent_id: str) -> str:
+    """Fetch the target agent's baked ``model`` field.
+
+    /v1/messages is Anthropic-spec and requires ``model`` on every request —
+    the kernel does NOT fall through to the agent's baked model on that
+    endpoint. We fetch it once here so the loop can supply it on each call.
+    Raises :class:`AuthenticationError` on 401 and :class:`NotFoundError`
+    (which the caller surfaces as a clear error) on 404. Other errors
+    propagate as-is.
+    """
+    agent = await client.agents.get(target_agent_id)
+    # Resource shape: managed-agents GET returns the agent with a top-level
+    # ``model`` field. If that's missing or null, fall back to a sensible
+    # default for the simulator pattern — partners can override per-archetype
+    # via ``model_override`` on the archetype YAML.
+    model = getattr(agent, "model", None) or "anthropic/claude-haiku-4-5"
+    return model
+
+
 # ----------------------------------------------------------- streaming surface
 
 
@@ -249,6 +292,7 @@ async def async_simulate_stream(
     simulator_system_prompt: str | None = None,
     metadata: dict[str, Any] | None = None,
     target_api_key: str | None = None,
+    target_model: str | None = None,
 ) -> AsyncIterator[TurnEvent]:
     """Async-iterator variant of :func:`async_simulate`.
 
@@ -290,6 +334,14 @@ async def async_simulate_stream(
         simulator_system_prompt=prompt,
     )
 
+    # Resolve target model — caller-supplied wins; else fetch once via
+    # ``client.agents.get``. /v1/messages requires ``model`` explicitly.
+    effective_target_model = (
+        target_model
+        if target_model is not None
+        else await _fetch_target_model(client, target_agent_id)
+    )
+
     try:
         async for event in stream_loop(
             client,
@@ -299,6 +351,7 @@ async def async_simulate_stream(
             simulator_system_prompt=prompt,
             effective_max_turns=effective_max_turns,
             simulator_model=effective_model,
+            target_model=effective_target_model,
             session_id=session_id,
             metadata=metadata,
             target_api_key=target_api_key,
@@ -323,6 +376,7 @@ def simulate_stream(
     simulator_system_prompt: str | None = None,
     metadata: dict[str, Any] | None = None,
     target_api_key: str | None = None,
+    target_model: str | None = None,
 ) -> Iterator[TurnEvent]:
     """Sync facade over :func:`async_simulate_stream`.
 
@@ -359,6 +413,7 @@ def simulate_stream(
                 simulator_system_prompt=simulator_system_prompt,
                 metadata=metadata,
                 target_api_key=target_api_key,
+                target_model=target_model,
             )
             try:
                 async for event in agen:

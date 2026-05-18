@@ -50,6 +50,7 @@ async def run_loop(
     simulator_system_prompt: str,
     effective_max_turns: int,
     simulator_model: str,
+    target_model: str,
     session_id: str,
     metadata: dict[str, Any] | None,
     target_api_key: str | None,  # reserved — surfaced for symmetry with the public signature, currently piggybacks on the client default
@@ -71,6 +72,7 @@ async def run_loop(
         simulator_system_prompt=simulator_system_prompt,
         effective_max_turns=effective_max_turns,
         simulator_model=simulator_model,
+        target_model=target_model,
         session_id=session_id,
         metadata=metadata,
         target_api_key=target_api_key,
@@ -92,6 +94,7 @@ async def stream_loop(
     simulator_system_prompt: str,
     effective_max_turns: int,
     simulator_model: str,
+    target_model: str,
     session_id: str,
     metadata: dict[str, Any] | None,
     target_api_key: str | None,  # reserved — surfaced for symmetry with the public signature, currently piggybacks on the client default
@@ -264,6 +267,7 @@ async def stream_loop(
                 agent_id=target_agent_id,
                 messages=target_messages,
                 metadata=tgt_metadata,
+                target_model=target_model,
             )
 
             if tgt_err is not None:
@@ -418,11 +422,20 @@ async def _call_target(
     agent_id: str,
     messages: list[dict[str, Any]],
     metadata: dict[str, Any],
+    target_model: str,
 ) -> dict[str, Any]:
-    """One /v1/messages call against the target agent (no extra system)."""
+    """One /v1/messages call against the target agent (no extra system).
+
+    ``target_model`` must be supplied because /v1/messages is Anthropic-spec
+    which requires ``model`` in every request body — the kernel does not
+    fall through to the agent's baked model on this endpoint. The caller
+    fetches it once at simulate-start via ``client.agents.get(target_agent_id)``
+    and threads it through (see ``simulate.py``).
+    """
     return await client.messages.create(
         agent_id,
         messages=messages,
+        model=target_model,
         metadata=metadata,
     )
 
@@ -461,6 +474,7 @@ async def _call_target_with_retries(
     agent_id: str,
     messages: list[dict[str, Any]],
     metadata: dict[str, Any],
+    target_model: str,
 ) -> tuple[dict[str, Any] | None, str | None]:
     """Target-side retry logic per spec F.
 
@@ -478,6 +492,7 @@ async def _call_target_with_retries(
                 agent_id=agent_id,
                 messages=messages,
                 metadata=metadata,
+                target_model=target_model,
             )
             return resp, None
         except NovaOSError as exc:

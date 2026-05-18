@@ -120,6 +120,19 @@ def _make_handler(
                 },
             )
 
+        # Target-model discovery GET (added in simulate.py _fetch_target_model).
+        # Returns a generic agent with a baked model.
+        if path.startswith("/v1/agents/") and req.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "id": path.rsplit("/", 1)[-1],
+                    "name": path.rsplit("/", 1)[-1],
+                    "agent_type": "skill",
+                    "model": "anthropic/claude-haiku-4-5",
+                },
+            )
+
         if path == "/v1/agents" and req.method == "POST":
             if captured is not None:
                 captured["agent_create_calls"] += 1

@@ -131,6 +131,20 @@ def _make_handler(
                 },
             )
 
+        # Target-model discovery GET (added in simulate.py _fetch_target_model).
+        # All other agent GETs return a generic agent with a baked model so the
+        # simulator can pass ``model=`` on its target /v1/messages calls.
+        if path.startswith("/v1/agents/") and req.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "id": path.rsplit("/", 1)[-1],
+                    "name": path.rsplit("/", 1)[-1],
+                    "agent_type": "skill",
+                    "model": "anthropic/claude-haiku-4-5",
+                },
+            )
+
         if path == "/v1/agents" and req.method == "POST":
             if captured is not None:
                 captured["agent_create_calls"] += 1
@@ -492,7 +506,14 @@ def test_cleanup_on_simulator_error_still_deletes_transient() -> None:
         return httpx.Response(500)
 
     c = Client("https://eval.local", "key", transport=_mock_transport(handler))
-    result = c.simulate(target_agent_id="agent", archetype=_archetype_basic())
+    # Pass target_model explicitly — this minimal handler doesn't mock the
+    # GET /v1/agents/<target> path. The simulator-error path doesn't reach
+    # the target side anyway, so the model value is irrelevant here.
+    result = c.simulate(
+        target_agent_id="agent",
+        archetype=_archetype_basic(),
+        target_model="anthropic/claude-haiku-4-5",
+    )
     # outcome=error because both simulator attempts failed
     assert result.outcome == "error"
     assert (result.outcome_reason or "").startswith("simulator_error")

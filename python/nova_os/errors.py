@@ -139,11 +139,24 @@ _TYPE_TO_CLASS: dict[str, type[NovaOSError]] = {
     "authentication_error": AuthenticationError,
     "permission_error": PermissionError,
     "not_found_error": NotFoundError,
+    # Server also emits "not_found" (without _error suffix) on some endpoints
+    # (notably /v1/agents/* via parse_error_response wrapped envelope) — alias.
+    "not_found": NotFoundError,
     "rate_limit_error": RateLimitedError,
     "billing_error": BillingError,
     "upstream_error": UpstreamError,
     "vertex_schema_error": VertexSchemaError,
     "internal_error": InternalError,
+}
+
+# Status-code fallback when the server returns a 4xx/5xx with no recognized
+# ``type`` field. Defensive — keeps `except NotFoundError` paths working even
+# when the server adds a new endpoint that doesn't follow the type convention.
+_STATUS_TO_CLASS: dict[int, type[NovaOSError]] = {
+    401: AuthenticationError,
+    403: PermissionError,
+    404: NotFoundError,
+    429: RateLimitedError,
 }
 
 
@@ -152,6 +165,13 @@ def parse_error_response(status: int, body: Any) -> NovaOSError:
 
     `body` is the parsed JSON body (dict) or the raw text fallback (str).
     Returns the most specific NovaOSError subclass we can identify.
+
+    Handles three server envelope shapes observed in practice:
+    1. Flat:    ``{"message": "...", "type": "...", "code": ...}``
+    2. Wrapped: ``{"error": {"message": "...", "type": "..."}}`` (e.g. /v1/agents/*)
+    3. String:  ``{"error": "not_found"}`` (e.g. /v1/conversations/* unknown id)
+
+    All three normalize to the same typed subclass on the way out.
     """
     if not isinstance(body, dict):
         return NovaOSError(f"HTTP {status}: {body}", status=status)
@@ -163,6 +183,18 @@ def parse_error_response(status: int, body: Any) -> NovaOSError:
     # at the body shape itself.
     if status == 404 and "id" in body and body.get("error") == "persona not found":
         return PersonaNotFound(body["id"], "persona not found")
+
+    # Wrapped envelope: unwrap `body["error"]` into the inner dict so the
+    # flat-envelope code below works unchanged for both shapes.
+    if isinstance(body.get("error"), dict):
+        body = body["error"]
+    # String-only envelope: `{"error": "not_found"}` — synthesize a flat
+    # body so 404 short-strings still produce typed NotFoundError.
+    elif isinstance(body.get("error"), str) and status >= 400:
+        err_str = body["error"]
+        # Common server shorthand: "not_found" string IS the type code.
+        guess_type = err_str if err_str in _TYPE_TO_CLASS else ""
+        body = {"message": err_str, "type": guess_type}
 
     type_str = body.get("type", "")
     message = body.get("message", str(body))
@@ -191,6 +223,13 @@ def parse_error_response(status: int, body: Any) -> NovaOSError:
     msg_lower = message.lower()
     if "model" in msg_lower and ("not found" in msg_lower or "unknown" in msg_lower):
         return ModelNotFoundError(message, **common)
+
+    # Status-code fallback — last resort so 404s map to NotFoundError even
+    # when the server returns an unknown ``type`` field. Keeps SDK-side
+    # ``except NotFoundError`` paths working as the server evolves.
+    status_cls = _STATUS_TO_CLASS.get(status)
+    if status_cls is not None:
+        return status_cls(message, **common)
 
     return NovaOSError(message, **common)
 
