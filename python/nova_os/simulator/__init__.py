@@ -21,6 +21,7 @@ from nova_os.simulator.archetype import (
     TerminationConditions,
 )
 from nova_os.simulator.errors import ArchetypeValidationError
+from nova_os.simulator.prompt import build_simulator_prompt
 
 __all__ = [
     "Archetype",
@@ -28,4 +29,5 @@ __all__ = [
     "TerminationConditions",
     "DisclosureWillingness",
     "FailureSignalMatch",
+    "build_simulator_prompt",
 ]
