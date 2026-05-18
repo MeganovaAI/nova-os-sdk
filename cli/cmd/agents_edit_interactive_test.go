@@ -108,6 +108,7 @@ func TestPromptField_SystemPromptUsesEditor(t *testing.T) {
 		map[string]any{"type": "string", "description": "the prompt"},
 		false,
 		"initial prompt body",
+		nil, // skills not exercised by editor path
 	)
 	if err != nil {
 		t.Fatalf("promptField: %v", err)
@@ -124,6 +125,7 @@ func TestPromptField_UnknownTypeReturnsNilNoError(t *testing.T) {
 		"future_field",
 		map[string]any{"type": "geometry-blob"},
 		false,
+		nil,
 		nil,
 	)
 	if err != nil {

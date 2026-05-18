@@ -29,10 +29,20 @@ import (
 // downstream markdown-preview + JSON-marshal + submit path as the
 // scriptable mode.
 //
-// The `id` positional arg is seeded into body["name"] up front and only
-// overwritten if the user explicitly fills the `name` prompt.
-func interactiveCollect(schema map[string]any, id string) (map[string]any, error) {
-	body := map[string]any{"name": id}
+// seed pre-fills body (e.g., from --template) so the operator sees
+// template defaults already in the prompt and can accept or override
+// per field. id is forced into body["name"] regardless of seed.
+//
+// skills, when non-nil, swaps the `tools` field's free-text prompt
+// for a huh.NewMultiSelect populated from the live skill catalog.
+// nil skills = free-text fallback (e.g., when /api/skills is
+// unreachable).
+func interactiveCollect(schema map[string]any, skills []string, id string, seed map[string]any) (map[string]any, error) {
+	body := map[string]any{}
+	for k, v := range seed {
+		body[k] = v
+	}
+	body["name"] = id
 
 	props, ok := schema["properties"].(map[string]any)
 	if !ok {
@@ -45,7 +55,7 @@ func interactiveCollect(schema map[string]any, id string) (map[string]any, error
 		if fieldSchema == nil {
 			continue
 		}
-		val, err := promptField(name, fieldSchema, requiredSet[name], body[name])
+		val, err := promptField(name, fieldSchema, requiredSet[name], body[name], skills)
 		if err != nil {
 			return nil, err
 		}
@@ -71,9 +81,11 @@ func requiredFieldSet(schema map[string]any) map[string]bool {
 
 // promptField builds the appropriate huh element for a single schema
 // field and runs it. The `current` argument is the existing value (if
-// any) used to seed the prompt. Returns the user's response or nil if
-// they skipped.
-func promptField(name string, fieldSchema map[string]any, required bool, current any) (any, error) {
+// any) used to seed the prompt. `skills`, when non-nil and the field
+// is `tools`, drives a multi-select populated from the live skill
+// catalog instead of plain free-text input. Returns the user's
+// response or nil if they skipped.
+func promptField(name string, fieldSchema map[string]any, required bool, current any, skills []string) (any, error) {
 	ftype, _ := fieldSchema["type"].(string)
 	desc, _ := fieldSchema["description"].(string)
 	title := name
@@ -198,11 +210,40 @@ func promptField(name string, fieldSchema map[string]any, required bool, current
 		return n, nil
 
 	case "array":
-		// Plain comma-separated input. `tools` gets the special object-
-		// shape expansion mirroring applySetFlags's behavior so the
-		// interactive path and the scriptable path produce identical
-		// bodies for the same input. Skill autocomplete via GET /api/skills
-		// is slice 3.
+		// `tools` with live skills available → multi-select from the
+		// catalog (slice 3 of #18). Pre-tick anything already in current
+		// (e.g., from --template seed). Falls through to free-text input
+		// for non-tools arrays or when skills==nil (endpoint unreachable).
+		if name == "tools" && len(skills) > 0 {
+			preselected := map[string]bool{}
+			for _, s := range extractToolNames(map[string]any{"tools": current}) {
+				preselected[s] = true
+			}
+			opts := make([]huh.Option[string], 0, len(skills))
+			for _, s := range skills {
+				opts = append(opts, huh.NewOption(s, s).Selected(preselected[s]))
+			}
+			var picked []string
+			if err := huh.NewMultiSelect[string]().
+				Title(title).
+				Description(desc + " (space to toggle, enter to confirm)").
+				Options(opts...).
+				Value(&picked).
+				Run(); err != nil {
+				return nil, err
+			}
+			if len(picked) == 0 {
+				return nil, nil
+			}
+			tools := make([]map[string]any, len(picked))
+			for i, p := range picked {
+				tools[i] = map[string]any{"name": p}
+			}
+			return tools, nil
+		}
+
+		// Plain comma-separated input for non-tools arrays AND for
+		// tools when /api/skills was unreachable (fail-soft).
 		var input string
 		if err := huh.NewInput().
 			Title(title).
