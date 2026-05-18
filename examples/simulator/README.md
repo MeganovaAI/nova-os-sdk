@@ -20,6 +20,43 @@ print(a.name, a.disclosure_willingness)
 | `legal-vendor-msa-review.yaml` | Legal — contract review | guarded | multi-turn redline identification under hidden constraints |
 | `medical-patient-with-hidden-history.yaml` | Medical — triage | cautious | targeted history-question elicitation |
 
+## Running the example
+
+The `run_eval.py` script in this directory runs all three example
+archetypes against a target agent. It uses the two-instance pattern:
+point it at an evaluation `nova-os` instance (separate from production),
+not at production.
+
+See the [nova-os-stack](https://github.com/MeganovaAI/nova-os-stack)
+repo for the `docker-compose.eval.yaml` template that brings up the
+eval instance.
+
+### Quickstart
+
+```bash
+# 1. Bring up the eval nova-os instance per the nova-os-stack README
+#    (results in nova-os listening on port 8901 with its own database
+#    and gateway key).
+
+# 2. Set env + run.
+export EVAL_NOVA_BASE_URL=http://localhost:8901
+export EVAL_NOVA_API_KEY=<your eval JWT or agent key>
+export EVAL_TARGET_AGENT_ID=default      # optional; defaults to "default"
+python examples/simulator/run_eval.py
+```
+
+Output:
+
+- Live turn-by-turn events streamed to stdout (one line per
+  simulator / target utterance).
+- Per-archetype JSON transcript in `./output/<archetype>.json`
+  containing the full transcript, outcome, evaluation signals,
+  duration, and token usage.
+- A final summary table with per-archetype outcome / turn count /
+  duration / success-signal-matched.
+- Exit code `0` if every archetype terminated cleanly (any outcome
+  other than `"error"`); `1` if any archetype errored.
+
 ## Authoring custom archetypes
 
 Make hidden facts consequence-bearing and specific — "I would be embarrassed
