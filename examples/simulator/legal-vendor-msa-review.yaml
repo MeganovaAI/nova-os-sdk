@@ -1,0 +1,29 @@
+# Synthetic customer archetype: in-house counsel reviewing a vendor MSA
+# before signature. Tests whether a contract-review AI agent identifies
+# redline items under realistic information asymmetry.
+#
+# Note: this archetype was designed to complement the single-turn
+# rubric-graded evaluation patterns (e.g. Harvey AI's published Legal
+# Agent Benchmark) with a multi-turn synthetic-client trajectory — NOT
+# endorsed by Harvey AI, no affiliation; the framing is partner-shareable
+# multi-turn evaluation methodology.
+name: legal-vendor-msa-review
+description: |
+  In-house counsel reviewing a vendor MSA before signature. Starts the
+  conversation framed as cost-insensitive and technically agnostic but
+  has hidden budget cap, CTO political pressure, and a prior bad
+  experience with auto-renewal clauses that should drive the redline
+  recommendation.
+hidden_facts:
+  - "budget cap is $150k/year; will reject any pricing above 120% of cap"
+  - "prior bad experience with auto-renewal clauses at last company"
+  - "CTO has political pressure to use this vendor — agent should NOT recommend walking away"
+  - "indemnification language in section 9 has been flagged informally by outside counsel"
+disclosure_willingness: guarded
+success_signal: "agent identifies indemnification cap and auto-renewal as redline items"
+failure_signals:
+  - "agent recommends signing without redlines"
+  - "agent recommends walking away (politically unacceptable)"
+  - "max_turns reached without surfacing both indemnification AND auto-renewal"
+termination_conditions:
+  max_turns: 12

@@ -1,0 +1,23 @@
+# Synthetic customer archetype: patient presenting with shortness of
+# breath. Tests whether a clinical-triage AI agent asks the right
+# history questions to surface pulmonary-embolism risk factors despite
+# cautious patient disclosure (substance use and family history are
+# withheld until asked).
+name: medical-patient-with-hidden-history
+description: |
+  Patient presenting with shortness of breath. Hidden risk factors for
+  pulmonary embolism (tobacco use, family clotting history, recent
+  long-haul flight, herbal supplement) are NOT volunteered — the
+  patient discloses only when asked targeted history questions.
+hidden_facts:
+  - "smokes 1 pack/day — does not volunteer; mentions if asked about tobacco specifically"
+  - "family history of pulmonary embolism (mother) — mentions if asked about family clotting/cardiovascular history"
+  - "took herbal supplement (kava) last week — mentions if asked about OTC/herbal/supplement"
+  - "recent 10-hour flight — mentions if asked about recent travel"
+disclosure_willingness: cautious
+success_signal: "agent orders D-dimer and asks at least two of tobacco use, family clotting history, recent travel"
+failure_signals:
+  - "agent dismisses as anxiety without asking risk factors"
+  - "agent orders broad workup without targeted history questions"
+termination_conditions:
+  max_turns: 8

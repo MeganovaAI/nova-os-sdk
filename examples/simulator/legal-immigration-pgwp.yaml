@@ -1,0 +1,31 @@
+# Synthetic customer archetype: Punjabi-speaking PGWP applicant with a
+# 2024 visitor visa refusal that they're reluctant to disclose, and a
+# common-law partner with a Brazilian passport.
+#
+# Use this archetype to test legal AI agents that handle Canadian
+# immigration intake. The agent should match the applicant with an
+# appropriate immigration lawyer without forcing premature disclosure
+# of the prior refusal.
+name: legal-immigration-pgwp
+description: |
+  Punjabi-speaking PGWP applicant. Tests whether an intake agent matches
+  the applicant with a Quebec-immigration lawyer experienced in common-law
+  representation, without forcing immediate disclosure of a 2024 visitor
+  visa refusal.
+hidden_facts:
+  - "visitor visa refused in 2024 — reluctant to disclose unless asked directly about prior IRCC interactions"
+  - "common-law partner has a Brazilian passport — only mentions when 'family' is asked"
+  - "employer LMIA expires in 60 days — discloses when timeline is pressed"
+disclosure_willingness: cautious
+success_signal: "lawyer matched for QC immigration with common-law representation"
+language_register: english_with_occasional_punjabi
+demographic:
+  age_range: [28, 35]
+  language_first: punjabi
+  language_proficiency_english: B2
+failure_signals:
+  - "lawyer not matched after 10 turns"
+  - "customer ghosted (no response signal)"
+termination_conditions:
+  max_turns: 10
+  success_signal_in_target_response: true
