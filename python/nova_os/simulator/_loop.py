@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, AsyncIterator
 
 from nova_os.errors import NovaOSError
 from nova_os.simulator._signals import (
@@ -31,7 +31,7 @@ from nova_os.simulator._signals import (
     signal_matches,
 )
 from nova_os.simulator.archetype import Archetype
-from nova_os.simulator.types import SimulationResult, Turn
+from nova_os.simulator.types import SimulationResult, Turn, TurnEvent
 
 if TYPE_CHECKING:
     from nova_os.client import Client
@@ -55,6 +55,65 @@ async def run_loop(
     target_api_key: str | None,  # reserved — surfaced for symmetry with the public signature, currently piggybacks on the client default
 ) -> SimulationResult:
     """Drive the simulator ↔ target loop and return a SimulationResult.
+
+    Thin aggregator over :func:`stream_loop` — the streaming variant
+    is the canonical implementation. ``run_loop`` consumes the async
+    iterator and returns the final ``outcome`` event's
+    :class:`SimulationResult`. See ``stream_loop`` for the loop body
+    and failure-handling table.
+    """
+    result: SimulationResult | None = None
+    async for ev in stream_loop(
+        client,
+        target_agent_id=target_agent_id,
+        archetype=archetype,
+        simulator_agent_id=simulator_agent_id,
+        simulator_system_prompt=simulator_system_prompt,
+        effective_max_turns=effective_max_turns,
+        simulator_model=simulator_model,
+        session_id=session_id,
+        metadata=metadata,
+        target_api_key=target_api_key,
+    ):
+        if ev.kind == "outcome":
+            result = ev.outcome
+    # stream_loop guarantees exactly one outcome event; the assertion
+    # is defensive — if it ever fires the streaming layer has a bug.
+    assert result is not None, "stream_loop did not emit an outcome event"
+    return result
+
+
+async def stream_loop(
+    client: "Client",
+    *,
+    target_agent_id: str,
+    archetype: Archetype,
+    simulator_agent_id: str,
+    simulator_system_prompt: str,
+    effective_max_turns: int,
+    simulator_model: str,
+    session_id: str,
+    metadata: dict[str, Any] | None,
+    target_api_key: str | None,  # reserved — surfaced for symmetry with the public signature, currently piggybacks on the client default
+) -> AsyncIterator[TurnEvent]:
+    """Async-iterator variant of :func:`run_loop`. Yields per-turn events.
+
+    Event sequence per turn (in order): ``simulator_turn`` →
+    ``target_turn``. After the loop terminates (success / failure /
+    timeout / error / simulator-silent), exactly one ``outcome`` event
+    is emitted as the LAST event, carrying the full materialised
+    :class:`SimulationResult`. Errors are NEVER raised through the
+    iterator — they are surfaced via ``outcome``'s ``outcome=="error"``
+    state (per spec §F: partners handle failed simulations as data).
+
+    Cancellation: if the consumer stops iterating early (``break`` out
+    of ``async for`` or ``await it.aclose()``), the underlying
+    asynchronous-generator protocol fires ``GeneratorExit`` inside the
+    body and the helper raises out cleanly. Caller-owned cleanup (eg.
+    transient-agent DELETE) runs in the outer ``try/finally`` in
+    :func:`async_simulate_stream` — not inside this iterator — so it
+    fires deterministically whether the iterator is exhausted, broken
+    out of, or aclose'd.
 
     Failure handling (per the v1 spec table):
 
@@ -133,13 +192,21 @@ async def run_loop(
                 outcome = "error"
                 outcome_reason = f"simulator_error: {sim_err}"
                 error_msg = str(sim_err)
+                err_ts = time.time()
                 transcript.append(
                     Turn(
                         role="simulator",
                         content="",
-                        timestamp=time.time(),
+                        timestamp=err_ts,
                         metadata={**sim_metadata, "error": True},
                     )
+                )
+                yield TurnEvent(
+                    kind="simulator_turn",
+                    role="simulator",
+                    content="",
+                    turn_index=len(transcript) - 1,
+                    timestamp=err_ts,
                 )
                 break
 
@@ -147,13 +214,21 @@ async def run_loop(
             tokens_used["simulator_input"] += sim_in
             tokens_used["simulator_output"] += sim_out
 
+            sim_ts = time.time()
             transcript.append(
                 Turn(
                     role="simulator",
                     content=sim_text,
-                    timestamp=time.time(),
+                    timestamp=sim_ts,
                     metadata=sim_metadata,
                 )
+            )
+            yield TurnEvent(
+                kind="simulator_turn",
+                role="simulator",
+                content=sim_text,
+                turn_index=len(transcript) - 1,
+                timestamp=sim_ts,
             )
 
             # Empty simulator response → terminate per failure-mode rule
@@ -195,13 +270,21 @@ async def run_loop(
                 outcome = "error"
                 outcome_reason = tgt_err  # already prefixed
                 error_msg = tgt_err
+                err_ts = time.time()
                 transcript.append(
                     Turn(
                         role="target",
                         content="",
-                        timestamp=time.time(),
+                        timestamp=err_ts,
                         metadata={**tgt_metadata, "error": True},
                     )
+                )
+                yield TurnEvent(
+                    kind="target_turn",
+                    role="target",
+                    content="",
+                    turn_index=len(transcript) - 1,
+                    timestamp=err_ts,
                 )
                 break
 
@@ -209,13 +292,21 @@ async def run_loop(
             tokens_used["target_input"] += tgt_in
             tokens_used["target_output"] += tgt_out
 
+            tgt_ts = time.time()
             transcript.append(
                 Turn(
                     role="target",
                     content=tgt_text,
-                    timestamp=time.time(),
+                    timestamp=tgt_ts,
                     metadata=tgt_metadata,
                 )
+            )
+            yield TurnEvent(
+                kind="target_turn",
+                role="target",
+                content=tgt_text,
+                turn_index=len(transcript) - 1,
+                timestamp=tgt_ts,
             )
 
             # Feed target's reply back to the simulator as user.
@@ -285,7 +376,7 @@ async def run_loop(
         "turn_count": turn_count,
     }
 
-    return SimulationResult(
+    result = SimulationResult(
         archetype_name=archetype.name,
         target_agent_id=target_agent_id,
         transcript=transcript,
@@ -296,6 +387,7 @@ async def run_loop(
         tokens_used=tokens_used,
         error=error_msg,
     )
+    yield TurnEvent(kind="outcome", outcome=result)
 
 
 # --------------------------------------------------------------- chat calls
@@ -496,4 +588,4 @@ def _transcript_as_target_sees_it(
     return out
 
 
-__all__ = ["run_loop"]
+__all__ = ["run_loop", "stream_loop"]

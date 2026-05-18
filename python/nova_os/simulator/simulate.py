@@ -15,13 +15,15 @@ The Nova OS ``Client`` exposes both — see ``Client.simulate(...)``
 
 from __future__ import annotations
 
+import queue
+import threading
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, AsyncIterator, Iterator
 
 import anyio
 
-from nova_os.simulator._loop import run_loop
+from nova_os.simulator._loop import run_loop, stream_loop
 from nova_os.simulator._wiring import (
     ensure_simulator_agent,
     teardown_transient_agent,
@@ -29,7 +31,7 @@ from nova_os.simulator._wiring import (
 from nova_os.simulator.archetype import Archetype
 from nova_os.simulator.errors import ArchetypeValidationError
 from nova_os.simulator.prompt import build_simulator_prompt
-from nova_os.simulator.types import SimulationResult
+from nova_os.simulator.types import SimulationResult, TurnEvent
 
 if TYPE_CHECKING:
     from nova_os.client import Client
@@ -234,4 +236,177 @@ def _new_session_id() -> str:
     return str(uuid.uuid4())
 
 
-__all__ = ["simulate", "async_simulate"]
+# ----------------------------------------------------------- streaming surface
+
+
+async def async_simulate_stream(
+    client: "Client",
+    target_agent_id: str,
+    archetype: dict[str, Any] | str | Path | Archetype,
+    *,
+    max_turns: int = _DEFAULT_MAX_TURNS,
+    simulator_model: str = _DEFAULT_SIMULATOR_MODEL,
+    simulator_system_prompt: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    target_api_key: str | None = None,
+) -> AsyncIterator[TurnEvent]:
+    """Async-iterator variant of :func:`async_simulate`.
+
+    Yields one :class:`~nova_os.simulator.types.TurnEvent` per turn —
+    a ``simulator_turn`` immediately followed by a ``target_turn`` —
+    and ends with exactly ONE ``outcome`` event carrying the full
+    :class:`SimulationResult`. The outcome event always fires, even on
+    error / timeout / cancellation paths (per spec §F: runtime errors
+    are surfaced as data, not raised through the iterator).
+
+    Cancellation contract: if the caller breaks out of the
+    ``async for`` loop or calls ``await it.aclose()`` mid-stream, any
+    transient simulator agent that was created during wiring is still
+    DELETEd via the ``try/finally`` below. Partners can rely on this
+    for resource hygiene regardless of how iteration ends.
+
+    Parameters mirror :func:`async_simulate`. See its docstring for
+    field-by-field semantics.
+    """
+    # Archetype normalisation + wiring happen BEFORE the first yield;
+    # validation failures still raise (they're not in-loop errors).
+    arche = _normalize_archetype(archetype)
+    effective_max_turns = _resolve_max_turns(max_turns, arche)
+    prompt = (
+        simulator_system_prompt
+        if simulator_system_prompt is not None
+        else build_simulator_prompt(arche, max_turns=effective_max_turns)
+    )
+    effective_model = (
+        arche.model_override
+        if arche.model_override is not None
+        else simulator_model
+    )
+    session_id = _new_session_id()
+
+    sim_agent_id, is_transient = await ensure_simulator_agent(
+        client,
+        arche,
+        simulator_system_prompt=prompt,
+    )
+
+    try:
+        async for event in stream_loop(
+            client,
+            target_agent_id=target_agent_id,
+            archetype=arche,
+            simulator_agent_id=sim_agent_id,
+            simulator_system_prompt=prompt,
+            effective_max_turns=effective_max_turns,
+            simulator_model=effective_model,
+            session_id=session_id,
+            metadata=metadata,
+            target_api_key=target_api_key,
+        ):
+            yield event
+    finally:
+        # Cleanup runs whether the consumer exhausts the stream,
+        # breaks out early, or aclose()s the generator — this is the
+        # load-bearing cancellation-cleanup contract.
+        await teardown_transient_agent(
+            client, sim_agent_id, is_transient=is_transient
+        )
+
+
+def simulate_stream(
+    client: "Client",
+    target_agent_id: str,
+    archetype: dict[str, Any] | str | Path | Archetype,
+    *,
+    max_turns: int = _DEFAULT_MAX_TURNS,
+    simulator_model: str = _DEFAULT_SIMULATOR_MODEL,
+    simulator_system_prompt: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    target_api_key: str | None = None,
+) -> Iterator[TurnEvent]:
+    """Sync facade over :func:`async_simulate_stream`.
+
+    The async iterator is driven on a dedicated thread (running its
+    own anyio event loop); events are handed back to the calling
+    thread via a bounded :mod:`queue` so the caller can ``for event
+    in simulate_stream(...)`` from synchronous code.
+
+    Cancellation: if the caller stops iterating (``break`` /
+    ``return`` from the ``for`` loop) and lets the iterator be
+    garbage-collected, the generator's ``close()`` runs on next
+    consumption attempt; the producer thread observes the closed
+    queue and cancels the async iterator (triggering the
+    ``try/finally`` cleanup inside :func:`async_simulate_stream`).
+    """
+    # Sentinel marker that signals "iterator exhausted" — any non-
+    # TurnEvent placeholder would do; we use a fresh object identity
+    # so users can't accidentally synthesize one.
+    _DONE = object()
+    # Sentinel marker that signals "caller wants us to stop", set by
+    # the consuming side when it gives up early.
+    _STOP = threading.Event()
+
+    q: "queue.Queue[Any]" = queue.Queue(maxsize=8)
+
+    def _producer() -> None:
+        async def _drive() -> None:
+            agen = async_simulate_stream(
+                client,
+                target_agent_id,
+                archetype,
+                max_turns=max_turns,
+                simulator_model=simulator_model,
+                simulator_system_prompt=simulator_system_prompt,
+                metadata=metadata,
+                target_api_key=target_api_key,
+            )
+            try:
+                async for event in agen:
+                    if _STOP.is_set():
+                        break
+                    q.put(event)
+            finally:
+                # Ensure the async generator's own finally (transient
+                # agent DELETE) fires before the thread exits, even on
+                # mid-stream cancellation.
+                await agen.aclose()
+
+        try:
+            anyio.run(_drive)
+        except BaseException as exc:  # noqa: BLE001 — surface to consumer
+            q.put(exc)
+        finally:
+            q.put(_DONE)
+
+    thread = threading.Thread(target=_producer, daemon=True)
+    thread.start()
+
+    try:
+        while True:
+            item = q.get()
+            if item is _DONE:
+                return
+            if isinstance(item, BaseException):
+                raise item
+            yield item
+    finally:
+        # If the consumer abandons the generator early (break / return /
+        # exception), signal the producer to stop and let its finally
+        # fire (which closes the async generator and triggers cleanup).
+        _STOP.set()
+        # Drain remaining queue items so the producer thread can put _DONE
+        # without blocking on a full queue.
+        try:
+            while True:
+                q.get_nowait()
+        except queue.Empty:
+            pass
+        thread.join(timeout=5.0)
+
+
+__all__ = [
+    "simulate",
+    "async_simulate",
+    "simulate_stream",
+    "async_simulate_stream",
+]

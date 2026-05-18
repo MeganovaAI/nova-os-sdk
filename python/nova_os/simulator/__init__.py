@@ -19,8 +19,12 @@ Example::
     result = c.simulate(target_agent_id="legal-assistant", archetype=archetype)
     print(result.outcome, result.outcome_reason)
 
-A streaming variant (yielding per-turn events) is on the roadmap for
-a follow-up release.
+A streaming variant — :func:`simulate_stream` /
+:func:`async_simulate_stream` — yields per-turn events instead of a
+materialised :class:`SimulationResult`. The final event of any stream
+is always a ``kind="outcome"`` event carrying the full result, so
+partners that prefer the streaming surface still get the same outcome
+data at the end.
 """
 
 from __future__ import annotations
@@ -38,8 +42,13 @@ from nova_os.simulator.errors import (
     SimulatorError,
 )
 from nova_os.simulator.prompt import build_simulator_prompt
-from nova_os.simulator.simulate import async_simulate, simulate
-from nova_os.simulator.types import SimulationResult, Turn
+from nova_os.simulator.simulate import (
+    async_simulate,
+    async_simulate_stream,
+    simulate,
+    simulate_stream,
+)
+from nova_os.simulator.types import SimulationResult, Turn, TurnEvent
 
 __all__ = [
     "Archetype",
@@ -53,6 +62,9 @@ __all__ = [
     "build_simulator_prompt",
     "simulate",
     "async_simulate",
+    "simulate_stream",
+    "async_simulate_stream",
     "SimulationResult",
     "Turn",
+    "TurnEvent",
 ]

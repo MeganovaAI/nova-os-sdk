@@ -105,4 +105,48 @@ class SimulationResult:
     error: str | None = None
 
 
-__all__ = ["Turn", "SimulationResult", "Role", "Outcome"]
+TurnEventKind = Literal["simulator_turn", "target_turn", "outcome"]
+
+
+@dataclass(frozen=True)
+class TurnEvent:
+    """One event from the streaming simulator iterator.
+
+    Three kinds:
+
+    - ``"simulator_turn"`` — emitted after a simulator-side ``/v1/messages``
+      call returns. ``content`` is the full simulator text;
+      ``role == "simulator"``; ``turn_index`` is the position in the
+      transcript (0-based).
+    - ``"target_turn"`` — emitted after a target-side ``/v1/messages``
+      call returns. ``content`` is the full target text;
+      ``role == "target"``; ``turn_index`` is the position in the
+      transcript (0-based, one greater than the preceding simulator
+      event for the same simulator-target pair).
+    - ``"outcome"`` — emitted exactly once as the LAST event in any
+      stream. ``outcome`` carries the full materialised
+      :class:`SimulationResult`. Per spec, error / timeout / failure
+      states are surfaced via this event (never raised mid-iteration).
+
+    The event order contract is load-bearing: each pair
+    ``simulator_turn`` → ``target_turn`` mirrors the underlying loop;
+    the stream always closes with exactly one ``outcome`` event, even
+    on error / cancellation paths.
+    """
+
+    kind: TurnEventKind
+    role: Role | None = None
+    content: str | None = None
+    outcome: SimulationResult | None = None
+    turn_index: int | None = None
+    timestamp: float | None = None
+
+
+__all__ = [
+    "Turn",
+    "SimulationResult",
+    "TurnEvent",
+    "TurnEventKind",
+    "Role",
+    "Outcome",
+]

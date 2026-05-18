@@ -182,12 +182,14 @@ class Client:
             body = resp.text
         raise parse_error_response(resp.status_code, body)
 
-    # ----- Synthetic-customer simulator surface (Track 1.3 / 1.4) -----
+    # ----- Synthetic-customer simulator surface (Track 1.3 / 1.4 / 1.5) -----
 
     def simulate(
         self,
         target_agent_id: str,
         archetype: Any,
+        *,
+        stream: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Run a synthetic-customer simulation. Sync surface.
@@ -196,24 +198,59 @@ class Client:
         and contract. This shortcut binds ``self`` as the client so
         partners call ``c.simulate(target_id, archetype)`` directly.
 
-        Returns a :class:`~nova_os.simulator.SimulationResult`.
+        Default (``stream=False``) returns a
+        :class:`~nova_os.simulator.SimulationResult`.
+
+        When ``stream=True``, returns a sync
+        :class:`~typing.Iterator` of
+        :class:`~nova_os.simulator.TurnEvent` — one event per turn
+        plus a final ``outcome`` event. The outcome event always
+        fires, even on error / timeout / cancellation paths.
         """
+        if stream:
+            from nova_os.simulator.simulate import simulate_stream
+
+            return simulate_stream(self, target_agent_id, archetype, **kwargs)
+
         from nova_os.simulator.simulate import simulate as _simulate
 
         return _simulate(self, target_agent_id, archetype, **kwargs)
 
-    async def async_simulate(
+    def async_simulate(
         self,
         target_agent_id: str,
         archetype: Any,
+        *,
+        stream: bool = False,
         **kwargs: Any,
     ) -> Any:
-        """Async variant of :meth:`simulate`. Same contract; awaits
-        the loop directly without going through ``anyio.run``.
+        """Async variant of :meth:`simulate`.
+
+        Default (``stream=False``) returns a coroutine resolving to a
+        :class:`~nova_os.simulator.SimulationResult` — ``await`` it.
+
+        When ``stream=True``, returns an
+        :class:`~typing.AsyncIterator` of
+        :class:`~nova_os.simulator.TurnEvent` — iterate with
+        ``async for``. Same outcome-always-emitted contract as the
+        sync streaming surface.
+
+        Note: this method is intentionally NOT ``async def`` — the
+        ``stream=True`` path needs to hand back the async iterator
+        directly without going through one extra ``await`` layer.
+        Callers of the non-streaming path do ``await
+        c.async_simulate(...)`` exactly as before.
         """
+        if stream:
+            from nova_os.simulator.simulate import async_simulate_stream
+
+            return async_simulate_stream(
+                self, target_agent_id, archetype, **kwargs
+            )
+
         from nova_os.simulator.simulate import async_simulate as _async_simulate
 
-        return await _async_simulate(self, target_agent_id, archetype, **kwargs)
+        return _async_simulate(self, target_agent_id, archetype, **kwargs)
 
     async def _request_bytes(
         self,
