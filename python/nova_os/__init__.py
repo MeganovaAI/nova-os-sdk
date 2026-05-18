@@ -21,6 +21,7 @@ from nova_os.errors import (
 )
 from nova_os.callbacks import WebhookRouter
 from nova_os.streaming import MessageStream
+from nova_os.simulator import Archetype, ArchetypeValidationError
 
 __all__ = [
     "__version__",
@@ -40,4 +41,6 @@ __all__ = [
     "PersonaNotFound",
     "WebhookRouter",
     "MessageStream",
+    "Archetype",
+    "ArchetypeValidationError",
 ]

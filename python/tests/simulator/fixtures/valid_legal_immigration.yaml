@@ -1,0 +1,22 @@
+name: legal-immigration-pgwp
+description: |
+  Punjabi-speaking PGWP applicant; visitor visa refused 2024; common-law partner in Brazil.
+  Tests whether the routing-coordinator agent matches a QC-immigration lawyer with common-law
+  representation experience without forcing the customer to disclose the visa refusal.
+hidden_facts:
+  - "visitor visa refused 2024 — reluctant to disclose unless asked directly about prior IRCC interactions"
+  - "common-law partner has Brazilian passport — only mentions when 'family' is asked"
+  - "employer LMIA expires in 60 days — discloses when timeline is pressed"
+disclosure_willingness: cautious
+success_signal: "lawyer matched for QC immigration with common-law representation"
+language_register: english_with_occasional_punjabi
+demographic:
+  age_range: [28, 35]
+  language_first: punjabi
+  language_proficiency_english: B2
+failure_signals:
+  - "lawyer not matched after 10 turns"
+  - "customer ghosted (no response signal)"
+termination_conditions:
+  max_turns: 10
+  success_signal_in_target_response: true

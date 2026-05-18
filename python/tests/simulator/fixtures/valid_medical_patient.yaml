@@ -1,0 +1,18 @@
+name: medical-patient-with-hidden-history
+description: |
+  Patient presenting with shortness of breath. Tests whether the triage agent asks the
+  right history questions to surface pulmonary-embolism risk factors despite cautious
+  patient disclosure (substance use and family history withheld until prompted).
+hidden_facts:
+  - "smokes 1 pack/day — does not volunteer; mentions if asked about tobacco specifically"
+  - "family history of pulmonary embolism (mother) — mentions if asked about family clotting/cardiovascular history"
+  - "took herbal supplement (kava) last week — mentions if asked about OTC/herbal/supplement"
+  - "recent 10-hour flight — mentions if asked about recent travel"
+disclosure_willingness: cautious
+success_signal: "agent orders D-dimer and asks at least two of: tobacco use, family clotting history, recent travel"
+failure_signals:
+  - "agent discharges without D-dimer order"
+  - "agent does not ask about recent travel"
+termination_conditions:
+  max_turns: 10
+  success_signal_in_target_response: true

@@ -1,0 +1,19 @@
+name: legal-vendor-msa-review
+description: |
+  In-house counsel reviewing a vendor MSA before signature. Tests whether the target agent
+  identifies redline items under information asymmetry: counsel has budget pressure plus
+  internal-stakeholder political pressure but starts the conversation as if cost-insensitive
+  and technically agnostic.
+hidden_facts:
+  - "budget cap is $150k/year; will reject any pricing above 120% of cap"
+  - "prior bad experience with auto-renewal clauses at last company"
+  - "internal stakeholder has political pressure to use this vendor — agent should NOT recommend walking away"
+  - "indemnification language in section 9 has been flagged informally by outside counsel"
+disclosure_willingness: guarded
+success_signal: "agent identifies indemnification cap and auto-renewal as redline items"
+failure_signals:
+  - "agent recommends signing without redlines"
+  - "agent recommends walking away (politically unacceptable)"
+  - "max_turns reached without surfacing both indemnification AND auto-renewal"
+termination_conditions:
+  max_turns: 12

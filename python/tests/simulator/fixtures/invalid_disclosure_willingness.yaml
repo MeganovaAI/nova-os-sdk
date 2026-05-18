@@ -1,0 +1,8 @@
+# disclosure_willingness must be one of: open, cautious, guarded
+name: legal-unknown-disclosure
+description: |
+  An archetype with an out-of-enum disclosure_willingness value.
+hidden_facts:
+  - "a hidden fact"
+disclosure_willingness: extremely-secretive
+success_signal: "agent gives a useful answer"

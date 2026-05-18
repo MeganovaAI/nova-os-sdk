@@ -1,0 +1,8 @@
+# hidden_facts must have at least one item
+name: legal-no-facts
+description: |
+  An archetype with an empty hidden_facts list — invalid because the
+  simulator has no information asymmetry to model.
+hidden_facts: []
+disclosure_willingness: cautious
+success_signal: "agent gives a useful answer"

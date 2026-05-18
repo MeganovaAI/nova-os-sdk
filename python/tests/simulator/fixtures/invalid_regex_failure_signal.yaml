@@ -1,0 +1,11 @@
+# failure_signals contains a malformed regex after the `re:` prefix.
+name: legal-bad-regex
+description: |
+  An archetype whose failure_signals[0] uses a `re:` prefix with an
+  unterminated character class — must fail validation at load time.
+hidden_facts:
+  - "a hidden fact"
+disclosure_willingness: cautious
+success_signal: "agent gives a useful answer"
+failure_signals:
+  - "re:["

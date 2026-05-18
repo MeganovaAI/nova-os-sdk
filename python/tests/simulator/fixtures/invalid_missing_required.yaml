@@ -1,0 +1,7 @@
+# Missing required field: success_signal
+name: legal-incomplete
+description: |
+  An archetype missing the required success_signal field.
+hidden_facts:
+  - "a hidden fact"
+disclosure_willingness: cautious

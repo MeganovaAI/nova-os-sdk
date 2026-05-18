@@ -1,0 +1,8 @@
+# name must be lowercase kebab-case (no spaces, no caps).
+name: "Punjabi PGWP"
+description: |
+  An archetype with a non-kebab name.
+hidden_facts:
+  - "a hidden fact"
+disclosure_willingness: cautious
+success_signal: "agent gives a useful answer"
