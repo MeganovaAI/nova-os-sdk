@@ -1,14 +1,19 @@
-# Worked partner integrations
+# SDK examples
 
-End-to-end examples for the three verticals LibraOS most commonly ships into. Each is a runnable, partner-side script demonstrating how to wire your application against a LibraOS instance — not server-side internals.
+Runnable scripts that demonstrate how to call the `libraos-sdk` surface. Pick by **SDK feature**, not by use case — for end-to-end vertical workflows (contract extraction, clinical-note triage, 10-K diff, …) see the separate cookbook repo instead.
 
-| Vertical | What it shows |
+| Looking for | Go to |
 |---|---|
-| [`legaltech/`](legaltech/) | Contract clause extraction with structured output + a Mode B custom-tool webhook for partner-side precedent lookup |
-| [`healthcare/`](healthcare/) | Clinical-note triage with `output_type` JSON-schema validation + per-end-user identity passthrough for HIPAA-style isolation |
-| [`finance/`](finance/) | 10-K filing diff using the async-job pattern for long documents, with `web_search_config` for live market-data enrichment |
+| "How do I call this API?" | This directory + [`../python/examples/`](../python/examples/) |
+| "How do I build a contract-extraction app?" | [`libraos/cookbook`](https://github.com/libraos/cookbook) |
 
-For surface-level "how do I call this one API" examples, see the numbered scripts in [`../python/examples/`](../python/examples/).
+## Contents
+
+| Path | What it shows |
+|---|---|
+| [`simulator/`](simulator/) | Running the offline conversation simulator (`client.simulate(...)`) for evaluation and regression harnesses |
+
+The numbered, per-resource snippets (`messages_create.py`, `agents_list.py`, etc.) live in [`../python/examples/`](../python/examples/).
 
 ## Common prerequisites
 
@@ -18,8 +23,6 @@ export NOVA_OS_URL=https://nova.your-company.example
 export NOVA_OS_API_KEY=msk_live_...
 ```
 
-Each example's README lists any vertical-specific extras (FastAPI for the legaltech webhook, etc.).
+## Why no `legaltech/`, `healthcare/`, `finance/` here?
 
-## Sample data
-
-All sample inputs are **synthetic**. The legaltech MSA, the healthcare clinical note, and the finance 10-K excerpts in these scripts are constructed for documentation — they don't correspond to real contracts, real patients, or real filings. Replace them with your own data when adapting.
+Those moved to [`libraos/cookbook`](https://github.com/libraos/cookbook) (seed commit imports them verbatim). Reason: they compose the SDK with surrounding partner-side code (webhook receivers, sample documents, structured-output validators), and mixing that with SDK call-pattern reference confused partners trying to learn just the SDK surface. The split matches the [`anthropics/claude-cookbooks`](https://github.com/anthropics/claude-cookbooks) pattern.
