@@ -19,8 +19,18 @@ Codegen emits types only — SSE, OIDC, and multipart ergonomics are hand-writte
 
 ## Install
 
+> **Pre-release (alpha).** The kit publishes under the `next` dist-tag, so a bare
+> `npm install @meganova/nova-os-client` will **not** resolve until a stable
+> `latest` is cut. Until then, install from `@next` (or pin an exact version):
+
 ```sh
-npm install @meganova/nova-os-client
+npm install @meganova/nova-os-client@next
+```
+
+Once a stable version is released, the tag drops:
+
+```sh
+npm install @meganova/nova-os-client   # after a stable `latest` is published
 ```
 
 ## Quick start (partner-minted JWT)
