@@ -1206,7 +1206,7 @@ export interface components {
             title: string;
             /** @description Collection path (e.g. "contracts/2026") */
             path?: string;
-            /** @description Document type — pdf */
+            /** @description Document type — pdf, docx, md, etc. */
             type?: string;
             /** Format: int64 */
             readonly size_bytes?: number;

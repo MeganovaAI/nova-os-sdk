@@ -15,17 +15,23 @@ T = TypeVar("T", bound="MessageRequestMetadata")
 class MessageRequestMetadata:
     """
     Attributes:
+        agent_id (str | Unset): Target a specific Nova OS agent/persona for this turn; omit
+            for the default agent. Typed here so generated clients can set
+            it without falling back to untyped additionalProperties.
         brain (bool | Unset): Per-call planner toggle (3-state — null inherits server default).
         stream_events (bool | Unset): Per-call orchestration event streaming toggle.
         stream_thinking (bool | Unset): Per-call planner-thinking event toggle.
     """
 
+    agent_id: str | Unset = UNSET
     brain: bool | Unset = UNSET
     stream_events: bool | Unset = UNSET
     stream_thinking: bool | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        agent_id = self.agent_id
+
         brain = self.brain
 
         stream_events = self.stream_events
@@ -35,6 +41,8 @@ class MessageRequestMetadata:
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
+        if agent_id is not UNSET:
+            field_dict["agent_id"] = agent_id
         if brain is not UNSET:
             field_dict["brain"] = brain
         if stream_events is not UNSET:
@@ -47,6 +55,8 @@ class MessageRequestMetadata:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
+        agent_id = d.pop("agent_id", UNSET)
+
         brain = d.pop("brain", UNSET)
 
         stream_events = d.pop("stream_events", UNSET)
@@ -54,6 +64,7 @@ class MessageRequestMetadata:
         stream_thinking = d.pop("stream_thinking", UNSET)
 
         message_request_metadata = cls(
+            agent_id=agent_id,
             brain=brain,
             stream_events=stream_events,
             stream_thinking=stream_thinking,

@@ -62,6 +62,9 @@ def sync_detailed(
 ) -> Response[PersonaManifestEntry | PersonaNotFoundError]:
     """Fetch a single persona by id
 
+     Returns the manifest entry for a single registered persona. 404 with
+    a PersonaNotFoundError envelope when no persona matches the id.
+
     Args:
         id (str):
 
@@ -91,6 +94,9 @@ def sync(
 ) -> PersonaManifestEntry | PersonaNotFoundError | None:
     """Fetch a single persona by id
 
+     Returns the manifest entry for a single registered persona. 404 with
+    a PersonaNotFoundError envelope when no persona matches the id.
+
     Args:
         id (str):
 
@@ -114,6 +120,9 @@ async def asyncio_detailed(
     client: AuthenticatedClient | Client,
 ) -> Response[PersonaManifestEntry | PersonaNotFoundError]:
     """Fetch a single persona by id
+
+     Returns the manifest entry for a single registered persona. 404 with
+    a PersonaNotFoundError envelope when no persona matches the id.
 
     Args:
         id (str):
@@ -141,6 +150,9 @@ async def asyncio(
     client: AuthenticatedClient | Client,
 ) -> PersonaManifestEntry | PersonaNotFoundError | None:
     """Fetch a single persona by id
+
+     Returns the manifest entry for a single registered persona. 404 with
+    a PersonaNotFoundError envelope when no persona matches the id.
 
     Args:
         id (str):

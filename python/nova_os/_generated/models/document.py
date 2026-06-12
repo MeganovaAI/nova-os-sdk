@@ -24,7 +24,7 @@ class Document:
         id (str):
         title (str): File name or extracted title
         path (str | Unset): Collection path (e.g. "contracts/2026")
-        type_ (str | Unset): Document type — pdf
+        type_ (str | Unset): Document type — pdf, docx, md, etc.
         size_bytes (int | Unset):
         collection_id (str | Unset): Parent collection (empty = root)
         metadata (DocumentMetadata | Unset): Mime, pages, author, etc.

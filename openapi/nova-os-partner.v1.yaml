@@ -999,7 +999,7 @@ components:
         id: { type: string, readOnly: true }
         title: { type: string, description: File name or extracted title }
         path: { type: string, description: Collection path (e.g. "contracts/2026") }
-        type: { type: string, description: Document type — pdf, docx, md, etc. }
+        type: { type: string, description: "Document type — pdf, docx, md, etc." }
         size_bytes: { type: integer, format: int64, readOnly: true }
         collection_id: { type: string, description: Parent collection (empty = root) }
         metadata:

@@ -24,6 +24,9 @@ from .custom_tool_callback_auth_type import CustomToolCallbackAuthType
 from .custom_tool_callback_retry import CustomToolCallbackRetry
 from .custom_tool_callback_retry_backoff import CustomToolCallbackRetryBackoff
 from .custom_tool_result_request import CustomToolResultRequest
+from .deployment import Deployment
+from .deployment_auth import DeploymentAuth
+from .deployment_models import DeploymentModels
 from .document import Document
 from .document_list import DocumentList
 from .document_metadata import DocumentMetadata
@@ -149,6 +152,9 @@ __all__ = (
     "CustomToolCallbackRetry",
     "CustomToolCallbackRetryBackoff",
     "CustomToolResultRequest",
+    "Deployment",
+    "DeploymentAuth",
+    "DeploymentModels",
     "Document",
     "DocumentList",
     "DocumentMetadata",

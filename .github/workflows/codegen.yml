@@ -53,7 +53,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install openapi-python-client
-        run: pip install openapi-python-client
+        run: pip install openapi-python-client==0.28.3
 
       - name: Regenerate Python client
         run: |

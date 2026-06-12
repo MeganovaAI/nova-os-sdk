@@ -27,8 +27,11 @@ codegen-go:
 	cd cli && go generate ./...
 
 codegen-python:
-	cd python && openapi-python-client generate --path ../$(SPEC) --overwrite \
-	  --config openapi-python-client.yaml
+	cd python && rm -rf nova_os/_generated nova-os-sdk-generated && \
+	  openapi-python-client generate --path ../$(SPEC) --overwrite \
+	    --config openapi-python-client.yaml && \
+	  mv nova-os-sdk-generated/nova_os._generated nova_os/_generated && \
+	  rm -rf nova-os-sdk-generated
 
 codegen-ts:
 	cd clients/typescript && npm run codegen
