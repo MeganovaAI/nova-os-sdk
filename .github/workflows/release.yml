@@ -52,6 +52,49 @@ jobs:
           cd python
           twine upload dist/*
 
+  build-typescript:
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install + build
+        run: |
+          cd clients/typescript
+          npm ci
+          npm run build
+
+      - name: Pack tarball
+        run: cd clients/typescript && npm pack
+
+      - name: Upload tarball to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, 'rc') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
+          files: |
+            clients/typescript/*.tgz
+
+      - name: Publish to npm
+        # Mirrors the PyPI job: only publishes when the org token secret is set.
+        # Scoped package -> --access public. Prerelease versions (0.x-alpha) go
+        # to the `next` dist-tag so they never become `latest`.
+        if: env.NPM_TOKEN != ''
+        env:
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+        run: |
+          cd clients/typescript
+          VER=$(node -p "require('./package.json').version")
+          if echo "$VER" | grep -q '-'; then TAG=next; else TAG=latest; fi
+          echo "Publishing @meganova/nova-os-client@$VER under dist-tag '$TAG'"
+          npm publish --access public --tag "$TAG"
+
   build-cli:
     runs-on: ubuntu-latest
     steps:
