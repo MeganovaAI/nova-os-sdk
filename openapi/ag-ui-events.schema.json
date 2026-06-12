@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MeganovaAI/nova-os-sdk/openapi/ag-ui-events.schema.json",
+  "title": "Nova OS AG-UI streaming events",
+  "description": "Typed shape of the AG-UI streaming events Nova OS emits over Server-Sent Events on chat surfaces (the `X-Protocol: ag-ui` gated stream). This is a SEPARATE contract from the OpenAPI partner spec's `StreamEvent` union (the #99-native snake_case dialect): AG-UI is the adopted streaming standard (nova-os #370) whose wire fields are camelCase and whose `type` discriminator values are the canonical `@ag-ui/core` SCREAMING_SNAKE set. Hand-maintained to mirror nova-os `internal/server/streaming/agui/events.go`; the OpenAPI codegen does NOT produce these (it emits no SSE runtime). Each event is one `data: {json}\\n\\n` SSE frame; `type` discriminates.",
+  "oneOf": [
+    { "$ref": "#/$defs/RunStarted" },
+    { "$ref": "#/$defs/RunFinished" },
+    { "$ref": "#/$defs/RunError" },
+    { "$ref": "#/$defs/TextMessageStart" },
+    { "$ref": "#/$defs/TextMessageContent" },
+    { "$ref": "#/$defs/TextMessageEnd" },
+    { "$ref": "#/$defs/ReasoningMessageStart" },
+    { "$ref": "#/$defs/ReasoningMessageContent" },
+    { "$ref": "#/$defs/ReasoningMessageEnd" },
+    { "$ref": "#/$defs/ToolCallStart" },
+    { "$ref": "#/$defs/ToolCallArgs" },
+    { "$ref": "#/$defs/ToolCallEnd" },
+    { "$ref": "#/$defs/ToolCallResult" },
+    { "$ref": "#/$defs/StateDelta" },
+    { "$ref": "#/$defs/StateSnapshot" },
+    { "$ref": "#/$defs/CustomEvent" },
+    { "$ref": "#/$defs/RawEvent" }
+  ],
+  "$defs": {
+    "RunStarted": {
+      "type": "object",
+      "description": "Lifecycle — the agent run has begun. First frame of a stream.",
+      "required": ["type", "threadId", "runId"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "RUN_STARTED" },
+        "threadId": { "type": "string" },
+        "runId": { "type": "string" }
+      }
+    },
+    "RunFinished": {
+      "type": "object",
+      "description": "Lifecycle — terminal success frame. `result` is optional (`@ag-ui/core` RunFinishedEventSchema). Prior to nova-os #429 this emitted `outcome` and omitted threadId/runId — clients MUST use the current shape.",
+      "required": ["type", "threadId", "runId"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "RUN_FINISHED" },
+        "threadId": { "type": "string" },
+        "runId": { "type": "string" },
+        "result": {}
+      }
+    },
+    "RunError": {
+      "type": "object",
+      "description": "Lifecycle — terminal error frame. Emitted instead of RUN_FINISHED on failure.",
+      "required": ["type", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "RUN_ERROR" },
+        "message": { "type": "string" },
+        "code": { "type": "string" }
+      }
+    },
+    "TextMessageStart": {
+      "type": "object",
+      "description": "Text streaming — opens an assistant text message. `role` is typically \"assistant\".",
+      "required": ["type", "messageId", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "TEXT_MESSAGE_START" },
+        "messageId": { "type": "string" },
+        "role": { "type": "string" }
+      }
+    },
+    "TextMessageContent": {
+      "type": "object",
+      "description": "Text streaming — one incremental token/chunk of the open text message.",
+      "required": ["type", "messageId", "delta"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "TEXT_MESSAGE_CONTENT" },
+        "messageId": { "type": "string" },
+        "delta": { "type": "string" }
+      }
+    },
+    "TextMessageEnd": {
+      "type": "object",
+      "description": "Text streaming — closes the open text message.",
+      "required": ["type", "messageId"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "TEXT_MESSAGE_END" },
+        "messageId": { "type": "string" }
+      }
+    },
+    "ReasoningMessageStart": {
+      "type": "object",
+      "description": "Reasoning/thinking stream — opens a reasoning message (was THINKING_* before the early-2026 AG-UI rename). Gated on stream_thinking; don't render as the answer.",
+      "required": ["type", "messageId"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "REASONING_MESSAGE_START" },
+        "messageId": { "type": "string" }
+      }
+    },
+    "ReasoningMessageContent": {
+      "type": "object",
+      "description": "Reasoning/thinking stream — one incremental chunk of reasoning.",
+      "required": ["type", "messageId", "delta"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "REASONING_MESSAGE_CONTENT" },
+        "messageId": { "type": "string" },
+        "delta": { "type": "string" }
+      }
+    },
+    "ReasoningMessageEnd": {
+      "type": "object",
+      "description": "Reasoning/thinking stream — closes the reasoning message.",
+      "required": ["type", "messageId"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "REASONING_MESSAGE_END" },
+        "messageId": { "type": "string" }
+      }
+    },
+    "ToolCallStart": {
+      "type": "object",
+      "description": "Tool call — the agent is invoking a tool. Precedes its TOOL_CALL_RESULT.",
+      "required": ["type", "toolCallId", "toolCallName"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "TOOL_CALL_START" },
+        "toolCallId": { "type": "string" },
+        "toolCallName": { "type": "string" }
+      }
+    },
+    "ToolCallArgs": {
+      "type": "object",
+      "description": "Tool call — one chunk of the serialized-JSON tool arguments, accumulated by toolCallId.",
+      "required": ["type", "toolCallId", "delta"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "TOOL_CALL_ARGS" },
+        "toolCallId": { "type": "string" },
+        "delta": { "type": "string", "description": "Serialized JSON chunk; concatenate over toolCallId to reconstruct the args object." }
+      }
+    },
+    "ToolCallEnd": {
+      "type": "object",
+      "description": "Tool call — argument streaming for this call is complete.",
+      "required": ["type", "toolCallId"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "TOOL_CALL_END" },
+        "toolCallId": { "type": "string" }
+      }
+    },
+    "ToolCallResult": {
+      "type": "object",
+      "description": "Tool call — the result of a completed tool call. `messageId` ties it back to the assistant message that requested the call; `role` is typically \"tool\".",
+      "required": ["type", "messageId", "toolCallId", "content", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "TOOL_CALL_RESULT" },
+        "messageId": { "type": "string" },
+        "toolCallId": { "type": "string" },
+        "content": { "type": "string" },
+        "role": { "type": "string" }
+      }
+    },
+    "StateDelta": {
+      "type": "object",
+      "description": "State — an RFC 6902 JSON Patch describing incremental changes to the agent's shared state (e.g. persist_fields). The wire field is `delta` (canonical @ag-ui/core); prior to nova-os #425 it was `patch` — clients MUST read `delta`.",
+      "required": ["type", "delta"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "STATE_DELTA" },
+        "delta": {
+          "type": "array",
+          "description": "RFC 6902 JSON Patch — array of operation objects.",
+          "items": { "type": "object" }
+        }
+      }
+    },
+    "StateSnapshot": {
+      "type": "object",
+      "description": "State — full state snapshot (alternative to STATE_DELTA). Likely emitted on connect by future async-job AG-UI streams.",
+      "required": ["type", "snapshot"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "STATE_SNAPSHOT" },
+        "snapshot": {}
+      }
+    },
+    "CustomEvent": {
+      "type": "object",
+      "description": "Escape hatch for Nova-OS-specific extensions without a standard AG-UI event type. `name` is a `nova.<x>` namespaced inner event (e.g. \"nova.route_hint\", \"nova.citations\", \"nova.phase\", \"nova.done_meta\"); `value` is the partner-defined payload. Uses the canonical discriminator \"CUSTOM\" (NOT \"CUSTOM_EVENT\" — strict-zod consumers reject the latter; nova-os #416).",
+      "required": ["type", "name", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "CUSTOM" },
+        "name": { "type": "string", "pattern": "^nova\\." },
+        "value": {}
+      }
+    },
+    "RawEvent": {
+      "type": "object",
+      "description": "AG-UI passthrough for protocol-aware proxies that forward verbatim. Canonical discriminator \"RAW\" (NOT \"RAW_EVENT\"; nova-os #416).",
+      "required": ["type", "data"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "RAW" },
+        "data": {}
+      }
+    }
+  }
+}

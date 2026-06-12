@@ -26,6 +26,10 @@ servers:
 security:
   - bearerAuth: []
 
+tags:
+  - name: Deployment
+    description: Boot-time capabilities / model-tier / locale / auth read.
+
 components:
   securitySchemes:
     bearerAuth:
@@ -631,6 +635,12 @@ components:
         metadata:
           type: object
           properties:
+            agent_id:
+              type: string
+              description: |
+                Target a specific Nova OS agent/persona for this turn; omit
+                for the default agent. Typed here so generated clients can set
+                it without falling back to untyped additionalProperties.
             brain:
               type: boolean
               description: Per-call planner toggle (3-state — null inherits server default).
@@ -1253,6 +1263,61 @@ components:
         agent_id: { type: string }
         environment_id: { type: string }
         model: { type: string }
+
+    # ── Deployment / capabilities read (design D1) ────────────────────
+    Deployment:
+      type: object
+      required: [version, capabilities]
+      description: |
+        Minimal, derive-friendly capabilities read so a client (web/iOS) can
+        discover what this Nova OS instance supports without probing each
+        endpoint. Per the contract-unification design (D1, lean: derive),
+        this is intentionally small — the persona manifest
+        (`GET /agents/v1/personas`) remains the source of truth for *which*
+        agents exist; this read surfaces server-level feature flags, model
+        tiers, enabled locales, and the auth contract clients need at boot.
+        All fields are advisory; absence means "not advertised", not "off".
+      properties:
+        version:
+          type: string
+          description: Nova OS server version (e.g. "v0.1.9"). "dev"/"unknown" on unstamped builds.
+        capabilities:
+          type: array
+          description: |
+            Stable string labels for optional server features a client may
+            branch on (e.g. "observational_memory", "report_generator",
+            "async_jobs", "workflows", "knowledge_gate", "ag_ui_streaming").
+            Open-ended — unknown labels are ignored by older clients.
+          items: { type: string }
+        models:
+          type: object
+          description: |
+            Resolved model tiers (advisory; no secrets). Lets a client show
+            "powered by" / pick a tier without hardcoding model ids.
+          properties:
+            answer: { type: string, description: Default answer/synthesis model id. }
+            skill: { type: string, description: Cheap-tier skill/section model id. }
+            brain: { type: string, description: Planner/brain model id. }
+          additionalProperties: false
+        locales:
+          type: array
+          description: Enabled UI locales; first is the default (e.g. ["en","zh-CN"]).
+          items: { type: string }
+        auth:
+          type: object
+          description: |
+            The interactive-login contract clients should use. OIDC details
+            live in the hand-authored `docs/oidc-client-flow.md`; this block
+            only advertises the issuer + whether OIDC is enabled so a client
+            can construct the Auth-Code+PKCE flow.
+          properties:
+            oidc_enabled:
+              type: boolean
+              description: True when the embedded OIDC provider is available for interactive login.
+            issuer:
+              type: string
+              description: OIDC issuer / public base URL (discovery root). Empty when OIDC disabled.
+          additionalProperties: false
 
   responses:
     BadRequest:
@@ -2193,6 +2258,9 @@ paths:
     get:
       operationId: getPersonaByID
       summary: Fetch a single persona by id
+      description: |
+        Returns the manifest entry for a single registered persona. 404 with
+        a PersonaNotFoundError envelope when no persona matches the id.
       tags: [Personas]
       responses:
         '200':
@@ -2205,3 +2273,25 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PersonaNotFoundError' }
+
+  # ── Deployment / capabilities (design D1) ─────────────────────────
+  /v1/managed/deployment:
+    get:
+      operationId: getDeployment
+      summary: Read this instance's capabilities, model tiers, locales, and auth contract
+      tags: [Deployment]
+      description: |
+        Minimal capabilities read for boot-time client configuration. Lets a
+        web or iOS client discover server version, optional feature labels,
+        resolved model tiers, enabled locales, and the OIDC auth contract
+        without probing individual endpoints. Per the contract-unification
+        design (D1, lean: derive), this is deliberately small and advisory —
+        `GET /agents/v1/personas` remains the source of truth for which agents
+        exist.
+      responses:
+        '200':
+          description: Deployment capabilities.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Deployment' }
+        '401': { $ref: '#/components/responses/Unauthorized' }

@@ -1,4 +1,4 @@
-.PHONY: spec-validate spec-lint spec-hash spec-check codegen-go codegen-python smoke
+.PHONY: spec-validate spec-lint spec-hash spec-check codegen-go codegen-python codegen-ts smoke
 
 SPEC := openapi/nova-os-partner.v1.yaml
 HASH_FILE := openapi/openapi-hash.txt
@@ -29,6 +29,9 @@ codegen-go:
 codegen-python:
 	cd python && openapi-python-client generate --path ../$(SPEC) --overwrite \
 	  --config openapi-python-client.yaml
+
+codegen-ts:
+	cd clients/typescript && npm run codegen
 
 smoke:
 	$(MAKE) spec-check

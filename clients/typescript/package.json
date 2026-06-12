@@ -1,0 +1,46 @@
+{
+  "name": "@meganova/nova-os-client",
+  "version": "0.1.0-alpha.0",
+  "description": "Framework-agnostic TypeScript client kit for Nova OS — typed REST client (generated from the partner OpenAPI spec), OIDC Auth-Code+PKCE+refresh helper, and AG-UI streaming event types. No React/framework dependencies; runs in browsers, Node 22, and React Native.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "codegen": "openapi-typescript ../../openapi/nova-os-partner.v1.yaml -o src/_generated/schema.d.ts",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.13.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.6.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MeganovaAI/nova-os-sdk",
+    "directory": "clients/typescript"
+  }
+}

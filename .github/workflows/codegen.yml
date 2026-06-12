@@ -6,6 +6,7 @@ on:
       - 'openapi/**'
       - 'cli/**'
       - 'python/**'
+      - 'clients/typescript/**'
       - '.github/workflows/codegen.yml'
   push:
     branches: [main]
@@ -77,3 +78,35 @@ jobs:
           cd python
           pip install -e ".[dev]"
           pytest tests/test_smoke.py -v
+
+  codegen-ts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install deps
+        run: cd clients/typescript && npm ci
+
+      - name: Regenerate TS REST types
+        run: cd clients/typescript && npm run codegen
+
+      - name: Fail on drift
+        run: |
+          if ! git diff --quiet -- clients/typescript/src/_generated/schema.d.ts; then
+            echo "FAIL: clients/typescript/src/_generated/schema.d.ts drifted from spec."
+            echo "Run 'make codegen-ts' locally and commit the result."
+            git diff -- clients/typescript/src/_generated/schema.d.ts | head -80
+            exit 1
+          fi
+
+      - name: Build + test
+        run: |
+          cd clients/typescript
+          npm run typecheck
+          npm run build
+          npm test
