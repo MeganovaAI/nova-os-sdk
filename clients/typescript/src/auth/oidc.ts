@@ -78,7 +78,10 @@ export class OidcClient {
       crypto: config.crypto,
     };
     this.store = config.tokenStore ?? new MemoryTokenStore();
-    const f = config.fetch ?? (globalThis as { fetch?: typeof fetch }).fetch;
+    // Bind the global fallback to globalThis: browsers throw "Illegal
+    // invocation" if window.fetch is later called as `this.fetchImpl(...)`
+    // (a receiver other than window). A caller-supplied fetch is used as-is.
+    const f = config.fetch ?? (globalThis as { fetch?: typeof fetch }).fetch?.bind(globalThis);
     if (!f) throw new Error("No fetch available; pass `fetch` in OidcConfig.");
     this.fetchImpl = f;
   }
