@@ -24,6 +24,7 @@ export {
   type SessionCreate,
   type Deployment,
   type Agent,
+  type Transcription,
 } from "./client.js";
 
 // Low-level REST factory (for advanced use / custom auth).

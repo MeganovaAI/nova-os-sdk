@@ -24,6 +24,13 @@ export type SessionCreate = Schemas["SessionCreate"];
 export type Deployment = Schemas["Deployment"];
 export type Agent = Schemas["Agent"];
 
+/** Result of {@link NovaClient.transcribeAudio}. `json` returns `{text, language?}`; `verbose_json` adds `duration`. */
+export interface Transcription {
+  text: string;
+  language?: string;
+  duration?: number;
+}
+
 export interface NovaClientOptions {
   /** Base URL of the Nova OS instance. */
   baseUrl: string;
@@ -182,6 +189,32 @@ export class NovaClient {
     });
     if (!res.ok) throw await this.toApiError(res);
     return (await res.json()) as Document;
+  }
+
+  /** Transcribe audio (speech-to-text). `file` is a Blob/File; multipart → /v1/audio/transcriptions. */
+  async transcribeAudio(
+    file: Blob,
+    opts?: {
+      fileName?: string;
+      model?: string;
+      language?: string;
+      responseFormat?: "json" | "text" | "verbose_json";
+      signal?: AbortSignal;
+    },
+  ): Promise<Transcription> {
+    const form = new FormData();
+    form.append("file", file, opts?.fileName ?? "speech.webm");
+    if (opts?.model) form.append("model", opts.model);
+    if (opts?.language) form.append("language", opts.language);
+    if (opts?.responseFormat) form.append("response_format", opts.responseFormat);
+    const res = await this.rawFetch("/v1/audio/transcriptions", {
+      method: "POST",
+      body: form,
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    if (opts?.responseFormat === "text") return { text: await res.text() };
+    return (await res.json()) as Transcription;
   }
 
   // ── Sessions (#185) ────────────────────────────────────────────────────
