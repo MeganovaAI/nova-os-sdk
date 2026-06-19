@@ -239,7 +239,9 @@ export class NovaClient {
 
   /** Bearer-injected, refresh-on-401 raw fetch for SSE/multipart surfaces. */
   private async rawFetch(path: string, init: RequestInit): Promise<Response> {
-    const baseFetch = this.opts.fetch ?? (globalThis as { fetch?: typeof fetch }).fetch;
+    // Bind to globalThis so a bare `window.fetch` isn't called detached (browsers
+    // throw "Illegal invocation" when fetch loses its window receiver).
+    const baseFetch = this.opts.fetch ?? (globalThis as { fetch?: typeof fetch }).fetch?.bind(globalThis);
     if (!baseFetch) throw new Error("No fetch available.");
     const url = this.opts.baseUrl.replace(/\/+$/, "") + path;
 

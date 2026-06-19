@@ -78,7 +78,9 @@ export class OidcClient {
       crypto: config.crypto,
     };
     this.store = config.tokenStore ?? new MemoryTokenStore();
-    const f = config.fetch ?? (globalThis as { fetch?: typeof fetch }).fetch;
+    // Bind to globalThis: a bare `window.fetch` reference called as `this.fetchImpl(...)`
+    // loses its receiver and browsers throw "Illegal invocation".
+    const f = config.fetch ?? (globalThis as { fetch?: typeof fetch }).fetch?.bind(globalThis);
     if (!f) throw new Error("No fetch available; pass `fetch` in OidcConfig.");
     this.fetchImpl = f;
   }

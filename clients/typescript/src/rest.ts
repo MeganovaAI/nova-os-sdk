@@ -37,7 +37,9 @@ export interface RestClient {
 }
 
 export function createRestClient(options: RestClientOptions): RestClient {
-  const baseFetch = options.fetch ?? (globalThis as { fetch?: typeof fetch }).fetch;
+  // Bind to globalThis so a bare `window.fetch` isn't called detached (browsers
+  // throw "Illegal invocation" when fetch loses its window receiver).
+  const baseFetch = options.fetch ?? (globalThis as { fetch?: typeof fetch }).fetch?.bind(globalThis);
   if (!baseFetch) throw new Error("No fetch available; pass `fetch` in RestClientOptions.");
 
   // Wrap fetch to inject Bearer + handle a single refresh-retry on 401.
