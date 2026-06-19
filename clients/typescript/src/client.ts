@@ -31,6 +31,15 @@ export interface Transcription {
   duration?: number;
 }
 
+/** A user's observational memory for one persona, from {@link NovaClient.getMemory}. */
+export interface MemoryView {
+  agentId: string;
+  scope: "corporate" | "personal";
+  content: string;
+  lastObservedAt?: string;
+  enabled: boolean;
+}
+
 export interface NovaClientOptions {
   /** Base URL of the Nova OS instance. */
   baseUrl: string;
@@ -215,6 +224,34 @@ export class NovaClient {
     if (!res.ok) throw await this.toApiError(res);
     if (opts?.responseFormat === "text") return { text: await res.text() };
     return (await res.json()) as Transcription;
+  }
+
+  /** Read the caller's own observational memory for a persona (read-only). */
+  async getMemory(
+    agentId: string,
+    opts?: { scope?: "corporate" | "personal"; signal?: AbortSignal },
+  ): Promise<MemoryView> {
+    const qs = new URLSearchParams({ agent_id: agentId });
+    if (opts?.scope) qs.set("scope", opts.scope);
+    const res = await this.rawFetch(`/v1/managed/memory?${qs.toString()}`, {
+      method: "GET",
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as {
+      agent_id: string;
+      scope: "corporate" | "personal";
+      content: string;
+      last_observed_at?: string;
+      enabled: boolean;
+    };
+    return {
+      agentId: j.agent_id,
+      scope: j.scope,
+      content: j.content ?? "",
+      lastObservedAt: j.last_observed_at,
+      enabled: j.enabled,
+    };
   }
 
   // ── Sessions (#185) ────────────────────────────────────────────────────

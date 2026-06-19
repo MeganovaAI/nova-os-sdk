@@ -25,6 +25,7 @@ export {
   type Deployment,
   type Agent,
   type Transcription,
+  type MemoryView,
 } from "./client.js";
 
 // Low-level REST factory (for advanced use / custom auth).
