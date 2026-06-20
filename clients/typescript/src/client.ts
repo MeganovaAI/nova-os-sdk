@@ -40,6 +40,15 @@ export interface MemoryView {
   enabled: boolean;
 }
 
+/** A project containing conversations. */
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** One of the caller's conversations (from {@link NovaClient.listConversations}). */
 export interface ConversationSummary {
   id: string;
@@ -48,6 +57,7 @@ export interface ConversationSummary {
   createdAt: string;
   lastActiveAt: string;
   messageCount: number;
+  projectId?: string | null;
 }
 
 /** A persisted message in a conversation. */
@@ -284,11 +294,11 @@ export class NovaClient {
     const res = await this.rawFetch(`/v1/conversations${q ? `?${q}` : ""}`, { method: "GET", signal: opts?.signal });
     if (!res.ok) throw await this.toApiError(res);
     const j = (await res.json()) as {
-      conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number }>;
+      conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null }>;
     };
     return (j.conversations ?? []).map((c) => ({
       id: c.id, agentId: c.agent_id, title: c.title ?? null,
-      createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count,
+      createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null,
     }));
   }
 
@@ -297,11 +307,11 @@ export class NovaClient {
     const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, { method: "GET", signal: opts?.signal });
     if (!res.ok) throw await this.toApiError(res);
     const j = (await res.json()) as {
-      id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number;
+      id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null;
       messages?: Array<{ id?: string; role: string; content: string; timestamp: string; seq?: number }>;
     };
     return {
-      conversation: { id: j.id, agentId: j.agent_id, title: j.title ?? null, createdAt: j.created_at, lastActiveAt: j.last_active_at, messageCount: j.message_count },
+      conversation: { id: j.id, agentId: j.agent_id, title: j.title ?? null, createdAt: j.created_at, lastActiveAt: j.last_active_at, messageCount: j.message_count, projectId: j.project_id ?? null },
       messages: (j.messages ?? []).map((m) => ({ id: m.id, role: m.role as ConversationMessage["role"], content: m.content, timestamp: m.timestamp, seq: m.seq })),
     };
   }
@@ -318,6 +328,60 @@ export class NovaClient {
       method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ title }),
     });
     if (!res.ok) throw await this.toApiError(res);
+  }
+
+  // ── Projects ───────────────────────────────────────────────────────────
+
+  private toProject(j: { id: string; name: string; description?: string; created_at: string; updated_at: string }): Project {
+    return { id: j.id, name: j.name, description: j.description, createdAt: j.created_at, updatedAt: j.updated_at };
+  }
+
+  async listProjects(opts?: { signal?: AbortSignal }): Promise<Project[]> {
+    const res = await this.rawFetch("/v1/projects", { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { projects?: Array<Parameters<NovaClient["toProject"]>[0]> };
+    return (j.projects ?? []).map((p) => this.toProject(p));
+  }
+
+  async createProject(input: { name: string; description?: string }): Promise<Project> {
+    const res = await this.rawFetch("/v1/projects", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toProject(await res.json() as Parameters<NovaClient["toProject"]>[0]);
+  }
+
+  async getProject(id: string): Promise<Project> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toProject(await res.json() as Parameters<NovaClient["toProject"]>[0]);
+  }
+
+  async renameProject(id: string, input: { name?: string; description?: string }): Promise<void> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  async listProjectConversations(id: string, opts?: { signal?: AbortSignal }): Promise<ConversationSummary[]> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}/conversations`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null }> };
+    return (j.conversations ?? []).map((c) => ({ id: c.id, agentId: c.agent_id, title: c.title ?? null, createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null }));
+  }
+
+  async createConversation(input?: { id?: string; agentId?: string; projectId?: string; metadata?: Record<string, unknown> }): Promise<ConversationSummary> {
+    const body: Record<string, unknown> = {};
+    if (input?.id) body.id = input.id;
+    if (input?.agentId) body.agent_id = input.agentId;
+    if (input?.projectId) body.project_id = input.projectId;
+    if (input?.metadata) body.metadata = input.metadata;
+    const res = await this.rawFetch("/v1/conversations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) throw await this.toApiError(res);
+    const c = (await res.json()) as { id: string; agent_id: string; title?: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null };
+    return { id: c.id, agentId: c.agent_id, title: c.title ?? null, createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null };
   }
 
   // ── Sessions (#185) ────────────────────────────────────────────────────

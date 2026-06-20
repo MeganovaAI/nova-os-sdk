@@ -12,7 +12,7 @@ describe("conversations", () => {
     );
     const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const out = await client.listConversations({ agentId: "marketing", limit: 20 });
-    expect(out).toEqual([{ id: "c1", agentId: "marketing", title: "Q3", createdAt: "t1", lastActiveAt: "t2", messageCount: 4 }]);
+    expect(out).toEqual([{ id: "c1", agentId: "marketing", title: "Q3", createdAt: "t1", lastActiveAt: "t2", messageCount: 4, projectId: null }]);
     const [url] = fetchMock.mock.calls[0] as unknown as [string];
     expect(url).toContain("/v1/conversations");
     expect(url).toContain("agent=marketing");
@@ -26,7 +26,7 @@ describe("conversations", () => {
     );
     const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const out = await client.getConversation("c1");
-    expect(out.conversation).toEqual({ id: "c1", agentId: "marketing", title: null, createdAt: "t1", lastActiveAt: "t2", messageCount: 2 });
+    expect(out.conversation).toEqual({ id: "c1", agentId: "marketing", title: null, createdAt: "t1", lastActiveAt: "t2", messageCount: 2, projectId: null });
     expect(out.messages).toEqual([{ id: "m1", role: "user", content: "hi", timestamp: "ts1", seq: 1 }]);
     expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toContain("/v1/conversations/c1");
   });

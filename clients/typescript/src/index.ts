@@ -26,6 +26,7 @@ export {
   type Agent,
   type Transcription,
   type MemoryView,
+  type Project,
   type ConversationSummary,
   type ConversationMessage,
 } from "./client.js";
