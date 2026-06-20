@@ -8,7 +8,7 @@ describe("projects", () => {
     const fetchMock = vi.fn(async () => mk({ id: "p1", owner_id: "u", name: "Acme", description: "d", created_at: "t1", updated_at: "t2" }, 201));
     const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const p = await client.createProject({ name: "Acme" });
-    expect(p).toEqual({ id: "p1", name: "Acme", description: "d", createdAt: "t1", updatedAt: "t2" });
+    expect(p).toEqual({ id: "p1", name: "Acme", description: "d", createdAt: "t1", updatedAt: "t2", facts: [] });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toContain("/v1/projects");
     expect(init.method).toBe("POST");
@@ -19,7 +19,7 @@ describe("projects", () => {
     const fetchMock = vi.fn(async () => mk({ projects: [{ id: "p1", owner_id: "u", name: "Acme", created_at: "t1", updated_at: "t2" }] }));
     const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const out = await client.listProjects();
-    expect(out).toEqual([{ id: "p1", name: "Acme", description: undefined, createdAt: "t1", updatedAt: "t2" }]);
+    expect(out).toEqual([{ id: "p1", name: "Acme", description: undefined, createdAt: "t1", updatedAt: "t2", facts: [] }]);
   });
 
   it("listProjectConversations GETs /v1/projects/:id/conversations", async () => {

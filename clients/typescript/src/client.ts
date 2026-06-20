@@ -55,6 +55,7 @@ export interface Project {
   description?: string;
   createdAt: string;
   updatedAt: string;
+  facts?: string[];
 }
 
 /** One of the caller's conversations (from {@link NovaClient.listConversations}). */
@@ -338,10 +339,16 @@ export class NovaClient {
     if (!res.ok) throw await this.toApiError(res);
   }
 
+  /** Move a conversation to a project; pass null to move to General. */
+  async moveConversation(id: string, projectId: string | null): Promise<void> {
+    const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ project_id: projectId ?? "" }) });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
   // ── Projects ───────────────────────────────────────────────────────────
 
-  private toProject(j: { id: string; name: string; description?: string; created_at: string; updated_at: string }): Project {
-    return { id: j.id, name: j.name, description: j.description, createdAt: j.created_at, updatedAt: j.updated_at };
+  private toProject(j: { id: string; name: string; description?: string; created_at: string; updated_at: string; facts?: string[] }): Project {
+    return { id: j.id, name: j.name, description: j.description, createdAt: j.created_at, updatedAt: j.updated_at, facts: j.facts ?? [] };
   }
 
   async listProjects(opts?: { signal?: AbortSignal }): Promise<Project[]> {
@@ -365,6 +372,11 @@ export class NovaClient {
 
   async renameProject(id: string, input: { name?: string; description?: string }): Promise<void> {
     const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  async setProjectFacts(id: string, facts: string[]): Promise<void> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ facts }) });
     if (!res.ok) throw await this.toApiError(res);
   }
 
