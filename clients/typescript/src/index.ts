@@ -26,6 +26,8 @@ export {
   type Agent,
   type Transcription,
   type MemoryView,
+  type ConversationSummary,
+  type ConversationMessage,
 } from "./client.js";
 
 // Low-level REST factory (for advanced use / custom auth).

@@ -40,6 +40,25 @@ export interface MemoryView {
   enabled: boolean;
 }
 
+/** One of the caller's conversations (from {@link NovaClient.listConversations}). */
+export interface ConversationSummary {
+  id: string;
+  agentId: string;
+  title: string | null;
+  createdAt: string;
+  lastActiveAt: string;
+  messageCount: number;
+}
+
+/** A persisted message in a conversation. */
+export interface ConversationMessage {
+  id?: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: string;
+  seq?: number;
+}
+
 export interface NovaClientOptions {
   /** Base URL of the Nova OS instance. */
   baseUrl: string;
@@ -252,6 +271,53 @@ export class NovaClient {
       lastObservedAt: j.last_observed_at,
       enabled: j.enabled,
     };
+  }
+
+  // ── Conversations ──────────────────────────────────────────────────────
+
+  /** List the caller's conversations (newest first), optionally for one agent. */
+  async listConversations(opts?: { agentId?: string; limit?: number; signal?: AbortSignal }): Promise<ConversationSummary[]> {
+    const qs = new URLSearchParams();
+    if (opts?.agentId) qs.set("agent", opts.agentId);
+    if (opts?.limit != null) qs.set("limit", String(opts.limit));
+    const q = qs.toString();
+    const res = await this.rawFetch(`/v1/conversations${q ? `?${q}` : ""}`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as {
+      conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number }>;
+    };
+    return (j.conversations ?? []).map((c) => ({
+      id: c.id, agentId: c.agent_id, title: c.title ?? null,
+      createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count,
+    }));
+  }
+
+  /** Load one conversation's metadata + full message history. */
+  async getConversation(id: string, opts?: { signal?: AbortSignal }): Promise<{ conversation: ConversationSummary; messages: ConversationMessage[] }> {
+    const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as {
+      id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number;
+      messages?: Array<{ id?: string; role: string; content: string; timestamp: string; seq?: number }>;
+    };
+    return {
+      conversation: { id: j.id, agentId: j.agent_id, title: j.title ?? null, createdAt: j.created_at, lastActiveAt: j.last_active_at, messageCount: j.message_count },
+      messages: (j.messages ?? []).map((m) => ({ id: m.id, role: m.role as ConversationMessage["role"], content: m.content, timestamp: m.timestamp, seq: m.seq })),
+    };
+  }
+
+  /** Delete a conversation. */
+  async deleteConversation(id: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /** Set a conversation's title. */
+  async renameConversation(id: string, title: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, {
+      method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ title }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
   }
 
   // ── Sessions (#185) ────────────────────────────────────────────────────
