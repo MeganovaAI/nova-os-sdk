@@ -40,6 +40,14 @@ export interface MemoryView {
   enabled: boolean;
 }
 
+/** A file attached to a project, available for retrieval-augmented generation. */
+export interface ProjectFile {
+  id: string;
+  name: string;
+  size?: number;
+  status?: string;
+}
+
 /** A project containing conversations. */
 export interface Project {
   id: string;
@@ -362,6 +370,32 @@ export class NovaClient {
 
   async deleteProject(id: string): Promise<void> {
     const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  // ── Project files ──────────────────────────────────────────────────────
+
+  /** Upload a file to a project (multipart). Auto-indexed for RAG server-side. */
+  async uploadProjectFile(projectId: string, file: Blob, opts?: { fileName?: string; signal?: AbortSignal }): Promise<ProjectFile> {
+    const form = new FormData();
+    form.append("file", file, opts?.fileName ?? "upload");
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(projectId)}/files`, { method: "POST", body: form, signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { id: string; name: string; size?: number; status?: string };
+    return { id: j.id, name: j.name, size: j.size, status: j.status };
+  }
+
+  /** List all files attached to a project. */
+  async listProjectFiles(projectId: string, opts?: { signal?: AbortSignal }): Promise<ProjectFile[]> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(projectId)}/files`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { files?: Array<{ id: string; name: string; size?: number; status?: string }> };
+    return (j.files ?? []).map((f) => ({ id: f.id, name: f.name, size: f.size, status: f.status }));
+  }
+
+  /** Delete a file from a project. */
+  async deleteProjectFile(projectId: string, fileId: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(projectId)}/files/${encodeURIComponent(fileId)}`, { method: "DELETE" });
     if (!res.ok) throw await this.toApiError(res);
   }
 

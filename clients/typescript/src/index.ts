@@ -27,6 +27,7 @@ export {
   type Transcription,
   type MemoryView,
   type Project,
+  type ProjectFile,
   type ConversationSummary,
   type ConversationMessage,
 } from "./client.js";
