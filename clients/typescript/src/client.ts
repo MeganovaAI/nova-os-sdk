@@ -31,6 +31,66 @@ export interface Transcription {
   duration?: number;
 }
 
+/** A user's observational memory for one persona, from {@link NovaClient.getMemory}. */
+export interface MemoryView {
+  agentId: string;
+  scope: "corporate" | "personal";
+  content: string;
+  lastObservedAt?: string;
+  enabled: boolean;
+}
+
+/** A file attached to a project, available for retrieval-augmented generation. */
+export interface ProjectFile {
+  id: string;
+  name: string;
+  size?: number;
+  status?: string;
+}
+
+/**
+ * A document in the company-wide `default` knowledge collection.
+ * Returned by {@link NovaClient.listCorporateDocuments}.
+ * `id` is the chunk source path — pass it to {@link NovaClient.deleteCorporateDocument}.
+ */
+export interface CorporateDocument {
+  id: string;
+  collection_id: string;
+  filename: string;
+  content_type: string;
+  chunk_count: number;
+}
+
+/** A project containing conversations. */
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  facts?: string[];
+}
+
+/** One of the caller's conversations (from {@link NovaClient.listConversations}). */
+export interface ConversationSummary {
+  id: string;
+  agentId: string;
+  title: string | null;
+  createdAt: string;
+  lastActiveAt: string;
+  messageCount: number;
+  projectId?: string | null;
+}
+
+/** A persisted message in a conversation. */
+export interface ConversationMessage {
+  id?: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: string;
+  seq?: number;
+}
+
 export interface NovaClientOptions {
   /** Base URL of the Nova OS instance. */
   baseUrl: string;
@@ -215,6 +275,221 @@ export class NovaClient {
     if (!res.ok) throw await this.toApiError(res);
     if (opts?.responseFormat === "text") return { text: await res.text() };
     return (await res.json()) as Transcription;
+  }
+
+  /** Read the caller's own observational memory for a persona (read-only). */
+  async getMemory(
+    agentId: string,
+    opts?: { scope?: "corporate" | "personal"; signal?: AbortSignal },
+  ): Promise<MemoryView> {
+    const qs = new URLSearchParams({ agent_id: agentId });
+    if (opts?.scope) qs.set("scope", opts.scope);
+    const res = await this.rawFetch(`/v1/managed/memory?${qs.toString()}`, {
+      method: "GET",
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as {
+      agent_id: string;
+      scope: "corporate" | "personal";
+      content: string;
+      last_observed_at?: string;
+      enabled: boolean;
+    };
+    return {
+      agentId: j.agent_id,
+      scope: j.scope,
+      content: j.content ?? "",
+      lastObservedAt: j.last_observed_at,
+      enabled: j.enabled,
+    };
+  }
+
+  // ── Conversations ──────────────────────────────────────────────────────
+
+  /** List the caller's conversations (newest first), optionally for one agent. */
+  async listConversations(opts?: { agentId?: string; limit?: number; signal?: AbortSignal }): Promise<ConversationSummary[]> {
+    const qs = new URLSearchParams();
+    if (opts?.agentId) qs.set("agent", opts.agentId);
+    if (opts?.limit != null) qs.set("limit", String(opts.limit));
+    const q = qs.toString();
+    const res = await this.rawFetch(`/v1/conversations${q ? `?${q}` : ""}`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as {
+      conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null }>;
+    };
+    return (j.conversations ?? []).map((c) => ({
+      id: c.id, agentId: c.agent_id, title: c.title ?? null,
+      createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null,
+    }));
+  }
+
+  /** Load one conversation's metadata + full message history. */
+  async getConversation(id: string, opts?: { signal?: AbortSignal }): Promise<{ conversation: ConversationSummary; messages: ConversationMessage[] }> {
+    const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as {
+      id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null;
+      messages?: Array<{ id?: string; role: string; content: string; timestamp: string; seq?: number }>;
+    };
+    return {
+      conversation: { id: j.id, agentId: j.agent_id, title: j.title ?? null, createdAt: j.created_at, lastActiveAt: j.last_active_at, messageCount: j.message_count, projectId: j.project_id ?? null },
+      messages: (j.messages ?? []).map((m) => ({ id: m.id, role: m.role as ConversationMessage["role"], content: m.content, timestamp: m.timestamp, seq: m.seq })),
+    };
+  }
+
+  /** Delete a conversation. */
+  async deleteConversation(id: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /** Set a conversation's title. */
+  async renameConversation(id: string, title: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, {
+      method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ title }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /** Move a conversation to a project; pass null to move to General. */
+  async moveConversation(id: string, projectId: string | null): Promise<void> {
+    const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ project_id: projectId ?? "" }) });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  // ── Projects ───────────────────────────────────────────────────────────
+
+  private toProject(j: { id: string; name: string; description?: string; created_at: string; updated_at: string; facts?: string[] }): Project {
+    return { id: j.id, name: j.name, description: j.description, createdAt: j.created_at, updatedAt: j.updated_at, facts: j.facts ?? [] };
+  }
+
+  async listProjects(opts?: { signal?: AbortSignal }): Promise<Project[]> {
+    const res = await this.rawFetch("/v1/projects", { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { projects?: Array<Parameters<NovaClient["toProject"]>[0]> };
+    return (j.projects ?? []).map((p) => this.toProject(p));
+  }
+
+  async createProject(input: { name: string; description?: string }): Promise<Project> {
+    const res = await this.rawFetch("/v1/projects", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toProject(await res.json() as Parameters<NovaClient["toProject"]>[0]);
+  }
+
+  async getProject(id: string): Promise<Project> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toProject(await res.json() as Parameters<NovaClient["toProject"]>[0]);
+  }
+
+  async renameProject(id: string, input: { name?: string; description?: string }): Promise<void> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  async setProjectFacts(id: string, facts: string[]): Promise<void> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ facts }) });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  // ── Project files ──────────────────────────────────────────────────────
+
+  /** Upload a file to a project (multipart). Auto-indexed for RAG server-side. */
+  async uploadProjectFile(projectId: string, file: Blob, opts?: { fileName?: string; signal?: AbortSignal }): Promise<ProjectFile> {
+    const form = new FormData();
+    form.append("file", file, opts?.fileName ?? "upload");
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(projectId)}/files`, { method: "POST", body: form, signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { id: string; name: string; size?: number; status?: string };
+    return { id: j.id, name: j.name, size: j.size, status: j.status };
+  }
+
+  /** List all files attached to a project. */
+  async listProjectFiles(projectId: string, opts?: { signal?: AbortSignal }): Promise<ProjectFile[]> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(projectId)}/files`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { files?: Array<{ id: string; name: string; size?: number; status?: string }> };
+    return (j.files ?? []).map((f) => ({ id: f.id, name: f.name, size: f.size, status: f.status }));
+  }
+
+  /** Delete a file from a project. */
+  async deleteProjectFile(projectId: string, fileId: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(projectId)}/files/${encodeURIComponent(fileId)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  // ── Corporate Knowledge (default collection) ───────────────────────────
+
+  /**
+   * List documents in the company-wide `default` knowledge collection.
+   * Requires admin role (server-enforced). Each document's `id` is the
+   * chunk source path — use it with {@link deleteCorporateDocument}.
+   */
+  async listCorporateDocuments(opts?: { signal?: AbortSignal }): Promise<CorporateDocument[]> {
+    const res = await this.rawFetch("/api/knowledge/collections/default/documents", {
+      method: "GET",
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return (await res.json()) as CorporateDocument[];
+  }
+
+  /**
+   * Upload a file into the company-wide `default` knowledge collection.
+   * Multipart POST to `/api/documents/upload/` with form field `file`.
+   * Admin scope auto-routes to the `default` collection (server-enforced).
+   * Returns `{ uploaded: string; size: number }` on success.
+   */
+  async uploadCorporateDocument(
+    file: Blob,
+    opts?: { fileName?: string; signal?: AbortSignal },
+  ): Promise<{ uploaded: string; size: number }> {
+    const form = new FormData();
+    form.append("file", file, opts?.fileName ?? "upload");
+    const res = await this.rawFetch("/api/documents/upload/", {
+      method: "POST",
+      body: form,
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return (await res.json()) as { uploaded: string; size: number };
+  }
+
+  /**
+   * Delete a document from the `default` knowledge collection by its source id.
+   * `id` is the value from {@link CorporateDocument.id} (the chunk source path).
+   * Admin-only (server-enforced).
+   */
+  async deleteCorporateDocument(id: string): Promise<void> {
+    const res = await this.rawFetch(`/api/knowledge/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  async listProjectConversations(id: string, opts?: { signal?: AbortSignal }): Promise<ConversationSummary[]> {
+    const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}/conversations`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null }> };
+    return (j.conversations ?? []).map((c) => ({ id: c.id, agentId: c.agent_id, title: c.title ?? null, createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null }));
+  }
+
+  async createConversation(input?: { id?: string; agentId?: string; projectId?: string; metadata?: Record<string, unknown> }): Promise<ConversationSummary> {
+    const body: Record<string, unknown> = {};
+    if (input?.id) body.id = input.id;
+    if (input?.agentId) body.agent_id = input.agentId;
+    if (input?.projectId) body.project_id = input.projectId;
+    if (input?.metadata) body.metadata = input.metadata;
+    const res = await this.rawFetch("/v1/conversations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) throw await this.toApiError(res);
+    const c = (await res.json()) as { id: string; agent_id: string; title?: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null };
+    return { id: c.id, agentId: c.agent_id, title: c.title ?? null, createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null };
   }
 
   // ── Sessions (#185) ────────────────────────────────────────────────────
