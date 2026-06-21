@@ -61,6 +61,26 @@ export interface CorporateDocument {
   chunk_count: number;
 }
 
+/**
+ * A knowledge-signal entry emitted by an employee session and queued for
+ * admin curation. Returned by {@link NovaClient.listKnowledgeSignals},
+ * {@link NovaClient.promoteKnowledgeSignal}, and
+ * {@link NovaClient.rejectKnowledgeSignal}.
+ */
+export interface KnowledgeSignal {
+  id: string;
+  tenant: string;
+  app: string;
+  employeeId: string;
+  type: "gap" | "explicit_keep" | "correction" | "stale" | string;
+  factKey: string;
+  content: string;
+  sourceChunkId: string;
+  status: "pending" | "quarantined" | "eligible" | "promoted" | "rejected" | "superseded" | string;
+  createdAt: string;
+  signature: string;
+}
+
 /** A project containing conversations. */
 export interface Project {
   id: string;
@@ -490,6 +510,73 @@ export class NovaClient {
     if (!res.ok) throw await this.toApiError(res);
     const c = (await res.json()) as { id: string; agent_id: string; title?: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null };
     return { id: c.id, agentId: c.agent_id, title: c.title ?? null, createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null };
+  }
+
+  // ── Knowledge Signals (KSG curator) ───────────────────────────────────
+
+  /** Map a raw snake_case signal object to the camelCase {@link KnowledgeSignal} interface. */
+  private toKnowledgeSignal(r: {
+    id: string; tenant: string; app: string; employee_id: string;
+    type: string; fact_key: string; content: string; source_chunk_id: string;
+    status: string; created_at: string; signature: string;
+  }): KnowledgeSignal {
+    return {
+      id: r.id, tenant: r.tenant, app: r.app, employeeId: r.employee_id,
+      type: r.type, factKey: r.fact_key, content: r.content,
+      sourceChunkId: r.source_chunk_id, status: r.status,
+      createdAt: r.created_at, signature: r.signature,
+    };
+  }
+
+  /**
+   * List knowledge signals. Requires admin role (server-enforced).
+   * Returns 503 `{"error":"knowledge signals unavailable"}` when KSG is disabled;
+   * throws a {@link NovaApiError} with `status === 503` in that case.
+   */
+  async listKnowledgeSignals(opts?: { status?: string; limit?: number; tenant?: string; signal?: AbortSignal }): Promise<KnowledgeSignal[]> {
+    const qs = new URLSearchParams();
+    if (opts?.status) qs.set("status", opts.status);
+    if (opts?.limit != null) qs.set("limit", String(opts.limit));
+    if (opts?.tenant) qs.set("tenant", opts.tenant);
+    const q = qs.toString();
+    const res = await this.rawFetch(`/v1/managed/knowledge-signals${q ? `?${q}` : ""}`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { signals?: Array<Parameters<NovaClient["toKnowledgeSignal"]>[0]> };
+    return (j.signals ?? []).map((s) => this.toKnowledgeSignal(s));
+  }
+
+  /**
+   * List fact-key strings that are eligible for promotion.
+   * Requires admin role. Returns 503 when KSG is disabled.
+   */
+  async listKnowledgeSignalCandidates(opts?: { tenant?: string; signal?: AbortSignal }): Promise<string[]> {
+    const qs = new URLSearchParams();
+    if (opts?.tenant) qs.set("tenant", opts.tenant);
+    const q = qs.toString();
+    const res = await this.rawFetch(`/v1/managed/knowledge-signals/candidates${q ? `?${q}` : ""}`, { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { fact_keys?: string[] };
+    return j.fact_keys ?? [];
+  }
+
+  /**
+   * Promote a knowledge signal (POST /:id/promote). Admin-only.
+   * Returns the updated {@link KnowledgeSignal}.
+   */
+  async promoteKnowledgeSignal(id: string): Promise<KnowledgeSignal> {
+    const res = await this.rawFetch(`/v1/managed/knowledge-signals/${encodeURIComponent(id)}/promote`, { method: "POST" });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toKnowledgeSignal(await res.json() as Parameters<NovaClient["toKnowledgeSignal"]>[0]);
+  }
+
+  /**
+   * Reject a knowledge signal (POST /:id/reject). Admin-only.
+   * Returns the updated {@link KnowledgeSignal}.
+   */
+  async rejectKnowledgeSignal(id: string): Promise<KnowledgeSignal> {
+    const res = await this.rawFetch(`/v1/managed/knowledge-signals/${encodeURIComponent(id)}/reject`, { method: "POST" });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toKnowledgeSignal(await res.json() as Parameters<NovaClient["toKnowledgeSignal"]>[0]);
   }
 
   // ── Sessions (#185) ────────────────────────────────────────────────────
