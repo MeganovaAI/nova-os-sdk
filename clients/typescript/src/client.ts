@@ -493,6 +493,21 @@ export class NovaClient {
     if (!res.ok) throw await this.toApiError(res);
   }
 
+  /**
+   * Ingest raw text directly into the corporate (`default`) knowledge collection
+   * — no file needed. `source` is an optional human label. Admin-only
+   * (server-enforced via CanWrite on `default`). POST `/api/knowledge/ingest`.
+   */
+  async ingestCorporateText(content: string, opts?: { title?: string; signal?: AbortSignal }): Promise<void> {
+    const res = await this.rawFetch("/api/knowledge/ingest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content, collection: "default", source: opts?.title ?? "" }),
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
   async listProjectConversations(id: string, opts?: { signal?: AbortSignal }): Promise<ConversationSummary[]> {
     const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}/conversations`, { method: "GET", signal: opts?.signal });
     if (!res.ok) throw await this.toApiError(res);
