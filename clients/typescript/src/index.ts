@@ -32,6 +32,7 @@ export {
   type ConversationMessage,
   type CorporateDocument,
   type KnowledgeSignal,
+  type User,
 } from "./client.js";
 
 // Low-level REST factory (for advanced use / custom auth).

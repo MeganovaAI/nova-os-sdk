@@ -81,6 +81,25 @@ export interface KnowledgeSignal {
   signature: string;
 }
 
+/**
+ * A tenant user record, returned by user-management methods.
+ * All optional fields may be `undefined` when the server omits them.
+ */
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  displayName?: string;
+  role?: string;
+  tenantId?: string;
+  roles?: string[];
+  mustChangePassword?: boolean;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
+}
+
 /** A project containing conversations. */
 export interface Project {
   id: string;
@@ -592,6 +611,88 @@ export class NovaClient {
     const res = await this.rawFetch(`/v1/managed/knowledge-signals/${encodeURIComponent(id)}/reject`, { method: "POST" });
     if (!res.ok) throw await this.toApiError(res);
     return this.toKnowledgeSignal(await res.json() as Parameters<NovaClient["toKnowledgeSignal"]>[0]);
+  }
+
+  // ── User management (admin-gated) ──────────────────────────────────────
+
+  /** Map a raw snake_case user object to the camelCase {@link User} interface. */
+  private toUser(r: {
+    id: string; email: string; name?: string | null; display_name?: string | null;
+    role?: string | null; tenant_id?: string | null; roles?: string[] | null;
+    must_change_password?: boolean | null; is_active?: boolean | null;
+    created_at?: string | null; updated_at?: string | null; last_login_at?: string | null;
+  }): User {
+    return {
+      id: r.id, email: r.email, name: r.name ?? undefined, displayName: r.display_name ?? undefined,
+      role: r.role ?? undefined, tenantId: r.tenant_id ?? undefined, roles: r.roles ?? undefined,
+      mustChangePassword: r.must_change_password ?? undefined, isActive: r.is_active ?? undefined,
+      createdAt: r.created_at ?? undefined, updatedAt: r.updated_at ?? undefined,
+      lastLoginAt: r.last_login_at ?? undefined,
+    };
+  }
+
+  /**
+   * List all users in the tenant. Admin-only (403 `{"error":"admin_required"}`
+   * when called by a non-admin — throws a {@link NovaApiError} with `status === 403`).
+   */
+  async listUsers(opts?: { signal?: AbortSignal }): Promise<User[]> {
+    const res = await this.rawFetch("/api/users", { method: "GET", signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    return ((await res.json()) as Array<Parameters<NovaClient["toUser"]>[0]>).map((u) => this.toUser(u));
+  }
+
+  /**
+   * Create a new user. Admin-only. Role defaults to `employee` server-side.
+   * Returns the created {@link User} (201).
+   */
+  async createUser(input: { email: string; name?: string; role?: string; password: string }): Promise<User> {
+    const res = await this.rawFetch("/api/users", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toUser(await res.json() as Parameters<NovaClient["toUser"]>[0]);
+  }
+
+  /**
+   * Partially update a user. Admin-only. Maps camelCase `isActive` → `is_active` in the body.
+   * Omit fields you are not changing. Returns the updated {@link User}.
+   */
+  async updateUser(id: string, patch: { name?: string; role?: string; isActive?: boolean }): Promise<User> {
+    const body: Record<string, unknown> = {};
+    if (patch.name !== undefined) body.name = patch.name;
+    if (patch.role !== undefined) body.role = patch.role;
+    if (patch.isActive !== undefined) body.is_active = patch.isActive;
+    const res = await this.rawFetch(`/api/users/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toUser(await res.json() as Parameters<NovaClient["toUser"]>[0]);
+  }
+
+  /**
+   * Delete a user. Admin-only. Returns `{ status: "deleted" }` server-side;
+   * the method resolves `void` on success.
+   */
+  async deleteUser(id: string): Promise<void> {
+    const res = await this.rawFetch(`/api/users/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /**
+   * Set a new password for a user and force a password change at next login.
+   * Admin-only. POST `/api/admin/users/:id/reset-password`.
+   */
+  async resetUserPassword(id: string, password: string): Promise<void> {
+    const res = await this.rawFetch(`/api/admin/users/${encodeURIComponent(id)}/reset-password`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
   }
 
   // ── Sessions (#185) ────────────────────────────────────────────────────
