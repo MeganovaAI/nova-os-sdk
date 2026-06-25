@@ -31,6 +31,7 @@ export {
   type ConversationSummary,
   type ConversationMessage,
   type CorporateDocument,
+  type Collection,
   type KnowledgeSignal,
   type User,
 } from "./client.js";

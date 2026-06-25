@@ -62,6 +62,21 @@ export interface CorporateDocument {
 }
 
 /**
+ * A named knowledge collection, returned by {@link NovaClient.listCollections},
+ * {@link NovaClient.createCollection}, and {@link NovaClient.getCollection}.
+ */
+export interface Collection {
+  id: string;
+  name: string;
+  description: string;
+  accessLevel: string;
+  documentCount: number;
+  chunkCount: number;
+  agentBindings: string[];
+  createdAt: string;
+}
+
+/**
  * A knowledge-signal entry emitted by an employee session and queued for
  * admin curation. Returned by {@link NovaClient.listKnowledgeSignals},
  * {@link NovaClient.promoteKnowledgeSignal}, and
@@ -525,6 +540,172 @@ export class NovaClient {
       signal: opts?.signal,
     });
     if (!res.ok) throw await this.toApiError(res);
+  }
+
+  // ── Knowledge Collections (named, multi-tenant) ────────────────────────
+
+  /** Map a raw snake_case collection object to the camelCase {@link Collection} interface. */
+  private toCollection(j: {
+    id: string; name: string; description: string; access_level: string;
+    document_count: number; chunk_count: number; agent_bindings: string[]; created_at: string;
+  }): Collection {
+    return {
+      id: j.id,
+      name: j.name,
+      description: j.description,
+      accessLevel: j.access_level,
+      documentCount: j.document_count,
+      chunkCount: j.chunk_count,
+      agentBindings: j.agent_bindings ?? [],
+      createdAt: j.created_at,
+    };
+  }
+
+  /** List all knowledge collections. GET `/api/knowledge/collections`. */
+  async listCollections(opts?: { signal?: AbortSignal }): Promise<Collection[]> {
+    const res = await this.rawFetch("/api/knowledge/collections", {
+      method: "GET",
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return ((await res.json()) as Array<Parameters<NovaClient["toCollection"]>[0]>).map((c) => this.toCollection(c));
+  }
+
+  /**
+   * Create a new knowledge collection (admin-only). POST `/api/knowledge/collections`.
+   * Defaults: `description: ""`, `accessLevel: "corporate"`.
+   */
+  async createCollection(
+    input: { name: string; description?: string; accessLevel?: string },
+    opts?: { signal?: AbortSignal },
+  ): Promise<Collection> {
+    const res = await this.rawFetch("/api/knowledge/collections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: input.name,
+        description: input.description ?? "",
+        access_level: input.accessLevel ?? "corporate",
+      }),
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toCollection(await res.json() as Parameters<NovaClient["toCollection"]>[0]);
+  }
+
+  /** Get a single knowledge collection by id. GET `/api/knowledge/collections/:id`. */
+  async getCollection(id: string, opts?: { signal?: AbortSignal }): Promise<Collection> {
+    const res = await this.rawFetch(`/api/knowledge/collections/${encodeURIComponent(id)}`, {
+      method: "GET",
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return this.toCollection(await res.json() as Parameters<NovaClient["toCollection"]>[0]);
+  }
+
+  /** Delete a knowledge collection by id (admin-only). DELETE `/api/knowledge/collections/:id`. */
+  async deleteCollection(id: string): Promise<void> {
+    const res = await this.rawFetch(`/api/knowledge/collections/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /**
+   * List documents in a named knowledge collection.
+   * GET `/api/knowledge/collections/:id/documents`. Returns `CorporateDocument[]`.
+   */
+  async listCollectionDocuments(id: string, opts?: { signal?: AbortSignal }): Promise<CorporateDocument[]> {
+    const res = await this.rawFetch(`/api/knowledge/collections/${encodeURIComponent(id)}/documents`, {
+      method: "GET",
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return (await res.json()) as CorporateDocument[];
+  }
+
+  /**
+   * Ingest raw text into a named collection. POST `/api/knowledge/ingest`.
+   * Requires write permission on the collection.
+   */
+  async ingestCollectionText(
+    collectionId: string,
+    content: string,
+    opts?: { title?: string; signal?: AbortSignal },
+  ): Promise<void> {
+    const res = await this.rawFetch("/api/knowledge/ingest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content, collection: collectionId, source: opts?.title ?? "" }),
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /**
+   * Upload a file into a named collection. Multipart POST `/api/documents/upload/:collectionId`.
+   * Returns `{ uploaded: string; size: number }`.
+   */
+  async uploadCollectionDocument(
+    collectionId: string,
+    file: Blob,
+    opts?: { fileName?: string; signal?: AbortSignal },
+  ): Promise<{ uploaded: string; size: number }> {
+    const form = new FormData();
+    form.append("file", file, opts?.fileName ?? "upload");
+    const res = await this.rawFetch(`/api/documents/upload/${encodeURIComponent(collectionId)}`, {
+      method: "POST",
+      body: form,
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return (await res.json()) as { uploaded: string; size: number };
+  }
+
+  /**
+   * Delete a document from any collection by its bare source id (admin-only).
+   * DELETE `/api/knowledge/:sourceId`.
+   */
+  async deleteCollectionDocument(sourceId: string): Promise<void> {
+    const res = await this.rawFetch(`/api/knowledge/${encodeURIComponent(sourceId)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /**
+   * Bind a collection to an agent (admin-only). POST `/api/agents/:id/collections`.
+   * Returns `{ status: "bound" }`.
+   */
+  async bindAgentCollection(agentId: string, collectionId: string): Promise<{ status: string }> {
+    const res = await this.rawFetch(`/api/agents/${encodeURIComponent(agentId)}/collections`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ collection_id: collectionId }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    return (await res.json()) as { status: string };
+  }
+
+  /**
+   * Remove a collection binding from an agent (admin-only, idempotent).
+   * DELETE `/api/agents/:id/collections/:collectionId`.
+   */
+  async unbindAgentCollection(agentId: string, collectionId: string): Promise<void> {
+    const res = await this.rawFetch(
+      `/api/agents/${encodeURIComponent(agentId)}/collections/${encodeURIComponent(collectionId)}`,
+      { method: "DELETE" },
+    );
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /**
+   * List all collections bound to a given agent.
+   * Calls `listCollections` internally and filters by `agent_bindings` containing `agentId`.
+   */
+  async listAgentCollections(agentId: string, opts?: { signal?: AbortSignal }): Promise<Collection[]> {
+    const all = await this.listCollections(opts);
+    return all.filter((c) => c.agentBindings.includes(agentId));
   }
 
   async listProjectConversations(id: string, opts?: { signal?: AbortSignal }): Promise<ConversationSummary[]> {
