@@ -211,7 +211,9 @@ export class NovaClient {
 
   /** List agents. */
   async listAgents(): Promise<Agent[]> {
-    const res = await this.rest.api.GET("/v1/agents");
+    const res = await this.rest.api.GET("/v1/agents", {
+      headers: { "anthropic-beta": "managed-agents-2026-04-01" },
+    });
     throwIfError(res);
     return ((res.data as { data?: Agent[] })?.data ?? []) as Agent[];
   }

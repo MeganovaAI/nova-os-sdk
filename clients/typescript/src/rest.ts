@@ -45,7 +45,12 @@ export function createRestClient(options: RestClientOptions): RestClient {
   // Wrap fetch to inject Bearer + handle a single refresh-retry on 401.
   const authedFetch: typeof fetch = async (input, init) => {
     const withAuth = async (token: string | undefined): Promise<RequestInit> => {
-      const headers = new Headers(init?.headers);
+      // openapi-fetch passes a `Request` as `input` carrying the per-call
+      // headers (e.g. `anthropic-beta`). Seed from those first — otherwise the
+      // `init` we return (auth-only) would replace the Request's headers when
+      // the underlying fetch is called with both, silently dropping the
+      // per-call headers. Fall back to `init?.headers` when `input` is a URL.
+      const headers = new Headers(input instanceof Request ? input.headers : init?.headers);
       if (token) headers.set("authorization", `Bearer ${token}`);
       return { ...init, headers };
     };
