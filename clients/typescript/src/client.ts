@@ -145,6 +145,45 @@ export interface ConversationMessage {
   seq?: number;
 }
 
+/** A pending side-effecting action awaiting approval (nova-os#546/#767/#768). */
+export interface PendingAction {
+  id: string;
+  agentId: string;
+  userId: string;
+  tenantId: string;
+  sessionId: string;
+  toolName: string;
+  risk: string;
+  status: string;
+  result?: string;
+  createdAt: string;
+  decidedAt?: string | null;
+  input?: unknown;
+  preview?: unknown;
+  source?: string;
+  externalRef?: string;
+  groupId?: string;
+  claimedBy?: string;
+  decidedBy?: string;
+}
+
+/** A named group in the kernel registry (nova-os#768). */
+export interface Group {
+  id: string;
+  tenantId: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  members?: GroupMember[];
+}
+
+export interface GroupMember {
+  userId: string;
+  role: string;
+  createdAt: string;
+}
+
 export interface NovaClientOptions {
   /** Base URL of the Nova OS instance. */
   baseUrl: string;
@@ -896,6 +935,156 @@ export class NovaClient {
     return res.data as Session;
   }
 
+  // ── Pending actions + groups (#546/#767/#768, sdk#56) ──────────────────
+  //
+  // 503 responses carry {error: "pending_actions_disabled" | "no_database" |
+  // "executor_not_wired"} in NovaApiError.body — UIs branch on error, not text.
+
+  /** List pending actions. Non-admins see actions of groups they belong to. */
+  async listPendingActions(opts?: { status?: string; source?: string; externalRef?: string; limit?: number }): Promise<PendingAction[]> {
+    const qs = new URLSearchParams();
+    if (opts?.status) qs.set("status", opts.status);
+    if (opts?.source) qs.set("source", opts.source);
+    if (opts?.externalRef) qs.set("external_ref", opts.externalRef);
+    if (opts?.limit != null) qs.set("limit", String(opts.limit));
+    const q = qs.toString();
+    const res = await this.rawFetch(`/v1/managed/actions${q ? `?${q}` : ""}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { actions?: RawPendingAction[] };
+    return (j.actions ?? []).map(toPendingAction);
+  }
+
+  async getPendingAction(id: string): Promise<PendingAction> {
+    const res = await this.rawFetch(`/v1/managed/actions/${encodeURIComponent(id)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { action: RawPendingAction };
+    return toPendingAction(j.action);
+  }
+
+  /**
+   * Submit a connector-sourced action for approval (nova-os#767). Requires an
+   * admin/service credential. `callback.auth.secretRef` names an env var ON
+   * THE NOVA OS SERVER holding the shared HMAC secret.
+   */
+  async createPendingAction(input: {
+    toolName: string;
+    input: unknown;
+    source: string;
+    callback: { url: string; auth: { type: string; secretRef: string }; timeoutSec?: number };
+    agentId?: string;
+    userId?: string;
+    tenantId?: string;
+    sessionId?: string;
+    groupId?: string;
+    preview?: unknown;
+    risk?: string;
+    externalRef?: string;
+  }): Promise<PendingAction> {
+    const res = await this.rawFetch("/v1/managed/actions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        agent_id: input.agentId,
+        user_id: input.userId,
+        tenant_id: input.tenantId,
+        session_id: input.sessionId,
+        group_id: input.groupId,
+        tool_name: input.toolName,
+        input: input.input,
+        preview: input.preview,
+        risk: input.risk,
+        source: input.source,
+        external_ref: input.externalRef,
+        callback: {
+          url: input.callback.url,
+          auth: { type: input.callback.auth.type, secret_ref: input.callback.auth.secretRef },
+          timeout_sec: input.callback.timeoutSec,
+        },
+      }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { action: RawPendingAction };
+    return toPendingAction(j.action);
+  }
+
+  /** Soft-claim an action to avoid double-handling. 409 (already_claimed) when someone else won. */
+  async claimPendingAction(id: string): Promise<PendingAction> {
+    const res = await this.rawFetch(`/v1/managed/actions/${encodeURIComponent(id)}/claim`, { method: "POST" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { action: RawPendingAction };
+    return toPendingAction(j.action);
+  }
+
+  /** Approve and execute. 409 (already_decided) when raced; 403 without an approver role. */
+  async approvePendingAction(id: string): Promise<PendingAction> {
+    const res = await this.rawFetch(`/v1/managed/actions/${encodeURIComponent(id)}/approve`, { method: "POST" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { action: RawPendingAction };
+    return toPendingAction(j.action);
+  }
+
+  /** Reject without executing; the optional reason is audited on the row. */
+  async rejectPendingAction(id: string, reason?: string): Promise<PendingAction> {
+    const res = await this.rawFetch(`/v1/managed/actions/${encodeURIComponent(id)}/reject`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(reason ? { reason } : {}),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { action: RawPendingAction };
+    return toPendingAction(j.action);
+  }
+
+  /** List groups (admin). */
+  async listGroups(): Promise<Group[]> {
+    const res = await this.rawFetch("/v1/managed/groups", { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { groups?: RawGroup[] };
+    return (j.groups ?? []).map(toGroup);
+  }
+
+  async createGroup(input: { name: string; description?: string }): Promise<Group> {
+    const res = await this.rawFetch("/v1/managed/groups", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: input.name, description: input.description }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { group: RawGroup };
+    return toGroup(j.group);
+  }
+
+  /** Group detail, including members. */
+  async getGroup(id: string): Promise<Group> {
+    const res = await this.rawFetch(`/v1/managed/groups/${encodeURIComponent(id)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { group: RawGroup };
+    return toGroup(j.group);
+  }
+
+  async deleteGroup(id: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/groups/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /** Add (or re-role) a member. Roles: member | approver | lead. */
+  async addGroupMember(groupId: string, userId: string, role: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/groups/${encodeURIComponent(groupId)}/members`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ user_id: userId, role }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  async removeGroupMember(groupId: string, userId: string): Promise<void> {
+    const res = await this.rawFetch(
+      `/v1/managed/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
+      { method: "DELETE" },
+    );
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
   // ── internals ──────────────────────────────────────────────────────────
 
   /** Bearer-injected, refresh-on-401 raw fetch for SSE/multipart surfaces. */
@@ -929,4 +1118,39 @@ export class NovaClient {
       return new NovaApiError(res.status);
     }
   }
+}
+
+// ── pending-actions/groups wire shapes (snake_case → camelCase) ───────────
+
+interface RawPendingAction {
+  id: string; agent_id: string; user_id: string; tenant_id: string; session_id: string;
+  tool_name: string; risk: string; status: string; result?: string;
+  created_at: string; decided_at?: string | null;
+  input?: unknown; preview?: unknown;
+  source?: string; external_ref?: string; group_id?: string; claimed_by?: string; decided_by?: string;
+}
+
+function toPendingAction(a: RawPendingAction): PendingAction {
+  return {
+    id: a.id, agentId: a.agent_id, userId: a.user_id, tenantId: a.tenant_id, sessionId: a.session_id,
+    toolName: a.tool_name, risk: a.risk, status: a.status, result: a.result,
+    createdAt: a.created_at, decidedAt: a.decided_at ?? null,
+    input: a.input, preview: a.preview,
+    source: a.source, externalRef: a.external_ref, groupId: a.group_id,
+    claimedBy: a.claimed_by, decidedBy: a.decided_by,
+  };
+}
+
+interface RawGroup {
+  id: string; tenant_id: string; name: string; description?: string;
+  created_at: string; updated_at: string;
+  members?: Array<{ user_id: string; role: string; created_at: string }>;
+}
+
+function toGroup(g: RawGroup): Group {
+  return {
+    id: g.id, tenantId: g.tenant_id, name: g.name, description: g.description,
+    createdAt: g.created_at, updatedAt: g.updated_at,
+    members: g.members?.map((m) => ({ userId: m.user_id, role: m.role, createdAt: m.created_at })),
+  };
 }

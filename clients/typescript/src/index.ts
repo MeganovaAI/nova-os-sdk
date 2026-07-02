@@ -34,6 +34,9 @@ export {
   type Collection,
   type KnowledgeSignal,
   type User,
+  type PendingAction,
+  type Group,
+  type GroupMember,
 } from "./client.js";
 
 // Low-level REST factory (for advanced use / custom auth).
