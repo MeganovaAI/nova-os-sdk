@@ -4,6 +4,12 @@
  * Uses Web Crypto (`crypto.subtle` + `crypto.getRandomValues`), which is global
  * in browsers, Node 18+, and React Native (with a polyfill). The crypto provider
  * is injectable so the same core runs everywhere; defaults to `globalThis.crypto`.
+ *
+ * Insecure-origin (plain HTTP, non-localhost) fallback: browsers expose
+ * `crypto.getRandomValues` on all origins but restrict `crypto.subtle` to secure
+ * contexts (HTTPS / localhost). When `subtle` is absent but `getRandomValues` IS
+ * present, `resolveCrypto` constructs a fallback provider that uses @noble/hashes
+ * for the SHA-256 digest so PKCE sign-in works on internal-IP HTTP deployments.
  */
 
 export interface CryptoProvider {
@@ -11,14 +17,45 @@ export interface CryptoProvider {
   subtle: Pick<SubtleCrypto, "digest">;
 }
 
+/**
+ * Build a minimal `subtle` shim backed by @noble/hashes sha256.
+ * Only "SHA-256" is supported — the sole algorithm PKCE requires.
+ */
+async function _nobleDigest(alg: AlgorithmIdentifier, data: BufferSource): Promise<ArrayBuffer> {
+  const name = typeof alg === "string" ? alg : alg.name;
+  if (name !== "SHA-256") throw new Error(`PKCE fallback only supports SHA-256, got: ${name}`);
+  const { sha256 } = await import("@noble/hashes/sha256");
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data as ArrayBuffer);
+  return sha256(bytes).buffer as ArrayBuffer;
+}
+
 function resolveCrypto(provided?: CryptoProvider): CryptoProvider {
-  const c = provided ?? (globalThis as { crypto?: CryptoProvider }).crypto;
-  if (!c || !c.subtle || typeof c.getRandomValues !== "function") {
-    throw new Error(
-      "No Web Crypto available. Pass a CryptoProvider (e.g. a polyfill) to the PKCE helper.",
-    );
+  // Explicit injection always wins unchanged — no override.
+  if (provided !== undefined) return provided;
+
+  const g = (globalThis as { crypto?: Crypto }).crypto;
+
+  // Full Web Crypto available (HTTPS / localhost, Node 18+).
+  if (g?.subtle && typeof g.getRandomValues === "function") {
+    return g as unknown as CryptoProvider;
   }
-  return c;
+
+  // Insecure-origin (plain HTTP, non-localhost): subtle is undefined but
+  // getRandomValues is still present — use @noble/hashes as SHA-256 fallback.
+  if (g && typeof g.getRandomValues === "function") {
+    // Crypto.getRandomValues excludes null in its signature but CryptoProvider
+    // includes it for flexibility; cast through unknown to satisfy both.
+    const getRV = g.getRandomValues.bind(g) as unknown as CryptoProvider["getRandomValues"];
+    return {
+      getRandomValues: getRV,
+      subtle: { digest: _nobleDigest },
+    };
+  }
+
+  // No CSPRNG at all — cannot safely generate a verifier.
+  throw new Error(
+    "No Web Crypto available. Pass a CryptoProvider (e.g. a polyfill) to the PKCE helper.",
+  );
 }
 
 const UNRESERVED = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
