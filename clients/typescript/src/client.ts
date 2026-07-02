@@ -192,6 +192,20 @@ export interface MyGroup {
   role: string;
 }
 
+/**
+ * A connector's kernel-owned settings, MASKED: secretKeys names which
+ * credentials are set — values never reach the client (nova-os#777).
+ */
+export interface ConnectorConfig {
+  kind: string;
+  tenantId?: string;
+  enabled: boolean;
+  groupId?: string;
+  config: Record<string, unknown>;
+  secretKeys: string[];
+  updatedAt: string;
+}
+
 export interface NovaClientOptions {
   /** Base URL of the Nova OS instance. */
   baseUrl: string;
@@ -1105,6 +1119,56 @@ export class NovaClient {
     return (j.groups ?? []).map((g) => ({ id: g.id, name: g.name, description: g.description || undefined, role: g.role }));
   }
 
+  // ── Connector configs (nova-os#777, employee-assistant #38) ────────────
+
+  /** List connector configs (admin; masked — secret values never serialize). */
+  async listConnectorConfigs(): Promise<ConnectorConfig[]> {
+    const res = await this.rawFetch("/v1/managed/connectors", { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { connectors?: RawConnectorConfig[] };
+    return (j.connectors ?? []).map(toConnectorConfig);
+  }
+
+  async getConnectorConfig(kind: string): Promise<ConnectorConfig> {
+    const res = await this.rawFetch(`/v1/managed/connectors/${encodeURIComponent(kind)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { connector: RawConnectorConfig };
+    return toConnectorConfig(j.connector);
+  }
+
+  /**
+   * Upsert a connector's settings (admin). Secret merge semantics: a
+   * non-empty value overwrites that credential, an empty string DELETES it,
+   * and absent keys are preserved — rotate one secret without the others.
+   */
+  async putConnectorConfig(kind: string, input: {
+    enabled: boolean;
+    groupId?: string;
+    tenantId?: string;
+    config?: Record<string, unknown>;
+    secrets?: Record<string, string>;
+  }): Promise<ConnectorConfig> {
+    const res = await this.rawFetch(`/v1/managed/connectors/${encodeURIComponent(kind)}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        enabled: input.enabled,
+        group_id: input.groupId,
+        tenant_id: input.tenantId,
+        config: input.config ?? {},
+        secrets: input.secrets ?? {},
+      }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { connector: RawConnectorConfig };
+    return toConnectorConfig(j.connector);
+  }
+
+  async deleteConnectorConfig(kind: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/connectors/${encodeURIComponent(kind)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
   // ── internals ──────────────────────────────────────────────────────────
 
   /** Bearer-injected, refresh-on-401 raw fetch for SSE/multipart surfaces. */
@@ -1172,5 +1236,18 @@ function toGroup(g: RawGroup): Group {
     id: g.id, tenantId: g.tenant_id, name: g.name, description: g.description,
     createdAt: g.created_at, updatedAt: g.updated_at,
     members: g.members?.map((m) => ({ userId: m.user_id, role: m.role, createdAt: m.created_at })),
+  };
+}
+
+interface RawConnectorConfig {
+  kind: string; tenant_id?: string; enabled: boolean; group_id?: string;
+  config?: Record<string, unknown>; secret_keys?: string[]; updated_at: string;
+}
+
+function toConnectorConfig(c: RawConnectorConfig): ConnectorConfig {
+  return {
+    kind: c.kind, tenantId: c.tenant_id || undefined, enabled: c.enabled,
+    groupId: c.group_id || undefined, config: c.config ?? {},
+    secretKeys: c.secret_keys ?? [], updatedAt: c.updated_at,
   };
 }
