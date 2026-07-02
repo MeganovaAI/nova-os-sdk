@@ -52,3 +52,22 @@ describe("groups", () => {
     expect(JSON.parse(calls[0]!.init.body as string)).toEqual({ user_id: "u1", role: "approver" });
   });
 });
+
+describe("listMyGroups", () => {
+  it("GETs /mine unwrapping {groups} with roles (non-admin endpoint)", async () => {
+    const fetchMock = vi.fn(async () =>
+      mk({ groups: [{ id: "support", name: "support", description: "", role: "approver" }] }),
+    );
+    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    expect(await client.listMyGroups()).toEqual([
+      { id: "support", name: "support", description: undefined, role: "approver" },
+    ]);
+    expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toBe("http://x/v1/managed/groups/mine");
+  });
+
+  it("returns [] for a user in no groups", async () => {
+    const fetchMock = vi.fn(async () => mk({ groups: [] }));
+    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    expect(await client.listMyGroups()).toEqual([]);
+  });
+});

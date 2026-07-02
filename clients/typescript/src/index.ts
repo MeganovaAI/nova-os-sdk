@@ -37,6 +37,7 @@ export {
   type PendingAction,
   type Group,
   type GroupMember,
+  type MyGroup,
 } from "./client.js";
 
 // Low-level REST factory (for advanced use / custom auth).

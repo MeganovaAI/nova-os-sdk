@@ -184,6 +184,14 @@ export interface GroupMember {
   createdAt: string;
 }
 
+/** One of the caller's own memberships, from {@link NovaClient.listMyGroups}. */
+export interface MyGroup {
+  id: string;
+  name: string;
+  description?: string;
+  role: string;
+}
+
 export interface NovaClientOptions {
   /** Base URL of the Nova OS instance. */
   baseUrl: string;
@@ -1083,6 +1091,18 @@ export class NovaClient {
       { method: "DELETE" },
     );
     if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /**
+   * The CALLER's own group memberships with roles (nova-os#774). Authenticated
+   * but not admin-gated — group-conditional UI (e.g. the Inbox) branches on
+   * this. Returns [] for users in no groups.
+   */
+  async listMyGroups(): Promise<MyGroup[]> {
+    const res = await this.rawFetch("/v1/managed/groups/mine", { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { groups?: Array<{ id: string; name: string; description?: string; role: string }> };
+    return (j.groups ?? []).map((g) => ({ id: g.id, name: g.name, description: g.description || undefined, role: g.role }));
   }
 
   // ── internals ──────────────────────────────────────────────────────────
