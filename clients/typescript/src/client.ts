@@ -206,6 +206,17 @@ export interface ConnectorConfig {
   updatedAt: string;
 }
 
+/**
+ * A tenant's entitlement flags (employee-assistant #80). Flags gate premium
+ * capabilities; a tenant with no stored row reads the "free floor" (every
+ * premium flag OFF, connector_limit at the free cap). Upgrading is a flag flip.
+ */
+export interface Entitlements {
+  tenantId: string;
+  flags: Record<string, unknown>;
+  updatedAt?: string;
+}
+
 export interface NovaClientOptions {
   /** Base URL of the Nova OS instance. */
   baseUrl: string;
@@ -1169,6 +1180,36 @@ export class NovaClient {
     if (!res.ok) throw await this.toApiError(res);
   }
 
+  // ── Tenant entitlements (employee-assistant #80) ───────────────────────
+
+  /**
+   * Read a tenant's entitlement flags (admin). A tenant with no stored row
+   * returns the free floor — every premium flag OFF, connector_limit at the
+   * free cap — so the read path is stable whether or not the tenant is upgraded.
+   */
+  async getEntitlements(tenant: string): Promise<Entitlements> {
+    const res = await this.rawFetch(`/v1/managed/entitlements/${encodeURIComponent(tenant)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { entitlements: RawEntitlements };
+    return toEntitlements(j.entitlements);
+  }
+
+  /**
+   * Upsert a tenant's entitlement flags (admin). The stored map replaces any
+   * prior map; the read path overlays it on the free floor, so flipping one
+   * premium flag on is all it takes to unlock that capability.
+   */
+  async putEntitlements(tenant: string, flags: Record<string, unknown>): Promise<Entitlements> {
+    const res = await this.rawFetch(`/v1/managed/entitlements/${encodeURIComponent(tenant)}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ flags }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { entitlements: RawEntitlements };
+    return toEntitlements(j.entitlements);
+  }
+
   // ── internals ──────────────────────────────────────────────────────────
 
   /** Bearer-injected, refresh-on-401 raw fetch for SSE/multipart surfaces. */
@@ -1249,5 +1290,15 @@ function toConnectorConfig(c: RawConnectorConfig): ConnectorConfig {
     kind: c.kind, tenantId: c.tenant_id || undefined, enabled: c.enabled,
     groupId: c.group_id || undefined, config: c.config ?? {},
     secretKeys: c.secret_keys ?? [], updatedAt: c.updated_at,
+  };
+}
+
+interface RawEntitlements {
+  tenant_id: string; flags?: Record<string, unknown>; updated_at?: string;
+}
+
+function toEntitlements(e: RawEntitlements): Entitlements {
+  return {
+    tenantId: e.tenant_id, flags: e.flags ?? {}, updatedAt: e.updated_at || undefined,
   };
 }

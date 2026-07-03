@@ -39,6 +39,7 @@ export {
   type GroupMember,
   type MyGroup,
   type ConnectorConfig,
+  type Entitlements,
 } from "./client.js";
 
 // Low-level REST factory (for advanced use / custom auth).
