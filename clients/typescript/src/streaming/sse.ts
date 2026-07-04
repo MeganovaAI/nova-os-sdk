@@ -62,14 +62,44 @@ export async function* parseSse<T = unknown>(
   }
 }
 
-/** Convenience: iterate a `text/event-stream` body as typed {@link AgUiEvent}s. */
+/** Convenience: iterate a `text/event-stream` body as typed {@link AgUiEvent}s.
+ *
+ * The kernel's /v1/messages is Anthropic-Messages-compatible and streams
+ * Anthropic-native SSE (`message_start` / `content_block_delta` / `message_stop`
+ * / `error`). Older builds streamed AG-UI events directly. We normalize BOTH:
+ * AG-UI frames pass through by their `type`; Anthropic frames are translated to
+ * the AG-UI equivalents the consumers switch on, so a kernel format change never
+ * silently drops the stream. */
 export async function* parseAgUiStream(
   response: Response,
 ): AsyncGenerator<AgUiEvent, void, unknown> {
-  for await (const frame of parseSse<AgUiEvent>(response)) {
-    if (frame.data && typeof frame.data === "object" && "type" in frame.data) {
-      yield frame.data;
+  const AGUI_TYPES = new Set([
+    "RUN_STARTED", "RUN_FINISHED", "RUN_ERROR",
+    "TEXT_MESSAGE_START", "TEXT_MESSAGE_CONTENT", "TEXT_MESSAGE_END",
+    "TOOL_CALL_START", "TOOL_CALL_ARGS", "TOOL_CALL_END", "STATE_DELTA", "CUSTOM",
+  ]);
+  for await (const frame of parseSse<Record<string, unknown>>(response)) {
+    const d = frame.data;
+    if (!d || typeof d !== "object" || !("type" in d)) continue;
+    const t = (d as { type: string }).type;
+    if (AGUI_TYPES.has(t)) {
+      yield d as unknown as AgUiEvent;
+      continue;
     }
+    // ── Anthropic-native SSE → AG-UI translation ──
+    if (t === "content_block_delta") {
+      const delta = (d as { delta?: { type?: string; text?: string } }).delta;
+      if (delta?.type === "text_delta" && typeof delta.text === "string") {
+        yield { type: "TEXT_MESSAGE_CONTENT", messageId: "", delta: delta.text } as AgUiEvent;
+      }
+    } else if (t === "message_stop") {
+      yield { type: "RUN_FINISHED", threadId: "", runId: "" } as AgUiEvent;
+    } else if (t === "error") {
+      const err = (d as { error?: { message?: string } }).error;
+      yield { type: "RUN_ERROR", message: err?.message ?? "stream error" } as AgUiEvent;
+    }
+    // message_start / content_block_start / content_block_stop / message_delta /
+    // ping — no AG-UI equivalent needed; skip.
   }
 }
 
