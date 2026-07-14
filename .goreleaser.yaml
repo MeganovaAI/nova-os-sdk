@@ -1,15 +1,15 @@
 version: 2
-project_name: nova-os-cli
+project_name: libraos-cli
 
 before:
   hooks:
     - sh -c 'cd cli && go mod tidy'
 
 builds:
-  - id: nova-os-cli
+  - id: libraos-cli
     dir: cli
     main: .
-    binary: nova-os-cli
+    binary: libraos-cli
     env:
       - CGO_ENABLED=0
     goos:
@@ -33,7 +33,7 @@ builds:
 archives:
   - id: default
     builds:
-      - nova-os-cli
+      - libraos-cli
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     format: tar.gz
     format_overrides:
@@ -82,7 +82,7 @@ dockers:
     goos: linux
     goarch: amd64
     image_templates:
-      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-amd64"
+      - "ghcr.io/libraos/libraos-cli:{{ .Tag }}-amd64"
     dockerfile: cli/Dockerfile
     extra_files:
       # extra_files are additional files copied into the build context
@@ -99,7 +99,7 @@ dockers:
     goos: linux
     goarch: arm64
     image_templates:
-      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-arm64"
+      - "ghcr.io/libraos/libraos-cli:{{ .Tag }}-arm64"
     dockerfile: cli/Dockerfile
     extra_files:
       - cli/README.md
@@ -111,21 +111,21 @@ dockers:
       - "--label=org.opencontainers.image.version={{ .Version }}"
 
 docker_manifests:
-  - name_template: "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}"
+  - name_template: "ghcr.io/libraos/libraos-cli:{{ .Tag }}"
     image_templates:
-      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-amd64"
-      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-arm64"
-  - name_template: "ghcr.io/meganovaai/nova-os-cli:latest"
+      - "ghcr.io/libraos/libraos-cli:{{ .Tag }}-amd64"
+      - "ghcr.io/libraos/libraos-cli:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/libraos/libraos-cli:latest"
     image_templates:
-      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-amd64"
-      - "ghcr.io/meganovaai/nova-os-cli:{{ .Tag }}-arm64"
+      - "ghcr.io/libraos/libraos-cli:{{ .Tag }}-amd64"
+      - "ghcr.io/libraos/libraos-cli:{{ .Tag }}-arm64"
 
 # release section — goreleaser uploads everything to the GitHub Release
 # the workflow already created (or creates one if absent).
 release:
   github:
-    owner: MeganovaAI
-    name: nova-os-sdk
+    owner: libraos
+    name: sdk
   prerelease: auto    # auto-detect rc/alpha/beta tags
   draft: false
   # Overwrite assets if they already exist on the release. Prevents

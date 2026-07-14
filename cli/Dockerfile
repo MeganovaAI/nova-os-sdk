@@ -3,12 +3,12 @@
 # by goreleaser. Multi-arch manifest is assembled by goreleaser.
 FROM gcr.io/distroless/static:nonroot
 
-LABEL org.opencontainers.image.source="https://github.com/MeganovaAI/nova-os-sdk"
-LABEL org.opencontainers.image.description="Nova OS partner CLI"
+LABEL org.opencontainers.image.source="https://github.com/libraos/sdk"
+LABEL org.opencontainers.image.description="LibraOS partner CLI"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # goreleaser drops the binary at the build context root.
-COPY nova-os-cli /usr/local/bin/nova-os-cli
+COPY libraos-cli /usr/local/bin/libraos-cli
 
 USER nonroot
-ENTRYPOINT ["/usr/local/bin/nova-os-cli"]
+ENTRYPOINT ["/usr/local/bin/libraos-cli"]

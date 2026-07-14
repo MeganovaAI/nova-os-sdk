@@ -11,7 +11,7 @@ import (
 	"github.com/libraos/sdk/cli/internal/client"
 )
 
-// CLIVersion is the published nova-os-cli version.
+// CLIVersion is the published libraos-cli version.
 // SpecVersion stays in lockstep with the OpenAPI version pinned in the spec file.
 // CLIVersion, commit, and buildDate are overridable via -ldflags from goreleaser.
 var (
@@ -43,7 +43,7 @@ var versionCmd = &cobra.Command{
 			cmd.Println(string(b))
 			return nil
 		}
-		cmd.Printf("nova-os-cli %s (commit %s, built %s)\n", CLIVersion, commit, buildDate)
+		cmd.Printf("libraos-cli %s (commit %s, built %s)\n", CLIVersion, commit, buildDate)
 		cmd.Printf("openapi spec %s (hash %s)\n", SpecVersion, hash)
 		return nil
 	},
