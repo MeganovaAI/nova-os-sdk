@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Nova OS Partner API
-  version: 1.0.0-alpha.5
+  version: 1.0.0-alpha.6
   description: |
     Partner integration API for Nova OS. Mirrors Anthropic Managed Agents
     1:1 for the compat surface (Section 1.1 of the design); extends with
@@ -29,6 +29,66 @@ security:
 tags:
   - name: Deployment
     description: Boot-time capabilities / model-tier / locale / auth read.
+  - name: Agents
+    description: Create, read, update, delete managed agents and personas.
+  - name: Chat
+    description: Native chat, OpenAI-compatible completions, models, token counting.
+  - name: Messages
+    description: Anthropic-compatible Messages API.
+  - name: Jobs
+    description: Asynchronous agent jobs (submit, poll, stream, cancel).
+  - name: Documents
+    description: Upload, list, delete, OCR, and text-extract documents.
+  - name: Knowledge
+    description: Knowledge collections, hybrid search, ingest, curation signals.
+  - name: Memory
+    description: Read a persona's observational memory.
+  - name: Employees
+    description: Digital-employee CRUD, portable bundles, and house profiles.
+  - name: Personas
+    description: Boot-time persona manifest.
+  - name: Files
+    description: OpenAI-compatible file upload and retrieval.
+  - name: Conversations
+    description: Conversation registry and per-conversation attachments.
+  - name: Audio
+    description: Speech-to-text, text-to-speech, and realtime voice.
+  - name: Images
+    description: OpenAI-compatible image generation, edits, and variations.
+  - name: Actions
+    description: Dry-run / approval queue for side-effecting tool actions.
+  - name: Groups
+    description: Departmental groups that gate action approval queues.
+  - name: FieldPolicies
+    description: Field-level access policy, evaluation, and audit.
+  - name: Connectors
+    description: External-system connectors and their credentials.
+  - name: Entitlements
+    description: Per-tenant entitlement flags.
+  - name: Hooks
+    description: Lifecycle webhook subscriptions.
+  - name: Filesystem
+    description: Per-session file workspaces.
+  - name: Sessions
+    description: Native sessions.
+  - name: Settings
+    description: Runtime platform settings.
+  - name: Users
+    description: Platform user management.
+  - name: OAuth
+    description: OIDC provider and relying-party sign-in.
+  - name: SCIM
+    description: SCIM 2.0 user provisioning.
+  - name: APIKeys
+    description: Service and per-agent API keys.
+  - name: Apps
+    description: Installed-app lifecycle and app-scoped agents.
+  - name: MCP
+    description: Model Context Protocol JSON-RPC endpoint.
+  - name: Skills
+    description: Direct single-tool invocation.
+  - name: Ops
+    description: Feature status, infra health, and logs.
 
 components:
   securitySchemes:
@@ -41,6 +101,12 @@ components:
         their tenancy model. The cloud variant accepts `msk_live_…` tokens
         in the same Bearer slot.
 
+    scimBearer:
+      type: http
+      scheme: bearer
+      description: |
+        SCIM 2.0 provisioning bearer token (configured server-side), distinct
+        from the end-user JWT. Used only by the /scim/v2/* endpoints.
   schemas:
     Error:
       type: object
@@ -1319,6 +1385,1731 @@ components:
               description: OIDC issuer / public base URL (discovery root). Empty when OIDC disabled.
           additionalProperties: false
 
+    # ---- chat ----
+    ChatMessage:
+      type: object
+      description: A single conversation message.
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          description: 'Message author role, e.g. system, user, assistant.'
+        content:
+          type: string
+          description: Message text content.
+
+    NativeChatMetadata:
+      type: object
+      description: >
+        Opaque per-request metadata. Nova OS does not interpret arbitrary keys
+        (they are threaded through tenant isolation and audit), but a few
+        reserved keys control per-call behavior.
+      additionalProperties: true
+      properties:
+        stream_events:
+          type: boolean
+          description: >
+            When true (and streaming), emit granular orchestration events
+            (tool_use / tool_result / text / thinking) over SSE.
+        stream_thinking:
+          type: boolean
+          description: >
+            When true, include model reasoning as `thinking` SSE events.
+            Independent of stream_events; default off.
+        max_tokens:
+          type: integer
+          description: >
+            Per-call output-token cap for the answer, overriding the agent's
+            configured limit. Must be > 0; clamped to 32768.
+        brain:
+          type: string
+          description: >
+            Per-call planning override. One of `always` or `never`; controls
+            whether the multi-step planner runs for this turn.
+          enum: [always, never]
+
+    NativeChatRequest:
+      type: object
+      description: >
+        Native chat request. Supply either `message` (simple form) or
+        `messages` (OpenAI array form).
+      properties:
+        message:
+          type: string
+          description: Simple single-message form (mutually usable with `messages`).
+        messages:
+          type: array
+          description: OpenAI-style conversation history.
+          items: { $ref: '#/components/schemas/ChatMessage' }
+        conversation_id:
+          type: string
+          description: Conversation/session identifier for continuity.
+        session_id:
+          type: string
+          description: Alternate session identifier.
+        model:
+          type: string
+          description: Optional model hint (server-side routing may override).
+        stream:
+          type: boolean
+          description: When true the response is delivered as an SSE stream.
+        fast:
+          type: boolean
+          description: >
+            Dispatch directly to the agent's primary skill, skipping planning.
+            Returns 400 if the agent has no skills. No-op on single-skill agents.
+        include_metadata:
+          type: boolean
+          description: >
+            When true, include additional diagnostic fields (e.g. tools_used,
+            per-stage details) in the response.
+        metadata:
+          $ref: '#/components/schemas/NativeChatMetadata'
+
+    UsageStage:
+      type: object
+      description: Token usage for one stage/sub-call of a turn.
+      properties:
+        stage:
+          type: string
+          description: The stage/agent that made the sub-call.
+        model:
+          type: string
+          description: The model used for the sub-call.
+        prompt_tokens: { type: integer }
+        completion_tokens: { type: integer }
+
+    UsageBlock:
+      type: object
+      description: >
+        Aggregated token usage across all of the turn's model sub-calls, with a
+        per-stage breakdown. Omitted on non-model/zero-usage turns. Excludes
+        embedding calls.
+      properties:
+        prompt_tokens: { type: integer }
+        completion_tokens: { type: integer }
+        total_tokens: { type: integer }
+        by_stage:
+          type: array
+          items: { $ref: '#/components/schemas/UsageStage' }
+
+    NativeChatResult:
+      type: object
+      description: Synchronous native chat response.
+      properties:
+        response:
+          type: string
+          description: The assistant's answer text.
+        conversation_id:
+          type: string
+        agent_id:
+          type: string
+        message_id:
+          type: string
+          description: Assistant turn identifier for per-message correlation.
+        images:
+          type: array
+          items: { type: string }
+        files:
+          type: array
+          items: { type: string }
+        grounding:
+          type: string
+          description: >
+            Per-turn grounded-vs-refusal outcome. Omitted on non-retrieval turns.
+          enum: [grounded, ungrounded_refusal, ungrounded_no_chunks, degraded]
+        retrieved_chunks:
+          type: array
+          description: Source ids of knowledge chunks surfaced by this turn.
+          items: { type: string }
+        tools_used:
+          type: array
+          description: Unique tool names dispatched this turn (include_metadata only).
+          items: { type: string }
+        usage:
+          $ref: '#/components/schemas/UsageBlock'
+
+    NativeJobAccepted:
+      type: object
+      description: Response to an accepted async job submission (202).
+      properties:
+        job_id: { type: string }
+        status:
+          type: string
+          description: Initial status, always `queued`.
+        agent_id: { type: string }
+        created_at:
+          type: string
+          format: date-time
+
+    NativeJob:
+      type: object
+      description: Async job state.
+      properties:
+        job_id: { type: string }
+        agent_id: { type: string }
+        status:
+          type: string
+          description: Job lifecycle status.
+          enum: [queued, running, done, failed, cancelled]
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+          description: Present once the job begins running.
+        finished_at:
+          type: string
+          format: date-time
+          description: Present once the job reaches a terminal state.
+        event_count:
+          type: integer
+          description: Number of events emitted so far.
+        result:
+          type: string
+          description: Final output text (present when done).
+        error:
+          type: string
+          description: Failure message (present when failed).
+        tokens_used:
+          type: integer
+
+    NativeJobCancelled:
+      type: object
+      properties:
+        job_id: { type: string }
+        status:
+          type: string
+          description: Always `cancelled`.
+
+    ChatCompletionRequest:
+      type: object
+      description: OpenAI-compatible chat completion request.
+      required: [messages]
+      properties:
+        model:
+          type: string
+          description: >
+            Target model/agent id. When gateway mode is enabled, a value of the
+            form `llm:<provider>/<model>` selects raw provider passthrough.
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/ChatMessage' }
+        stream:
+          type: boolean
+          description: When true the response is an SSE stream terminated by `[DONE]`.
+        max_tokens:
+          type: integer
+          description: Output-token cap (folded into the per-call answer limit).
+        max_completion_tokens:
+          type: integer
+          description: >
+            Newer OpenAI field for the output-token cap; preferred over
+            max_tokens when both are set.
+        temperature:
+          type: number
+          description: >
+            Sampling temperature. Accepted for OpenAI-client compatibility;
+            server-side routing controls the effective value on the agent path.
+        metadata:
+          type: object
+          description: >
+            Nova OS extension channel for per-call fields (e.g. a per-call model
+            override).
+          additionalProperties: true
+
+    ChatCompletionChoice:
+      type: object
+      properties:
+        index: { type: integer }
+        message: { $ref: '#/components/schemas/ChatMessage' }
+        finish_reason:
+          type: string
+          description: The provider's real stop reason.
+          enum: [stop, length, tool_calls]
+
+    ChatCompletionUsage:
+      type: object
+      description: Per-response token usage.
+      properties:
+        prompt_tokens: { type: integer }
+        completion_tokens: { type: integer }
+        total_tokens: { type: integer }
+
+    ChatCompletionResponse:
+      type: object
+      description: OpenAI-compatible chat completion response.
+      properties:
+        id: { type: string }
+        object:
+          type: string
+          description: Always `chat.completion`.
+        created:
+          type: integer
+          description: Unix timestamp (seconds).
+        model: { type: string }
+        choices:
+          type: array
+          items: { $ref: '#/components/schemas/ChatCompletionChoice' }
+        usage:
+          $ref: '#/components/schemas/ChatCompletionUsage'
+        nova_grounding:
+          type: string
+          description: >
+            Nova OS extension — per-turn grounded-vs-refusal outcome. Omitted on
+            non-retrieval turns.
+          enum: [grounded, ungrounded_refusal, ungrounded_no_chunks, degraded]
+        persisted_state:
+          type: object
+          description: >
+            Merged persisted field state, present only for agents that declare a
+            persist-fields schema.
+          additionalProperties: true
+
+    ModelListEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Model/agent id. Passthrough models carry an `llm:` prefix.
+        object:
+          type: string
+          description: Always `model`.
+        created:
+          type: integer
+        owned_by:
+          type: string
+
+    ModelList:
+      type: object
+      description: OpenAI-compatible model list.
+      properties:
+        object:
+          type: string
+          description: Always `list`.
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/ModelListEntry' }
+
+    CountTokensMessage:
+      type: object
+      description: One message in an Anthropic-shaped request.
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          description: >
+            Message content — a plain string or the Anthropic content-block array.
+          oneOf:
+            - type: string
+            - type: array
+              items: { type: object, additionalProperties: true }
+
+    CountTokensRequest:
+      type: object
+      description: Anthropic-compatible Messages request used for token counting.
+      required: [messages]
+      properties:
+        model:
+          type: string
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/CountTokensMessage' }
+        system:
+          description: System prompt — a string or an array of text blocks.
+          oneOf:
+            - type: string
+            - type: array
+              items: { type: object, additionalProperties: true }
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Optional metadata; `agent_id` selects the agent for validation.
+
+    CountTokensResult:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          description: Estimated number of input tokens for the supplied prompt.
+    # ---- media ----
+    TranscriptionRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Audio file to transcribe (e.g. mp3, wav, m4a, webm).
+        model:
+          type: string
+          description: >-
+            Transcription model (provider-prefixed, e.g.
+            `Systran/faster-whisper-large-v3`). Overrides the server default for
+            this call. A bare model name is rejected by the gateway.
+          example: Systran/faster-whisper-large-v3
+        language:
+          type: string
+          description: >-
+            ISO-639-1 language hint. Omit to let the model auto-detect
+            (supports mixed-language audio).
+          example: en
+        response_format:
+          type: string
+          description: Output format. Defaults to `json`.
+          default: json
+          enum: [json, text, srt, verbose_json, vtt]
+    TranscriptionResponse:
+      type: object
+      description: >-
+        JSON transcript. Shape follows the underlying model; `segments` and
+        timestamp detail are present for verbose formats.
+      properties:
+        text:
+          type: string
+          description: The full transcript.
+        language:
+          type: string
+          description: Detected or supplied language.
+        duration:
+          type: number
+          description: Audio duration in seconds, when reported.
+        segments:
+          type: array
+          description: Per-segment breakdown with timestamps, when available.
+          items:
+            $ref: '#/components/schemas/TranscriptionSegment'
+    TranscriptionSegment:
+      type: object
+      description: A timestamped transcript segment.
+      properties:
+        id:
+          type: integer
+        start:
+          type: number
+          description: Segment start time in seconds.
+        end:
+          type: number
+          description: Segment end time in seconds.
+        text:
+          type: string
+    SpeechRequest:
+      type: object
+      required: [input]
+      properties:
+        input:
+          type: string
+          description: Text to synthesize into speech.
+        model:
+          type: string
+          description: >-
+            TTS model (provider-prefixed, e.g. `gemini/gemini-2.5-flash-tts`).
+            Overrides the server default for this call.
+          example: gemini/gemini-2.5-flash-tts
+        voice:
+          type: string
+          description: >-
+            Voice name. Must belong to the same provider as `model` (e.g.
+            Gemini voices such as `Kore` for the default Gemini TTS model).
+            Defaults to the server-configured voice when omitted.
+          example: Kore
+        response_format:
+          type: string
+          description: >-
+            Audio container/codec. Defaults to `mp3` (`audio/mpeg` body).
+          default: mp3
+          example: mp3
+    ImageGenerationRequest:
+      type: object
+      required: [model, prompt]
+      description: >-
+        Forwarded verbatim to the image model; additional provider-specific
+        fields are accepted and passed through.
+      additionalProperties: true
+      properties:
+        model:
+          type: string
+          description: Image model, provider-prefixed.
+          example: Alibaba/z-image-turbo
+        prompt:
+          type: string
+          description: Text description of the desired image(s).
+        n:
+          type: integer
+          description: Number of images to generate.
+          default: 1
+        size:
+          type: string
+          description: Requested image dimensions.
+          example: 1024x1024
+        response_format:
+          type: string
+          description: How images are returned.
+          enum: [url, b64_json]
+    ImageEditRequest:
+      type: object
+      required: [model, image, prompt]
+      description: >-
+        Multipart body forwarded verbatim to the image model; additional
+        provider-specific fields are accepted.
+      properties:
+        model:
+          type: string
+          description: Image model, provider-prefixed.
+          example: Alibaba/z-image-turbo
+        image:
+          type: string
+          format: binary
+          description: Source image to edit.
+        mask:
+          type: string
+          format: binary
+          description: >-
+            Optional mask; transparent areas indicate where the image should be
+            edited.
+        prompt:
+          type: string
+          description: Text description of the desired edit.
+        n:
+          type: integer
+          default: 1
+        size:
+          type: string
+          example: 1024x1024
+        response_format:
+          type: string
+          enum: [url, b64_json]
+    ImageVariationRequest:
+      type: object
+      required: [model, image]
+      description: >-
+        Multipart body forwarded verbatim to the image model; additional
+        provider-specific fields are accepted.
+      properties:
+        model:
+          type: string
+          description: Image model, provider-prefixed.
+          example: Alibaba/z-image-turbo
+        image:
+          type: string
+          format: binary
+          description: Source image to create variations of.
+        n:
+          type: integer
+          default: 1
+        size:
+          type: string
+          example: 1024x1024
+        response_format:
+          type: string
+          enum: [url, b64_json]
+    ImageResponse:
+      type: object
+      description: >-
+        OpenAI-compatible image response, returned unchanged from the model.
+      properties:
+        created:
+          type: integer
+          description: Unix timestamp of generation.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageData'
+    ImageData:
+      type: object
+      description: A single generated image, per the requested `response_format`.
+      properties:
+        url:
+          type: string
+          description: Image URL (when `response_format=url`).
+        b64_json:
+          type: string
+          description: Base64-encoded image (when `response_format=b64_json`).
+        revised_prompt:
+          type: string
+          description: Prompt as revised by the model, when provided.
+    # ---- docs ----
+    OcrRequest:
+      type: object
+      description: JSON alternative to the multipart upload for OCR.
+      required: [file_base64]
+      properties:
+        file_base64:
+          type: string
+          description: Base64-encoded PDF bytes.
+        file_sha256:
+          type: string
+          description: Optional caller-supplied SHA-256 of the file, used as the result-cache key.
+        options:
+          type: object
+          properties:
+            max_pages:
+              type: integer
+              description: Optional cap on pages to process (0 or omitted = all pages).
+    OcrResponse:
+      type: object
+      properties:
+        markdown:
+          type: string
+          description: The extracted document text as markdown.
+        page_count:
+          type: integer
+          description: Number of pages processed.
+        model_used:
+          type: string
+          description: Vision model that produced the result.
+        fallback_chain_triggered:
+          type: boolean
+          description: True if a fallback vision model was used for one or more pages.
+        cost_usd:
+          type: number
+          description: Billed cost of this OCR call in USD.
+        cache_hit:
+          type: boolean
+          description: True when the result was served from cache (no new billing).
+        elapsed_ms:
+          type: integer
+          description: Server-side processing time in milliseconds.
+    ExtractRequest:
+      type: object
+      description: JSON alternative to the multipart upload for text extraction.
+      required: [file_base64, filename]
+      properties:
+        file_base64:
+          type: string
+          description: Base64-encoded document bytes.
+        filename:
+          type: string
+          description: Filename with a supported extension, used to route the parser.
+    ExtractResponse:
+      type: object
+      properties:
+        text:
+          type: string
+          description: The extracted plain text.
+        title:
+          type: string
+          description: Document title when the parser can detect one.
+        doc_type:
+          type: string
+          description: Detected document type (e.g. docx, xlsx, pdf, odt, csv, eml).
+        char_count:
+          type: integer
+          description: Length of the extracted text in characters.
+        elapsed_ms:
+          type: integer
+          description: Server-side processing time in milliseconds.
+    MemoryLog:
+      type: object
+      properties:
+        agent_id:
+          type: string
+          description: The persona this memory belongs to.
+        scope:
+          type: string
+          enum: [corporate, personal]
+          description: The memory scope that was read.
+        content:
+          type: string
+          description: The accumulated memory as text. Empty when nothing has been remembered yet.
+        updated_at:
+          type: string
+          format: date-time
+          description: When the memory log was last written.
+        enabled:
+          type: boolean
+          description: False when observational memory is not active on this deployment.
+        last_observed_at:
+          type: string
+          format: date-time
+          description: When new activity was last folded into memory. Omitted when never observed.
+    KnowledgeSignalList:
+      type: object
+      properties:
+        signals:
+          type: array
+          items: { $ref: '#/components/schemas/KnowledgeSignal' }
+        total:
+          type: integer
+          description: Number of signals returned.
+    KnowledgeSignal:
+      type: object
+      properties:
+        id:
+          type: string
+        tenant:
+          type: string
+        app:
+          type: string
+          description: Source application that captured the signal.
+        employee_id:
+          type: string
+          description: Persona associated with the signal.
+        type:
+          type: string
+          description: Signal type.
+        fact_key:
+          type: string
+          description: Normalised dedupe key identifying the same fact across signals.
+        content:
+          type: string
+          description: The captured fact text.
+        source_chunk_id:
+          type: string
+          description: Identifier of the source chunk the signal was derived from.
+        status:
+          type: string
+          enum: [pending, quarantined, eligible, promoted, rejected, superseded]
+        created_at:
+          type: string
+          format: date-time
+        signature:
+          type: string
+          description: Integrity signature over the signal contents.
+    PromotionCandidates:
+      type: object
+      properties:
+        fact_keys:
+          type: array
+          description: Fact keys that have cleared the promotion quorum.
+          items: { type: string }
+    # ---- files ----
+    FileObject:
+      type: object
+      description: An uploaded file, OpenAI Files API compatible.
+      required: [id, object, bytes, created_at, filename]
+      properties:
+        id:
+          type: string
+          description: File identifier, prefixed with `file-`.
+        object:
+          type: string
+          const: file
+        bytes:
+          type: integer
+          description: Size of the file in bytes.
+        created_at:
+          type: integer
+          description: Unix timestamp (seconds) of creation.
+        filename:
+          type: string
+        purpose:
+          type: string
+          description: Intended use of the file.
+        status:
+          type: string
+          description: Processing status, e.g. `processed`.
+        status_details:
+          type: string
+          nullable: true
+    FileDeleted:
+      type: object
+      required: [id, object, deleted]
+      properties:
+        id: { type: string }
+        object:
+          type: string
+          const: file
+        deleted:
+          type: boolean
+    Conversation:
+      type: object
+      description: Per-user conversation summary.
+      required: [id, agent_id, created_at, last_active_at, message_count]
+      properties:
+        id: { type: string }
+        agent_id: { type: string }
+        title:
+          type: string
+          nullable: true
+          description: Null until set via rename.
+        created_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: string
+          format: date-time
+        message_count:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties: true
+          description: App-owned metadata map. Omitted when empty.
+    ConversationDetail:
+      type: object
+      description: Conversation summary plus its message log.
+      required: [id, agent_id, created_at, last_active_at, message_count, messages]
+      properties:
+        id: { type: string }
+        agent_id: { type: string }
+        title:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: string
+          format: date-time
+        message_count:
+          type: integer
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/ConversationMessage' }
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Omitted when empty.
+    ConversationMessage:
+      type: object
+      required: [role, content, timestamp]
+      properties:
+        role:
+          type: string
+          description: e.g. `user`, `assistant`.
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ConversationList:
+      type: object
+      required: [conversations]
+      properties:
+        conversations:
+          type: array
+          items: { $ref: '#/components/schemas/Conversation' }
+    ConversationCreate:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Client-chosen id. Server generates one when omitted.
+        agent_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+          description: >-
+            App-owned metadata. Reserved `nova_` key prefix rejected; capped
+            at 4 KB serialized.
+    ConversationDeleted:
+      type: object
+      required: [id, deleted]
+      properties:
+        id: { type: string }
+        deleted:
+          type: boolean
+    Attachment:
+      type: object
+      description: A file attached to a conversation.
+      required: [id, name, mime_type, size_bytes, download_url, created_at, scan_status]
+      properties:
+        id: { type: string }
+        name:
+          type: string
+          description: Original filename.
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+        download_url:
+          type: string
+          description: Relative URL for downloading the attachment bytes.
+        created_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        scan_status:
+          type: string
+          description: Malware-scan status, e.g. `not_scanned`.
+    # ---- governance ----
+    PendingAction:
+      type: object
+      description: A side-effecting action parked for human approval.
+      properties:
+        id: { type: string }
+        agent_id: { type: string }
+        user_id: { type: string }
+        tenant_id: { type: string }
+        session_id: { type: string }
+        tool_name: { type: string }
+        risk:
+          type: string
+          description: Effective risk tier; an unknown/absent value fails safe to `high`.
+          enum: [low, medium, high]
+        status:
+          type: string
+          enum: [pending, approved, rejected, executed, failed]
+        result:
+          type: string
+          description: Terminal outcome detail (e.g. execution error); omitted when empty.
+        created_at: { type: string, format: date-time }
+        decided_at: { type: string, format: date-time }
+        input:
+          description: The tool arguments, forwarded as structured JSON.
+          type: object
+          additionalProperties: true
+        preview:
+          description: Dry-run preview of the action's effect, if computed.
+          type: object
+          additionalProperties: true
+        source:
+          type: string
+          description: Connector queue label (connector-sourced actions).
+        external_ref:
+          type: string
+          description: Connector correlation key.
+        group_id:
+          type: string
+          description: Owning group; empty means admin-only.
+        claimed_by:
+          type: string
+          description: User id that soft-claimed the action.
+        decided_by:
+          type: string
+          description: User id that approved or rejected the action.
+        reason:
+          type: string
+          description: Why the action was approved or rejected.
+      required: [id, tool_name, risk, status, created_at]
+    ActionEnvelope:
+      type: object
+      properties:
+        action: { $ref: '#/components/schemas/PendingAction' }
+      required: [action]
+    ActionList:
+      type: object
+      properties:
+        actions:
+          type: array
+          items: { $ref: '#/components/schemas/PendingAction' }
+      required: [actions]
+    ActionCallback:
+      type: object
+      description: >-
+        Webhook fired when the action is approved. It is snapshotted onto the
+        row and never surfaced back to clients.
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The webhook endpoint the approved action is dispatched to.
+        auth:
+          type: object
+          properties:
+            type: { type: string }
+            secret_ref:
+              type: string
+              description: >-
+                Name of an environment variable on the Nova OS server holding
+                the shared HMAC secret. The secret itself never travels in the
+                request or the stored row.
+          required: [secret_ref]
+        timeout_sec: { type: integer }
+        retry: { type: integer }
+      required: [url, auth]
+    CreateActionRequest:
+      type: object
+      description: Body for a connector parking an action for approval.
+      properties:
+        agent_id: { type: string }
+        user_id: { type: string }
+        tenant_id: { type: string }
+        session_id: { type: string }
+        group_id:
+          type: string
+          description: Route the action to a departmental group queue.
+        tool_name: { type: string }
+        input:
+          description: The tool arguments.
+          type: object
+          additionalProperties: true
+        preview:
+          description: Optional dry-run preview of the effect.
+          type: object
+          additionalProperties: true
+        risk:
+          type: string
+          description: Effective risk tier; absent/unknown fails safe to `high`.
+          enum: [low, medium, high]
+        source: { type: string }
+        external_ref: { type: string }
+        callback: { $ref: '#/components/schemas/ActionCallback' }
+      required: [tool_name, input, source, callback]
+    ActionDecisionRequest:
+      type: object
+      description: Optional body carrying an approve/reject reason for the audit trail.
+      properties:
+        reason: { type: string }
+    Group:
+      type: object
+      description: A role-carrying group that gates departmental action queues.
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        members:
+          type: array
+          items: { $ref: '#/components/schemas/GroupMember' }
+      required: [id, name, created_at, updated_at]
+    GroupEnvelope:
+      type: object
+      properties:
+        group: { $ref: '#/components/schemas/Group' }
+      required: [group]
+    GroupList:
+      type: object
+      properties:
+        groups:
+          type: array
+          items: { $ref: '#/components/schemas/Group' }
+      required: [groups]
+    GroupRole:
+      type: string
+      description: A member's role in a group.
+      enum: [member, approver, lead]
+    GroupMember:
+      type: object
+      properties:
+        user_id: { type: string }
+        role: { $ref: '#/components/schemas/GroupRole' }
+        created_at: { type: string, format: date-time }
+      required: [user_id, role]
+    CreateGroupRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Optional; derived from `name` as a kebab-case slug when omitted.
+        tenant_id: { type: string }
+        name: { type: string }
+        description: { type: string }
+      required: [name]
+    AddGroupMemberRequest:
+      type: object
+      properties:
+        user_id: { type: string }
+        role: { $ref: '#/components/schemas/GroupRole' }
+      required: [user_id]
+    MyGroupMembership:
+      type: object
+      description: One of the caller's own group memberships.
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        role: { $ref: '#/components/schemas/GroupRole' }
+      required: [id, name, role]
+    MyGroupList:
+      type: object
+      properties:
+        groups:
+          type: array
+          items: { $ref: '#/components/schemas/MyGroupMembership' }
+      required: [groups]
+    FieldTier:
+      type: string
+      description: A read or write access level over a record's fields.
+      enum: [all, non-sensitive, none]
+    FieldRule:
+      type: object
+      description: Maps a role to its read/write tiers.
+      properties:
+        role: { type: string }
+        read: { $ref: '#/components/schemas/FieldTier' }
+        write: { $ref: '#/components/schemas/FieldTier' }
+      required: [role, read, write]
+    FieldOwnerOverride:
+      type: object
+      description: >-
+        Raises (never lowers) the caller's tiers when the caller owns the
+        record. An empty tier leaves the corresponding tier unchanged.
+      properties:
+        read: { $ref: '#/components/schemas/FieldTier' }
+        write: { $ref: '#/components/schemas/FieldTier' }
+    FieldPolicy:
+      type: object
+      description: Declarative per-(tenant, record type) field-access policy.
+      properties:
+        sensitiveFields:
+          type: array
+          items: { type: string }
+        rules:
+          type: array
+          items: { $ref: '#/components/schemas/FieldRule' }
+        ownerOverride: { $ref: '#/components/schemas/FieldOwnerOverride' }
+        defaultRead:
+          allOf: [ { $ref: '#/components/schemas/FieldTier' } ]
+          description: Tier for a role not in `rules`; empty defaults to `non-sensitive`.
+        defaultWrite:
+          allOf: [ { $ref: '#/components/schemas/FieldTier' } ]
+          description: Tier for a role not in `rules`; empty defaults to `none`.
+    FieldPolicyList:
+      type: object
+      description: The tenant's policies keyed by record type.
+      properties:
+        policies:
+          type: object
+          additionalProperties: { $ref: '#/components/schemas/FieldPolicy' }
+      required: [policies]
+    FieldCaller:
+      type: object
+      description: The identity evaluated against a policy.
+      properties:
+        role: { type: string }
+        id: { type: string }
+      required: [role]
+    FieldAccess:
+      type: object
+      description: >-
+        The computed access contract. An omitted field list means "all fields";
+        a present list (including empty) is the explicit permitted set.
+      properties:
+        visibleFields:
+          type: array
+          items: { type: string }
+        writableFields:
+          type: array
+          items: { type: string }
+    FieldEvaluateRequest:
+      type: object
+      properties:
+        caller: { $ref: '#/components/schemas/FieldCaller' }
+        record:
+          type: object
+          properties:
+            owner: { type: string }
+            id: { type: string }
+            fields:
+              type: object
+              additionalProperties: true
+          required: [fields]
+        mode:
+          type: string
+          description: Empty for a read evaluation, `write` for a write evaluation.
+          enum: ['', write]
+      required: [caller, record]
+    FieldEvaluateResponse:
+      type: object
+      description: >-
+        The access decision plus the enforced record view. Read mode returns
+        `stripped`; write mode returns `filtered`.
+      properties:
+        _access: { $ref: '#/components/schemas/FieldAccess' }
+        stripped:
+          type: object
+          additionalProperties: true
+        filtered:
+          type: object
+          additionalProperties: true
+      required: [_access]
+    FieldAccessEvent:
+      type: object
+      description: An append-only audit record of sensitive-field access.
+      properties:
+        tenant: { type: string }
+        record_type: { type: string }
+        record_id: { type: string }
+        field: { type: string }
+        action:
+          type: string
+          description: The audited action (e.g. `read_strip`).
+        actor: { type: string }
+        at: { type: string, format: date-time }
+    FieldAccessEventList:
+      type: object
+      properties:
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/FieldAccessEvent' }
+      required: [events]
+    # ---- connectors ----
+    Connector:
+      type: object
+      description: A connector configuration with secret values masked; secret_keys lists which secrets are set.
+      properties:
+        kind:
+          type: string
+          description: Connector kind identifier.
+        tenant_id:
+          type: string
+          description: Owning tenant; omitted when unscoped.
+        enabled:
+          type: boolean
+        group_id:
+          type: string
+          description: Optional group scoping the connector.
+        config:
+          type: object
+          additionalProperties: true
+          description: Connector-specific non-secret settings.
+        secret_keys:
+          type: array
+          description: Names of the secrets that are set; values are never returned here.
+          items: { type: string }
+        updated_at:
+          type: string
+          format: date-time
+      required: [kind, enabled, config, secret_keys, updated_at]
+    ConnectorList:
+      type: object
+      properties:
+        connectors:
+          type: array
+          items: { $ref: '#/components/schemas/Connector' }
+      required: [connectors]
+    ConnectorUpsert:
+      type: object
+      description: Upsert payload for a connector's settings and secrets.
+      properties:
+        tenant_id:
+          type: string
+        enabled:
+          type: boolean
+        group_id:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+          description: Connector-specific non-secret settings (must be a JSON object).
+        secrets:
+          type: object
+          additionalProperties: { type: string }
+          description: >-
+            Secret values to merge. A non-empty value overwrites, an empty string
+            deletes that key, and omitted keys are preserved.
+    ConnectorCredentials:
+      type: object
+      description: A connector config together with its decrypted secret values.
+      properties:
+        connector: { $ref: '#/components/schemas/Connector' }
+        secrets:
+          type: object
+          additionalProperties: { type: string }
+          description: Decrypted secret values keyed by secret name.
+      required: [connector, secrets]
+    SyncStatus:
+      type: object
+      description: SharePoint sync worker status snapshot.
+      properties:
+        configured: { type: boolean }
+        enabled: { type: boolean }
+        collection_id: { type: string }
+        last_sync_at:
+          type: string
+          format: date-time
+        last_error: { type: string }
+        items_synced: { type: integer }
+        items_deleted: { type: integer }
+        items_failed: { type: integer }
+        items_skipped: { type: integer }
+        cycles_run: { type: integer }
+        has_delta_link:
+          type: boolean
+          description: Whether a delta resume link is persisted.
+        resume_pending:
+          type: boolean
+          description: True when the last cycle stopped at the item cap and the next cycle resumes the same delta round.
+      required: [configured, enabled, last_sync_at, items_synced, items_deleted, items_failed, items_skipped, cycles_run, has_delta_link, resume_pending]
+    HouseProfile:
+      type: object
+      description: An employee's house-profile markdown and its last-updated timestamp.
+      properties:
+        markdown:
+          type: string
+          description: The house-profile content, in markdown.
+        updated_at:
+          type: string
+          format: date-time
+          description: Last-updated timestamp; empty when no profile is set.
+      required: [markdown, updated_at]
+    HouseProfileUpdate:
+      type: object
+      description: Replacement house-profile content. An empty markdown string clears the profile.
+      properties:
+        markdown:
+          type: string
+      required: [markdown]
+    Entitlements:
+      type: object
+      description: A tenant's effective entitlement flag map.
+      properties:
+        tenant_id:
+          type: string
+        flags:
+          type: object
+          additionalProperties: true
+          description: Effective flag values (free floor overlaid with stored overrides).
+      required: [tenant_id, flags]
+    EntitlementsEnvelope:
+      type: object
+      properties:
+        entitlements: { $ref: '#/components/schemas/Entitlements' }
+      required: [entitlements]
+    EntitlementsUpdate:
+      type: object
+      description: Upsert payload for a tenant's entitlement flags.
+      properties:
+        flags:
+          type: object
+          additionalProperties: true
+      required: [flags]
+    # ---- auth ----
+    OidcDiscovery:
+      type: object
+      description: OpenID Connect discovery metadata.
+      properties:
+        issuer: { type: string, format: uri }
+        authorization_endpoint: { type: string, format: uri }
+        token_endpoint: { type: string, format: uri }
+        userinfo_endpoint: { type: string, format: uri }
+        jwks_uri: { type: string, format: uri }
+        response_types_supported:
+          type: array
+          items: { type: string }
+        subject_types_supported:
+          type: array
+          items: { type: string }
+        id_token_signing_alg_values_supported:
+          type: array
+          items: { type: string }
+        scopes_supported:
+          type: array
+          items: { type: string }
+        grant_types_supported:
+          type: array
+          items: { type: string }
+        token_endpoint_auth_methods_supported:
+          type: array
+          items: { type: string }
+    OauthError:
+      type: object
+      description: OAuth 2.0 error response.
+      properties:
+        error:
+          type: string
+          description: >-
+            Error code, e.g. `invalid_client`, `invalid_grant`,
+            `redirect_uri_mismatch`, `pkce_required`, `pkce_mismatch`,
+            `invalid_scope`, `unsupported_grant_type`, `unknown_provider`.
+      required: [error]
+    TokenRequest:
+      type: object
+      description: >-
+        Token request. Required fields depend on `grant_type`:
+        `authorization_code` uses code/redirect_uri/(code_verifier);
+        `refresh_token` uses refresh_token/(scope);
+        `client_credentials` uses client_id/client_secret.
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code, refresh_token, client_credentials]
+        client_id: { type: string }
+        client_secret: { type: string }
+        code: { type: string }
+        redirect_uri: { type: string, format: uri }
+        code_verifier: { type: string, description: PKCE verifier. }
+        refresh_token: { type: string }
+        scope: { type: string, description: Space-delimited. }
+      required: [grant_type]
+    TokenResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, example: Bearer }
+        id_token:
+          type: string
+          description: HS256 id token (present for the authorization_code / refresh_token grants).
+        expires_in: { type: integer, example: 3600 }
+        refresh_token:
+          type: string
+          description: Present when the `offline_access` scope was granted, and always on a refresh_token rotation.
+      required: [access_token, token_type, expires_in]
+    UserInfo:
+      type: object
+      properties:
+        sub: { type: string }
+        email: { type: string, format: email }
+        name: { type: string }
+        role:
+          type: string
+          description: Deprecated singular mirror of the highest role in `roles`.
+        tenant_id: { type: string }
+        roles:
+          type: array
+          items: { type: string }
+    OidcClient:
+      type: object
+      properties:
+        client_id: { type: string }
+        redirect_uri: { type: string, format: uri }
+        app_id: { type: string }
+    ScimName:
+      type: object
+      properties:
+        formatted: { type: string }
+        givenName: { type: string }
+        familyName: { type: string }
+    ScimEmail:
+      type: object
+      properties:
+        value: { type: string, format: email }
+        type: { type: string, example: work }
+        primary: { type: boolean }
+      required: [value]
+    ScimMeta:
+      type: object
+      properties:
+        resourceType: { type: string, example: User }
+        created: { type: string, format: date-time }
+        lastModified: { type: string, format: date-time }
+        location: { type: string }
+    ScimUser:
+      type: object
+      description: SCIM 2.0 core User resource (RFC 7643), restricted to the supported attributes.
+      properties:
+        schemas:
+          type: array
+          items: { type: string }
+          example: ['urn:ietf:params:scim:schemas:core:2.0:User']
+        id: { type: string }
+        externalId: { type: string }
+        userName:
+          type: string
+          format: email
+          description: The user's email; unique.
+        name: { $ref: '#/components/schemas/ScimName' }
+        displayName: { type: string }
+        active: { type: boolean }
+        emails:
+          type: array
+          items: { $ref: '#/components/schemas/ScimEmail' }
+        meta: { $ref: '#/components/schemas/ScimMeta' }
+      required: [userName]
+    ScimListResponse:
+      type: object
+      description: SCIM ListResponse envelope.
+      properties:
+        schemas:
+          type: array
+          items: { type: string }
+          example: ['urn:ietf:params:scim:api:messages:2.0:ListResponse']
+        totalResults: { type: integer }
+        startIndex: { type: integer }
+        itemsPerPage: { type: integer }
+        Resources:
+          type: array
+          items: { $ref: '#/components/schemas/ScimUser' }
+    ScimPatchOp:
+      type: object
+      description: SCIM PatchOp request (RFC 7644 §3.5.2).
+      properties:
+        schemas:
+          type: array
+          items: { type: string }
+          example: ['urn:ietf:params:scim:api:messages:2.0:PatchOp']
+        Operations:
+          type: array
+          items:
+            type: object
+            properties:
+              op:
+                type: string
+                enum: [add, replace, remove]
+              path: { type: string }
+              value:
+                description: >-
+                  Attribute value; a bare value, an object, or (for `emails`) an
+                  array. Boolean `active` also accepts the string `"True"`/`"False"`.
+            required: [op]
+      required: [Operations]
+    ScimError:
+      type: object
+      description: SCIM error response (RFC 7644 §3.12). `status` is a string.
+      properties:
+        schemas:
+          type: array
+          items: { type: string }
+          example: ['urn:ietf:params:scim:api:messages:2.0:Error']
+        status: { type: string, example: '404' }
+        scimType:
+          type: string
+          description: 'e.g. `invalidFilter`, `invalidValue`, `invalidSyntax`, `uniqueness`.'
+        detail: { type: string }
+    CreateServiceKeyRequest:
+      type: object
+      properties:
+        name: { type: string }
+        expires_in_days:
+          type: integer
+          minimum: 1
+          description: Optional expiry in days; omit for a non-expiring key.
+    ServiceKey:
+      type: object
+      description: Service API key metadata (no secret).
+      properties:
+        id: { type: string }
+        key_prefix: { type: string, example: nk_Ng9IdeX4S }
+        name: { type: string }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        last_used_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+    ServiceKeyList:
+      type: object
+      properties:
+        keys:
+          type: array
+          items: { $ref: '#/components/schemas/ServiceKey' }
+    ServiceKeySecret:
+      type: object
+      description: One-time mint response carrying the full secret. Store it immediately; it is never recoverable.
+      properties:
+        id: { type: string }
+        key_prefix: { type: string, example: nk_Ng9IdeX4S }
+        secret:
+          type: string
+          description: The full `nk_` key. Returned only once.
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+    AgentKey:
+      type: object
+      description: One-time mint response for a per-agent key carrying the full secret.
+      properties:
+        id: { type: string }
+        key_prefix: { type: string, example: nk_Ng9IdeX4S }
+        secret:
+          type: string
+          description: The full `nk_` key. Returned only once.
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+    # ---- opsapps ----
+    App:
+      type: object
+      description: One installed app.
+      properties:
+        name: { type: string }
+        version: { type: string }
+        schema_prefix: { type: string }
+        manifest_path: { type: string }
+        status: { type: string }
+        installed_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        archived_at: { type: string, format: date-time, nullable: true }
+        archived_by: { type: string, nullable: true }
+        last_error: { type: string, nullable: true }
+        agents_count: { type: integer }
+      required: [name, version, schema_prefix, manifest_path, status, installed_at, last_seen_at, agents_count]
+    AppList:
+      type: object
+      properties:
+        apps:
+          type: array
+          items: { $ref: '#/components/schemas/App' }
+      required: [apps]
+    AppAgent:
+      type: object
+      description: Minimal app-scoped agent summary.
+      properties:
+        id: { type: string }
+        capabilities:
+          type: array
+          items: { type: string }
+      required: [id, capabilities]
+    AppAgentList:
+      type: object
+      properties:
+        agents:
+          type: array
+          items: { $ref: '#/components/schemas/AppAgent' }
+      required: [agents]
+    AppMigration:
+      type: object
+      description: One schema-migration audit row for an app.
+      properties:
+        filename: { type: string }
+        checksum: { type: string }
+        status: { type: string, enum: [applied, failed] }
+        applied_at: { type: string, format: date-time }
+        error_message: { type: string, nullable: true, description: Null when status is applied. }
+      required: [filename, checksum, status, applied_at, error_message]
+    AppMigrationList:
+      type: object
+      properties:
+        app: { type: string }
+        migrations:
+          type: array
+          items: { $ref: '#/components/schemas/AppMigration' }
+      required: [app, migrations]
+    AppInstallResult:
+      type: object
+      description: Result of an install, reload, or uninstall operation.
+      properties:
+        name: { type: string }
+        version: { type: string }
+        registered: { type: boolean }
+        agents_registered: { type: integer }
+        agents_unregistered: { type: integer }
+        migrations_applied: { type: integer }
+        status: { type: string }
+        errors:
+          type: array
+          description: Present only when the operation failed.
+          items: { type: string }
+      required: [name, version, registered, agents_registered, agents_unregistered, migrations_applied]
+    McpRequest:
+      type: object
+      description: JSON-RPC 2.0 request envelope.
+      properties:
+        jsonrpc: { type: string, enum: ['2.0'] }
+        id:
+          description: 'JSON-RPC request id (string, number, or null), echoed on the response.'
+        method:
+          type: string
+          description: One of initialize, tools/list, tools/call, resources/list, resources/read.
+        params:
+          type: object
+          description: Method-specific parameters.
+          additionalProperties: true
+      required: [jsonrpc, method]
+    McpResponse:
+      type: object
+      description: JSON-RPC 2.0 response envelope. Exactly one of result or error is present.
+      properties:
+        jsonrpc: { type: string, enum: ['2.0'] }
+        id:
+          description: 'JSON-RPC request id (string, number, or null), echoed on the response.'
+        result:
+          type: object
+          additionalProperties: true
+        error:
+          type: object
+          properties:
+            code: { type: integer }
+            message: { type: string }
+          required: [code, message]
+      required: [jsonrpc, id]
+    SkillRunResponse:
+      type: object
+      properties:
+        output:
+          type: string
+          description: Raw string returned by the tool handler.
+      required: [output]
+    FeatureStatus:
+      type: object
+      description: Resolved state of one gated feature.
+      properties:
+        name: { type: string }
+        state: { type: string, enum: [on, off, degraded] }
+        resolved_from: { type: string, enum: [env, setting, default] }
+        flag: { type: string }
+        reason: { type: string }
+        runtime_mutable: { type: boolean }
+      required: [name, state, resolved_from]
+    FeatureList:
+      type: object
+      properties:
+        generated_at: { type: string, format: date-time }
+        features:
+          type: array
+          items: { $ref: '#/components/schemas/FeatureStatus' }
+      required: [generated_at, features]
+    InfraHealth:
+      type: object
+      description: Aggregated infrastructure-health signals over the requested window.
+      properties:
+        window_since: { type: string, format: date-time }
+        error_clusters:
+          type: array
+          items: { $ref: '#/components/schemas/InfraErrorCluster' }
+        tool_errors:
+          type: array
+          items: { $ref: '#/components/schemas/InfraToolError' }
+        latency:
+          type: array
+          items: { $ref: '#/components/schemas/InfraLatencyStat' }
+        identity_errors:
+          type: array
+          items: { $ref: '#/components/schemas/InfraErrorCluster' }
+        grounding_outcomes: { $ref: '#/components/schemas/InfraGroundingCounts' }
+      required: [window_since, error_clusters, tool_errors, latency, identity_errors, grounding_outcomes]
+    InfraErrorCluster:
+      type: object
+      properties:
+        pattern: { type: string }
+        count: { type: integer }
+        sample: { type: string }
+        top_agents: { type: array, items: { type: string } }
+        top_models: { type: array, items: { type: string } }
+        top_providers: { type: array, items: { type: string } }
+        first_seen: { type: string, format: date-time }
+        last_seen: { type: string, format: date-time }
+      required: [pattern, count, sample, first_seen, last_seen]
+    InfraToolError:
+      type: object
+      properties:
+        tool: { type: string }
+        invocations: { type: integer }
+        errored_turns: { type: integer }
+        errored_turn_rate: { type: number }
+        sample_errors: { type: array, items: { type: string } }
+      required: [tool, invocations, errored_turns, errored_turn_rate]
+    InfraLatencyStat:
+      type: object
+      properties:
+        model: { type: string }
+        provider: { type: string }
+        p50_ms: { type: integer }
+        p95_ms: { type: integer }
+        p99_ms: { type: integer }
+        n: { type: integer }
+      required: [model, provider, p50_ms, p95_ms, p99_ms, n]
+    InfraGroundingCounts:
+      type: object
+      properties:
+        grounded: { type: integer }
+        ungrounded_refusal: { type: integer }
+        ungrounded_no_chunks: { type: integer }
+        degraded: { type: integer }
+        unknown: { type: integer }
+      required: [grounded, ungrounded_refusal, ungrounded_no_chunks, degraded, unknown]
+    LogEntry:
+      type: object
+      description: One log row. Stable across both sources.
+      properties:
+        ts: { type: string, format: date-time }
+        level: { type: string }
+        msg: { type: string }
+        fields:
+          type: object
+          additionalProperties: true
+        request_id:
+          type: string
+          description: Set only on source=requests rows.
+      required: [ts, level, msg]
+    LogList:
+      type: object
+      properties:
+        logs:
+          type: array
+          items: { $ref: '#/components/schemas/LogEntry' }
+        next_cursor: { type: string }
+        source: { type: string, enum: [server, requests] }
+        total_in_buffer: { type: integer }
+      required: [logs, source, total_in_buffer]
   responses:
     BadRequest:
       description: Request validation failed.
@@ -2295,3 +4086,3135 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Deployment' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  # ==== chat ====
+  /agents/v1/{api_key}/chat:
+    parameters:
+      - name: api_key
+        in: path
+        required: true
+        description: The agent identifier the chat turn is routed to.
+        schema: { type: string }
+    post:
+      operationId: nativeChat
+      summary: Send a chat turn to an agent (native)
+      tags: [Chat]
+      description: >
+        Native chat endpoint. Accepts either the simple `{message}` shape or the
+        OpenAI-style `messages[]` array, plus Nova extensions (`fast`, `stream`,
+        `brain`, `metadata`). The synchronous response carries the assistant
+        `response`, an aggregated per-turn `usage` block (with a `by_stage[]`
+        split), a `grounding` outcome, and the resolved `conversation_id`.
+      parameters:
+        - name: fast
+          in: query
+          required: false
+          description: >
+            Alias for the body `fast` flag. When true the request is dispatched
+            directly to the agent's primary skill, skipping planning.
+          schema: { type: boolean }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NativeChatRequest' }
+      responses:
+        '200':
+          description: Chat turn completed (synchronous). SSE stream when `stream:true`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NativeChatResult' }
+            text/event-stream:
+              schema:
+                type: string
+                description: >
+                  Server-Sent Events. Emitted when `stream:true`. Token/text
+                  deltas plus, when `metadata.stream_events:true`, `tool_use` /
+                  `tool_result` / `text` / `thinking` events, and `: nova-heartbeat`
+                  keep-alive comments every 10s.
+        '400':
+          description: >
+            Bad request — invalid body, no messages, or `fast:true` requested for
+            an agent that has no skills.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /agents/v1/{api_key}/jobs:
+    parameters:
+      - name: api_key
+        in: path
+        required: true
+        description: The agent identifier the job is submitted against.
+        schema: { type: string }
+    post:
+      operationId: createNativeJob
+      summary: Submit an asynchronous job
+      tags: [Jobs]
+      description: >
+        Submit a long-running turn (e.g. deep research, multi-section report) as
+        an asynchronous job. Returns 202 immediately; poll or stream for progress
+        and the final result. Requires PostgreSQL persistence — returns 503 when
+        async jobs are disabled.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NativeChatRequest' }
+      responses:
+        '202':
+          description: Job accepted and queued.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NativeJobAccepted' }
+        '400':
+          description: >
+            Invalid body, no messages, or the target agent does not support
+            asynchronous streaming.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Async jobs disabled (no persistence backend configured).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /agents/v1/{api_key}/jobs/{job_id}:
+    parameters:
+      - name: api_key
+        in: path
+        required: true
+        schema: { type: string }
+      - name: job_id
+        in: path
+        required: true
+        description: The job identifier returned at submission.
+        schema: { type: string }
+    get:
+      operationId: getNativeJob
+      summary: Get job state
+      tags: [Jobs]
+      responses:
+        '200':
+          description: Current job state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NativeJob' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503':
+          description: Async jobs disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      operationId: cancelNativeJob
+      summary: Cancel a job
+      tags: [Jobs]
+      description: Request graceful cancellation of a non-terminal job.
+      responses:
+        '200':
+          description: Cancellation accepted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NativeJobCancelled' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Job already in a terminal state (done/failed/cancelled).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: Async jobs disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /agents/v1/{api_key}/jobs/{job_id}/stream:
+    parameters:
+      - name: api_key
+        in: path
+        required: true
+        schema: { type: string }
+      - name: job_id
+        in: path
+        required: true
+        schema: { type: string }
+      - name: Last-Event-ID
+        in: header
+        required: false
+        description: >
+          Resume token. Replays persisted events with a sequence greater than this
+          value, then continues live. Enables reconnect without losing events.
+        schema: { type: integer, minimum: 0 }
+    get:
+      operationId: streamNativeJob
+      summary: Stream job events (SSE)
+      tags: [Jobs]
+      description: >
+        Server-Sent Events stream. Replays stored events first (honoring
+        `Last-Event-ID`), then delivers live events until the job reaches a
+        terminal state. Each frame carries `id` (sequence), `event` (type) and a
+        JSON `data` payload; `: nova-heartbeat` comments are sent every 10s.
+      responses:
+        '200':
+          description: Event stream.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE frames (`id:` / `event:` / `data:`).
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503':
+          description: Async jobs disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /v1/chat/completions:
+    post:
+      operationId: chatCompletions
+      summary: Chat completions (OpenAI-compatible)
+      tags: [Chat]
+      description: >
+        OpenAI-compatible chat completions. Accepts the standard `model`,
+        `messages`, `stream`, and `max_tokens` / `max_completion_tokens` fields.
+        The response reports the provider's real `finish_reason` and a per-response
+        `usage`. Report-style requests are auto-detected and streamed with periodic
+        heartbeat comments. When gateway mode is enabled, a `model` of the form
+        `llm:<provider>/<model>` bypasses the agent pipeline and forwards the call
+        straight to the underlying provider (raw passthrough).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChatCompletionRequest' }
+      responses:
+        '200':
+          description: >
+            Completion (synchronous) or an SSE stream of `chat.completion.chunk`
+            frames terminated by `[DONE]` when `stream:true`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatCompletionResponse' }
+            text/event-stream:
+              schema:
+                type: string
+                description: >
+                  `data:`-framed `chat.completion.chunk` objects, a terminal
+                  `finish_reason` chunk, then `data: [DONE]`. Includes
+                  `: nova-heartbeat` keep-alive comments.
+        '400':
+          description: Invalid request body.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '502':
+          description: Upstream provider error (raw passthrough path).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: No provider configured for passthrough.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /v1/models:
+    get:
+      operationId: listModels
+      summary: List available models (OpenAI-compatible)
+      tags: [Chat]
+      description: >
+        Lists the models available to the caller in OpenAI's `{object:"list",
+        data:[...]}` shape. Each entry is an agent id; disabled agents are hidden.
+        When gateway mode is enabled and a passthrough allowlist is configured,
+        raw provider models are additionally advertised with `llm:` ids.
+      responses:
+        '200':
+          description: Model list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModelList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/messages/count_tokens:
+    post:
+      operationId: countTokens
+      summary: Count input tokens (Anthropic-compatible)
+      tags: [Chat]
+      description: >
+        Anthropic-compatible pre-flight token count. Accepts the Messages request
+        shape and returns an estimated `input_tokens` for the supplied
+        system + messages. Citation/document consistency validators run here too,
+        so misconfigurations surface as 400 before the chat path.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CountTokensRequest' }
+      responses:
+        '200':
+          description: Estimated input token count.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CountTokensResult' }
+        '400':
+          description: Invalid request or validation failure.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  # ==== media ====
+  /v1/audio/transcriptions:
+    post:
+      operationId: transcribeAudio
+      summary: Transcribe audio to text (speech-to-text)
+      description: >-
+        OpenAI-compatible speech-to-text. Upload an audio file as multipart
+        form data and receive a transcript. When `language` is omitted the
+        model auto-detects, including mixed-language audio. Requires a normal
+        authenticated caller (same auth as chat); not admin-only.
+      tags: [Audio]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TranscriptionRequest'
+      responses:
+        '200':
+          description: >-
+            Transcript. With `response_format=json` (default) a JSON object is
+            returned; verbose/segment formats and `text`/`srt`/`vtt` are
+            proxied from the model verbatim.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptionResponse'
+            text/plain:
+              schema:
+                type: string
+                description: Raw transcript when a non-JSON response_format is requested.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: >-
+            Audio file exceeds the configured upload ceiling (default 25 MB).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Transcription is unconfigured or disabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/audio/speech:
+    post:
+      operationId: synthesizeSpeech
+      summary: Synthesize speech from text (text-to-speech)
+      description: >-
+        OpenAI-compatible text-to-speech. Send text and receive audio bytes in
+        the response body. The `voice` must belong to the same provider as the
+        selected `model` (e.g. Gemini voices for the default Gemini TTS model);
+        a mismatched voice is rejected upstream. Not admin-only.
+      tags: [Audio]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeechRequest'
+      responses:
+        '200':
+          description: >-
+            Synthesized audio. Content-Type reflects the requested
+            `response_format` (default `audio/mpeg`).
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: Request body exceeds the configured ceiling (default 1 MB).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Speech synthesis is unconfigured or disabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/realtime:
+    get:
+      operationId: realtimeVoice
+      summary: Full-duplex speech-to-speech voice session (WebSocket)
+      description: >-
+        Opens a full-duplex voice WebSocket. The client performs a WebSocket
+        upgrade (responds `101 Switching Protocols`) on this authenticated
+        endpoint; audio and event frames are then pumped bidirectionally between
+        the client and the realtime speech-to-speech model. Standard REST error
+        responses are returned only if the upgrade or upstream connection fails
+        before the session starts.
+      tags: [Audio]
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: >-
+            Realtime model to use (provider-prefixed). Falls back to the
+            server-configured default when omitted.
+          schema:
+            type: string
+            example: gemini/gemini-3.1-flash-live-preview
+        - name: Connection
+          in: header
+          required: true
+          description: Must be `Upgrade` for the WebSocket handshake.
+          schema:
+            type: string
+            example: Upgrade
+        - name: Upgrade
+          in: header
+          required: true
+          description: Must be `websocket` for the WebSocket handshake.
+          schema:
+            type: string
+            example: websocket
+      responses:
+        '101':
+          description: >-
+            WebSocket handshake accepted; the connection is upgraded and voice
+            frames flow in both directions until either side closes.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '502':
+          description: The upstream realtime endpoint could not be reached.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Realtime voice is unconfigured or disabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/images/generations:
+    post:
+      operationId: generateImage
+      summary: Generate images from a text prompt
+      description: >-
+        OpenAI-compatible image generation. The request body is forwarded to the
+        configured image model and the response is returned unchanged, so the
+        client owns all parameters. `model` must be provider-prefixed
+        (e.g. `Alibaba/z-image-turbo`). Not admin-only.
+      tags: [Images]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageGenerationRequest'
+      responses:
+        '200':
+          description: Generated images (URLs or base64) per `response_format`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: Request body exceeds the configured ceiling (default 25 MB).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Image generation is unconfigured or disabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/images/edits:
+    post:
+      operationId: editImage
+      summary: Edit an image from a prompt and source image(s)
+      description: >-
+        OpenAI-compatible image edit. Multipart body carrying the source image
+        (and optional mask) plus edit parameters is forwarded to the configured
+        image model and the response is returned unchanged. `model` must be
+        provider-prefixed. Not admin-only.
+      tags: [Images]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImageEditRequest'
+      responses:
+        '200':
+          description: Edited images (URLs or base64) per `response_format`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: Request body exceeds the configured ceiling (default 25 MB).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Image generation is unconfigured or disabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/images/variations:
+    post:
+      operationId: imageVariation
+      summary: Create variations of a source image
+      description: >-
+        OpenAI-compatible image variation. Multipart body carrying the source
+        image plus variation parameters is forwarded to the configured image
+        model and the response is returned unchanged. `model` must be
+        provider-prefixed. Not admin-only.
+      tags: [Images]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImageVariationRequest'
+      responses:
+        '200':
+          description: Image variations (URLs or base64) per `response_format`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: Request body exceeds the configured ceiling (default 25 MB).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Image generation is unconfigured or disabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # ==== docs ====
+  /v1/managed/documents/ocr:
+    post:
+      operationId: ocrDocument
+      summary: OCR a scanned or image-only PDF into markdown
+      tags: [Documents]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The PDF to OCR.
+                file_sha256:
+                  type: string
+                  description: Optional caller-supplied SHA-256 of the file, used as the result-cache key.
+                max_pages:
+                  type: integer
+                  description: Optional cap on pages to process (0 or omitted = all pages).
+          application/json:
+            schema: { $ref: '#/components/schemas/OcrRequest' }
+      responses:
+        '200':
+          description: OCR result. Repeat calls on the same file are served from cache.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OcrResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413':
+          description: Decoded PDF exceeds the size limit.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: Body is not a PDF.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: OCR is disabled on this deployment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/documents/extract:
+    post:
+      operationId: extractDocument
+      summary: Extract text from an office document
+      tags: [Documents]
+      description: >-
+        Native text extraction for office and structured documents
+        (DOCX, XLSX, ODT, text-layer PDF, CSV, JSON, XML, YAML, HTML, Markdown, EML).
+        A filename with a recognised extension is required to route the parser.
+        Scanned or image-only PDFs have no text layer — use /v1/managed/documents/ocr instead.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The document to extract. The part's filename supplies the extension.
+                filename:
+                  type: string
+                  description: Optional filename override (wins over the uploaded part's name).
+          application/json:
+            schema: { $ref: '#/components/schemas/ExtractRequest' }
+      responses:
+        '200':
+          description: Extracted text and detected document metadata.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtractResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: Decoded document exceeds the size limit.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: File extension is not a supported document type.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Extraction is disabled on this deployment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/memory:
+    get:
+      operationId: getMemory
+      summary: Read your observational memory for one persona
+      tags: [Memory]
+      description: >-
+        Returns the calling identity's own accumulated memory log for a single persona.
+        Responds 200 with empty content when nothing has been remembered yet.
+      parameters:
+        - in: query
+          name: agent_id
+          required: true
+          description: The persona whose memory to read.
+          schema: { type: string }
+        - in: query
+          name: scope
+          required: false
+          description: Which memory scope to read. Defaults to corporate.
+          schema:
+            type: string
+            enum: [corporate, personal]
+            default: corporate
+      responses:
+        '200':
+          description: Memory log (empty content when nothing remembered yet).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemoryLog' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /v1/managed/knowledge-signals:
+    get:
+      operationId: listKnowledgeSignals
+      summary: List queued knowledge signals by status
+      tags: [Knowledge]
+      description: Admin-only curator view of captured knowledge signals awaiting review.
+      parameters:
+        - in: query
+          name: status
+          required: false
+          description: Filter by signal status. Defaults to pending.
+          schema:
+            type: string
+            enum: [pending, quarantined, eligible, promoted, rejected, superseded]
+            default: pending
+        - in: query
+          name: limit
+          required: false
+          description: Maximum signals to return. Defaults to 100.
+          schema: { type: integer, default: 100 }
+        - in: query
+          name: tenant
+          required: false
+          description: Admin override to read another tenant's signals. Defaults to the caller's tenant.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The matching signals and their count.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KnowledgeSignalList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Knowledge signals are unavailable on this deployment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/knowledge-signals/candidates:
+    get:
+      operationId: listPromotionCandidates
+      summary: List knowledge signals eligible for promotion
+      tags: [Knowledge]
+      description: >-
+        Admin-only. Returns the fact keys that have cleared the promotion quorum and are
+        candidates for promotion into the knowledge store. Promotion itself is a separate step.
+      parameters:
+        - in: query
+          name: tenant
+          required: false
+          description: Admin override to read another tenant's candidates. Defaults to the caller's tenant.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The promotion-eligible fact keys.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromotionCandidates' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Knowledge signals are unavailable on this deployment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  # ==== files ====
+  /v1/files:
+    post:
+      operationId: uploadFile
+      summary: Upload a file
+      description: >-
+        Upload a file via multipart form. The file text is extracted and
+        indexed into the caller's knowledge collection so subsequent chat
+        turns can retrieve it. OpenAI Files API compatible.
+      tags: [Files]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The file to upload.
+                purpose:
+                  type: string
+                  description: Intended use of the file. Defaults to `assistants`.
+      responses:
+        '200':
+          description: The uploaded file object.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileObject' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503':
+          description: Document engine unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/files/{id}:
+    get:
+      operationId: getFile
+      summary: Retrieve a file
+      tags: [Files]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The file object.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileObject' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503':
+          description: Document engine unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      operationId: deleteUploadedFile
+      summary: Delete a file
+      tags: [Files]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deletion confirmation.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileDeleted' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503':
+          description: Document engine unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/conversations:
+    get:
+      operationId: listConversations
+      summary: List conversations
+      description: List the caller's conversations, newest first.
+      tags: [Conversations]
+      parameters:
+        - name: agent
+          in: query
+          required: false
+          description: Filter to conversations for a single agent.
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          description: Maximum conversations to return (1-200, default 50).
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        '200':
+          description: The caller's conversations.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConversationList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createConversation
+      summary: Create a conversation
+      description: >-
+        Explicitly create (or idempotently claim) a conversation before the
+        first chat turn. Re-posting the same `id` returns the existing row
+        without overwriting its owner or metadata.
+      tags: [Conversations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConversationCreate' }
+      responses:
+        '201':
+          description: The created (or existing) conversation.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Conversation' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: Metadata exceeds the 4 KB cap.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/conversations/{id}:
+    get:
+      operationId: getConversation
+      summary: Retrieve a conversation
+      description: >-
+        Single-conversation detail including the message log. Returns 404 for
+        both "does not exist" and "exists but not owned by the caller".
+      tags: [Conversations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Conversation metadata and message log.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConversationDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: renameConversation
+      summary: Rename a conversation
+      description: >-
+        Set the conversation title. The title is trimmed; empty after trim
+        clears it. Limited to 200 characters.
+      tags: [Conversations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, maxLength: 200 }
+      responses:
+        '200':
+          description: The updated conversation.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Conversation' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      operationId: deleteConversation
+      summary: Delete a conversation
+      description: Hard-delete a conversation and its message log.
+      tags: [Conversations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deletion confirmation.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConversationDeleted' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/conversations/{id}/metadata:
+    patch:
+      operationId: updateConversationMetadata
+      summary: Replace conversation metadata
+      description: >-
+        Replace (not merge) the app-owned metadata map on the conversation.
+        Keys with the reserved `nova_` prefix are rejected; the serialized
+        map is capped at 4 KB.
+      tags: [Conversations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                metadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: The updated metadata map.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  metadata:
+                    type: object
+                    additionalProperties: true
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413':
+          description: Metadata exceeds the 4 KB cap.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/conversations/{cid}/attachments:
+    post:
+      operationId: addAttachment
+      summary: Attach a file to a conversation
+      description: >-
+        Upload a file scoped to a single conversation via multipart form.
+        The caller must own the conversation; on first upload an unclaimed
+        conversation id is claimed by the caller.
+      tags: [Conversations]
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The file to attach.
+      responses:
+        '201':
+          description: The stored attachment reference.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Attachment' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Per-conversation attachment cap reached.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '413':
+          description: File exceeds the maximum allowed size.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: MIME type not in the allowlist.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /v1/conversations/{cid}/attachments/{aid}/download:
+    get:
+      operationId: downloadAttachment
+      summary: Download an attachment
+      description: >-
+        Stream the attachment bytes. Depending on operator configuration the
+        response is either the bytes directly or a 302 redirect to a
+        time-limited download URL.
+      tags: [Conversations]
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema: { type: string }
+        - name: aid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The attachment bytes.
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '302':
+          description: Redirect to a time-limited download URL.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '410':
+          description: The attachment was deleted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      operationId: deleteAttachment
+      summary: Remove an attachment
+      description: Soft-delete an attachment. Idempotent.
+      tags: [Conversations]
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema: { type: string }
+        - name: aid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: The attachment was deleted (or was already deleted).
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  # ==== governance ====
+  /v1/managed/actions:
+    get:
+      operationId: listActions
+      summary: List pending actions in the approval queue
+      description: >-
+        Admins see every action; a group member sees only actions carrying a
+        group_id for a group they belong to. Requires the pending-actions
+        feature to be enabled.
+      tags: [Actions]
+      parameters:
+        - name: status
+          in: query
+          description: Filter by status; unrecognized values fall back to `pending`.
+          schema:
+            type: string
+            enum: [pending, approved, rejected, executed, failed]
+        - name: source
+          in: query
+          description: Filter by connector source label.
+          schema: { type: string }
+        - name: external_ref
+          in: query
+          description: Filter by connector correlation key.
+          schema: { type: string }
+        - name: limit
+          in: query
+          description: Max rows (default 50, capped at 200).
+          schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        '200':
+          description: The matching actions.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    post:
+      operationId: createAction
+      summary: Park a connector-sourced action for approval
+      description: >-
+        Lets an external connector submit a side-effecting action for human
+        approval. Requires an admin-role credential. The callback webhook is
+        snapshotted onto the row and fired only when the action is approved;
+        `callback.auth.secret_ref` names an environment variable on the server
+        holding the shared HMAC secret — the secret itself is never transmitted.
+      tags: [Actions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateActionRequest' }
+      responses:
+        '201':
+          description: The parked action.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/actions/{id}:
+    get:
+      operationId: getAction
+      summary: Fetch one pending action
+      description: >-
+        Admins may fetch any action; group members may fetch actions for their
+        groups. An unknown id and a no-access id both return 404 (existence is
+        not leaked).
+      tags: [Actions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The action.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/actions/{id}/claim:
+    post:
+      operationId: claimAction
+      summary: Soft-claim a pending action
+      description: >-
+        First-wins soft claim so two approvers do not double-handle the same
+        action. Admin or an approver/lead member of the action's group.
+      tags: [Actions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The claimed action.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Already claimed by another user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: already_claimed }
+                  claimed_by: { type: string }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/actions/{id}/approve:
+    post:
+      operationId: approveAction
+      summary: Approve and execute a pending action
+      description: >-
+        Atomically transitions the action pending→approved, then fires its
+        webhook once. Admin or an approver/lead member of the action's group.
+        The terminal outcome is carried in the returned action's `status` /
+        `result` fields (HTTP 200 is returned whether execution succeeded or
+        failed).
+      tags: [Actions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActionDecisionRequest' }
+      responses:
+        '200':
+          description: The action after execution (check `status`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Action was already decided by another caller.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: already_decided }
+                  status: { type: string }
+        '502':
+          description: The executor could not be resolved; the action is marked failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled, executor not configured, or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/actions/{id}/reject:
+    post:
+      operationId: rejectAction
+      summary: Reject a pending action without executing it
+      description: >-
+        Atomically transitions the action pending→rejected. The webhook is not
+        fired. Admin or an approver/lead member of the action's group.
+      tags: [Actions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActionDecisionRequest' }
+      responses:
+        '200':
+          description: The rejected action.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Action was already decided by another caller.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: already_decided }
+                  status: { type: string }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/groups:
+    get:
+      operationId: listGroups
+      summary: List groups
+      description: Admin-only. Optionally scoped to one tenant.
+      tags: [Groups]
+      parameters:
+        - name: tenant_id
+          in: query
+          description: Restrict to groups in this tenant.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The groups.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GroupList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    post:
+      operationId: createGroup
+      summary: Create a group
+      description: >-
+        Admin-only. If `id` is omitted it is derived from `name` as a
+        lowercase kebab-case slug.
+      tags: [Groups]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateGroupRequest' }
+      responses:
+        '201':
+          description: The created group.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GroupEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: A group with this id or (tenant, name) already exists.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/groups/mine:
+    get:
+      operationId: listMyGroups
+      summary: List the caller's own group memberships
+      description: >-
+        Authenticated but not admin-gated. Returns the calling user's groups
+        and their role in each, so a group-conditional client UI can adapt
+        without the admin registry.
+      tags: [Groups]
+      responses:
+        '200':
+          description: The caller's memberships.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MyGroupList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/groups/{id}:
+    get:
+      operationId: getGroup
+      summary: Fetch a group and its members
+      description: Admin-only.
+      tags: [Groups]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The group with its members.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GroupEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      operationId: deleteGroup
+      summary: Delete a group
+      description: Admin-only. Memberships cascade.
+      tags: [Groups]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/groups/{id}/members:
+    post:
+      operationId: addGroupMember
+      summary: Add or update a group member
+      description: >-
+        Admin-only. Upserts the member's role. `role` defaults to `member`
+        when omitted.
+      tags: [Groups]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddGroupMemberRequest' }
+      responses:
+        '200':
+          description: Membership set.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  group_id: { type: string }
+                  user_id: { type: string }
+                  role: { $ref: '#/components/schemas/GroupRole' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/groups/{id}/members/{userID}:
+    delete:
+      operationId: removeGroupMember
+      summary: Remove a group member
+      description: Admin-only.
+      tags: [Groups]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: userID
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: removed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled or PostgreSQL unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/field-policies:
+    get:
+      operationId: listFieldPolicies
+      summary: List field policies for the tenant
+      description: >-
+        Admin-only. Returns every field policy for the request tenant, keyed by
+        record type. The tenant is resolved server-side from request identity.
+      tags: [FieldPolicies]
+      responses:
+        '200':
+          description: The tenant's field policies.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FieldPolicyList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/field-policies/{type}:
+    get:
+      operationId: getFieldPolicy
+      summary: Fetch the field policy for a record type
+      description: Admin-only.
+      tags: [FieldPolicies]
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: The record type the policy governs.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The field policy.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FieldPolicy' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    put:
+      operationId: updateFieldPolicy
+      summary: Create or replace the field policy for a record type
+      description: Admin-only. Upserts the policy for `(tenant, type)`.
+      tags: [FieldPolicies]
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FieldPolicy' }
+      responses:
+        '200':
+          description: The stored policy.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FieldPolicy' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/field-policies/{type}/evaluate:
+    post:
+      operationId: evaluateFieldPolicy
+      summary: Evaluate field access for a caller against a record
+      description: >-
+        Admin-only canonical reference. Computes the caller's visible/writable
+        fields for the record type and returns the enforced view. With `mode`
+        omitted (read) the response strips non-visible fields and audits the
+        access; with `mode:"write"` it filters to writable fields. A missing
+        policy fails closed (nothing visible, nothing writable).
+      tags: [FieldPolicies]
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FieldEvaluateRequest' }
+      responses:
+        '200':
+          description: The access decision plus the enforced record view.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FieldEvaluateResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/field-access-events:
+    get:
+      operationId: listFieldAccessEvents
+      summary: Query the field-access audit log
+      description: >-
+        Admin-only. Append-only record of sensitive-field access, scoped to the
+        request tenant.
+      tags: [FieldPolicies]
+      parameters:
+        - name: record_type
+          in: query
+          description: Filter by record type.
+          schema: { type: string }
+        - name: record_id
+          in: query
+          description: Filter by record id.
+          schema: { type: string }
+        - name: since
+          in: query
+          description: Only events at or after this RFC 3339 timestamp.
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          description: Max rows (default 200, capped at 1000).
+          schema: { type: integer, default: 200, maximum: 1000 }
+      responses:
+        '200':
+          description: The matching audit events.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FieldAccessEventList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Feature disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  # ==== connectors ====
+  /v1/managed/connectors:
+    get:
+      operationId: listConnectors
+      summary: List configured connectors (secret values masked)
+      tags: [Connectors]
+      responses:
+        '200':
+          description: Connector configs with secret keys listed but values masked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Connector configuration store unavailable (requires PostgreSQL and an integration key).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/connectors/{kind}:
+    get:
+      operationId: getConnector
+      summary: Get one connector config (secret values masked)
+      tags: [Connectors]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          description: Connector kind identifier (e.g. sharepoint).
+          schema: { type: string }
+      responses:
+        '200':
+          description: The connector config with secret keys listed but values masked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connector: { $ref: '#/components/schemas/Connector' }
+                required: [connector]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Connector configuration store unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    put:
+      operationId: putConnector
+      summary: Upsert a connector's settings and merge its secrets
+      description: >-
+        Creates or updates the connector. Secret merge semantics: a non-empty
+        value overwrites, an empty string deletes that key, and absent keys are
+        preserved — so a single credential can be rotated without resending the rest.
+      tags: [Connectors]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConnectorUpsert' }
+      responses:
+        '200':
+          description: The stored connector config (masked view).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connector: { $ref: '#/components/schemas/Connector' }
+                required: [connector]
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Connector configuration store unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      operationId: deleteConnector
+      summary: Remove a connector config
+      tags: [Connectors]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The connector was deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: deleted }
+                required: [status]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Connector configuration store unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/connectors/{kind}/credentials:
+    get:
+      operationId: getConnectorCredentials
+      summary: Read a connector's decrypted credentials (for connector services)
+      description: >-
+        Returns decrypted secret values for the connector. Intended for connector
+        services authenticating with an admin or service credential; every access
+        is logged with the caller identity.
+      tags: [Connectors]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The connector config plus its decrypted secret values.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConnectorCredentials' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Connector configuration store unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/connectors/sharepoint/sync-status:
+    get:
+      operationId: getSharepointSyncStatus
+      summary: SharePoint grounding connector sync status
+      description: >-
+        Returns the SharePoint sync worker's status snapshot: last sync time,
+        per-cycle item counts, last error, and whether a delta resume link is persisted.
+      tags: [Connectors]
+      responses:
+        '200':
+          description: The current SharePoint sync status snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kind: { type: string, example: sharepoint }
+                  status: { $ref: '#/components/schemas/SyncStatus' }
+                required: [kind, status]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: SharePoint sync worker is not running (requires PostgreSQL).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/employees/{employee_id}/house-profile:
+    get:
+      operationId: getHouseProfile
+      summary: Get an employee's house profile
+      tags: [Employees]
+      parameters:
+        - name: employee_id
+          in: path
+          required: true
+          description: Employee (persona) identifier.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The employee's house-profile markdown and its last-updated timestamp.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HouseProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: House-profile store unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    put:
+      operationId: putHouseProfile
+      summary: Replace an employee's house profile
+      description: >-
+        Replaces the employee's house-profile markdown. Send an empty markdown
+        string to clear it. Optionally supply an If-Match header carrying the
+        profile's current updated_at to guard against a concurrent overwrite.
+      tags: [Employees]
+      parameters:
+        - name: employee_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: If-Match
+          in: header
+          required: false
+          description: >-
+            The profile's current updated_at (RFC 3339). When present and it does
+            not match the stored value, the write is rejected with 409.
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HouseProfileUpdate' }
+      responses:
+        '200':
+          description: The stored house-profile markdown and its authoritative updated_at.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HouseProfile' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: If-Match precondition failed; the profile was modified concurrently.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: stale }
+                  current_updated_at: { type: string }
+        '413':
+          description: The markdown exceeds the maximum allowed size.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: too_large }
+                  max_bytes: { type: integer }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: House-profile store unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/entitlements:
+    get:
+      operationId: getEntitlements
+      summary: Get a tenant's effective entitlement flags
+      description: >-
+        Returns the tenant's effective flags (free floor overlaid with any stored
+        overrides). A tenant with no stored row reads the free floor. The tenant is
+        supplied via the tenant query parameter.
+      tags: [Entitlements]
+      parameters:
+        - name: tenant
+          in: query
+          required: true
+          description: Tenant identifier.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The tenant's effective entitlement flags.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EntitlementsEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Entitlements store unavailable (requires PostgreSQL).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    put:
+      operationId: putEntitlements
+      summary: Upsert a tenant's entitlement flags
+      description: The tenant is supplied via the tenant query parameter.
+      tags: [Entitlements]
+      parameters:
+        - name: tenant
+          in: query
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EntitlementsUpdate' }
+      responses:
+        '200':
+          description: The tenant's stored effective flags after the update.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EntitlementsEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Entitlements store unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/entitlements/{tenant}:
+    get:
+      operationId: getTenantEntitlements
+      summary: Get a tenant's effective entitlement flags
+      tags: [Entitlements]
+      parameters:
+        - name: tenant
+          in: path
+          required: true
+          description: Tenant identifier.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The tenant's effective entitlement flags.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EntitlementsEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Entitlements store unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    put:
+      operationId: putTenantEntitlements
+      summary: Upsert a tenant's entitlement flags
+      tags: [Entitlements]
+      parameters:
+        - name: tenant
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EntitlementsUpdate' }
+      responses:
+        '200':
+          description: The tenant's stored effective flags after the update.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EntitlementsEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Entitlements store unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  # ==== auth ====
+  /.well-known/openid-configuration:
+    get:
+      operationId: oauthDiscovery
+      summary: OpenID Connect discovery document
+      description: >-
+        Public discovery metadata (issuer, authorization/token/userinfo
+        endpoints, supported scopes and grant types). No authentication.
+        The advertised `jwks_uri` is informational — id_tokens are HS256, not
+        JWKS-verifiable.
+      tags: [OAuth]
+      security: []
+      responses:
+        '200':
+          description: Discovery metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OidcDiscovery'
+  /oauth/openid:
+    get:
+      operationId: oauthOpenid
+      summary: Legacy authorization alias
+      description: >-
+        Compatibility alias that 302-redirects to `/oauth/authorize`,
+        forwarding all query parameters verbatim. Present for clients that
+        hard-code this path as the authorization URL.
+      tags: [OAuth]
+      security: []
+      responses:
+        '302':
+          description: Redirect to `/oauth/authorize` preserving the query string.
+  /oauth/authorize:
+    get:
+      operationId: oauthAuthorize
+      summary: Authorization endpoint
+      description: >-
+        OAuth 2.0 / OIDC authorization endpoint. With no valid session cookie
+        it renders the login page (HTML); with a valid session it issues a
+        single-use authorization code and 302-redirects to the client's
+        registered `redirect_uri` with `code` and `state`. Supports PKCE
+        (S256); some clients require it.
+      tags: [OAuth]
+      security: []
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema: { type: string }
+        - name: redirect_uri
+          in: query
+          required: false
+          description: Must exactly match the registered value; defaults to it when omitted.
+          schema: { type: string, format: uri }
+        - name: response_type
+          in: query
+          required: false
+          schema: { type: string, enum: [code] }
+        - name: scope
+          in: query
+          required: false
+          description: Space-delimited; e.g. `openid profile email offline_access`.
+          schema: { type: string }
+        - name: state
+          in: query
+          required: false
+          schema: { type: string }
+        - name: code_challenge
+          in: query
+          required: false
+          description: PKCE challenge; required for public/PKCE-only clients.
+          schema: { type: string }
+        - name: code_challenge_method
+          in: query
+          required: false
+          description: Accepted for compatibility; challenges are always treated as S256.
+          schema: { type: string, enum: [S256] }
+      responses:
+        '200':
+          description: Login page (no valid session).
+          content:
+            text/html:
+              schema: { type: string }
+        '302':
+          description: Redirect to `redirect_uri` with `code` and `state`.
+        '400':
+          description: >-
+            `invalid_client`, `redirect_uri_mismatch`, or `pkce_required`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OauthError' }
+  /oauth/login:
+    post:
+      operationId: oauthLogin
+      summary: Submit login credentials
+      description: >-
+        Verifies email + password, sets the `nova_oidc_session` cookie, and
+        redirects to the `continue` URL (typically the original
+        `/oauth/authorize` request). On failure re-renders the login page with
+        a generic error (no account enumeration).
+      tags: [OAuth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                continue:
+                  type: string
+                  description: Post-login redirect target (same-origin relative path).
+      responses:
+        '200':
+          description: 'Login page re-rendered with an error, or `{ "status": "logged_in" }` when no `continue` was supplied.'
+        '302':
+          description: Redirect to the `continue` URL.
+  /oauth/token:
+    post:
+      operationId: oauthToken
+      summary: Token endpoint
+      description: >-
+        Exchanges an authorization code, rotates a refresh token, or (when
+        service clients are configured) performs the `client_credentials`
+        grant. Accepts both `application/x-www-form-urlencoded` and
+        `application/json` bodies. Issues 1-hour HS256 access/id tokens.
+      tags: [OAuth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: { $ref: '#/components/schemas/TokenRequest' }
+          application/json:
+            schema: { $ref: '#/components/schemas/TokenRequest' }
+      responses:
+        '200':
+          description: Issued token set.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400':
+          description: >-
+            `invalid_grant`, `redirect_uri_mismatch`, `pkce_required`,
+            `pkce_mismatch`, `invalid_scope`, or `unsupported_grant_type`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OauthError' }
+        '401':
+          description: '`invalid_client` (bad client_credentials).'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OauthError' }
+  /oauth/revoke:
+    post:
+      operationId: oauthRevoke
+      summary: Revoke a refresh token
+      description: >-
+        Revokes the presented refresh token. Always returns 200 regardless of
+        whether the token existed (no token-existence disclosure).
+      tags: [OAuth]
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+      responses:
+        '200':
+          description: Revocation acknowledged (empty body).
+  /oauth/userinfo:
+    get:
+      operationId: oauthUserinfo
+      summary: UserInfo endpoint
+      description: Returns identity claims decoded from the bearer access/id token.
+      tags: [OAuth]
+      responses:
+        '200':
+          description: Identity claims.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserInfo' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /oauth/clients:
+    get:
+      operationId: oauthClients
+      summary: List registered OIDC clients
+      description: Returns the registered relying-party clients (id, redirect URI, app id).
+      tags: [OAuth]
+      responses:
+        '200':
+          description: Registered clients.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/OidcClient' }
+  /oauth/login/{provider}:
+    get:
+      operationId: oauthUpstreamLogin
+      summary: Start upstream IdP sign-in
+      description: >-
+        Begins the relying-party dance against a configured upstream provider
+        (Google/Okta/Azure/Authentik/GitHub): sets a signed one-shot state
+        cookie and 302-redirects to the provider's authorization URL.
+      tags: [OAuth]
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { type: string }
+        - name: continue
+          in: query
+          required: false
+          description: Same-origin relative path to return to after sign-in.
+          schema: { type: string }
+      responses:
+        '302':
+          description: Redirect to the upstream provider.
+        '404':
+          description: '`unknown_provider`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OauthError' }
+  /oauth/login/{provider}/callback:
+    get:
+      operationId: oauthUpstreamCallback
+      summary: Upstream IdP callback
+      description: >-
+        Completes the upstream exchange, JIT-creates or links the local user,
+        establishes the `nova_oidc_session` cookie, and redirects to the
+        original `continue` target. On any failure re-renders the login page.
+      tags: [OAuth]
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { type: string }
+        - name: code
+          in: query
+          required: false
+          schema: { type: string }
+        - name: state
+          in: query
+          required: false
+          schema: { type: string }
+        - name: error
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Login page re-rendered with an error.
+          content:
+            text/html:
+              schema: { type: string }
+        '302':
+          description: Redirect to the `continue` target on success.
+        '404':
+          description: '`unknown_provider`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OauthError' }
+  /scim/v2/ServiceProviderConfig:
+    get:
+      operationId: scimServiceProviderConfig
+      summary: SCIM service provider configuration
+      description: >-
+        Advertises supported SCIM capabilities (patch supported, filter
+        supported, bulk/sort/etag/changePassword unsupported) and the OAuth
+        bearer authentication scheme. Authenticated with the SCIM token.
+      tags: [SCIM]
+      security:
+        - scimBearer: []
+      responses:
+        '200':
+          description: Service provider configuration document.
+          content:
+            application/scim+json:
+              schema: { type: object }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /scim/v2/ResourceTypes:
+    get:
+      operationId: scimResourceTypes
+      summary: SCIM resource types
+      description: Discovery document listing the supported SCIM resource types (User).
+      tags: [SCIM]
+      security:
+        - scimBearer: []
+      responses:
+        '200':
+          description: ResourceType list response.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimListResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /scim/v2/Schemas:
+    get:
+      operationId: scimSchemas
+      summary: SCIM schemas
+      description: Discovery document describing the supported User attribute schema.
+      tags: [SCIM]
+      security:
+        - scimBearer: []
+      responses:
+        '200':
+          description: Schema list response.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimListResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /scim/v2/Users:
+    get:
+      operationId: scimListUsers
+      summary: List / query SCIM users
+      description: >-
+        Lists provisioned users. Supports the `userName eq "value"` filter IdPs
+        send for correlation, plus `startIndex`/`count` pagination (count
+        capped at 200).
+      tags: [SCIM]
+      security:
+        - scimBearer: []
+      parameters:
+        - name: filter
+          in: query
+          required: false
+          description: Only `userName eq "value"` is supported.
+          schema: { type: string }
+        - name: startIndex
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: count
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 100, maximum: 200 }
+      responses:
+        '200':
+          description: List response of users.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimListResponse' }
+        '400':
+          description: Unsupported filter (`invalidFilter`).
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: scimCreateUser
+      summary: Provision a SCIM user
+      description: Creates a user from the IdP-supplied resource; `userName` (email) is unique.
+      tags: [SCIM]
+      security:
+        - scimBearer: []
+      requestBody:
+        required: true
+        content:
+          application/scim+json:
+            schema: { $ref: '#/components/schemas/ScimUser' }
+      responses:
+        '201':
+          description: Created user (with `Location` header).
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimUser' }
+        '400':
+          description: '`invalidSyntax` / `invalidValue`.'
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: '`uniqueness` — userName already exists.'
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+  /scim/v2/Users/{id}:
+    get:
+      operationId: scimGetUser
+      summary: Get a SCIM user
+      tags: [SCIM]
+      security:
+        - scimBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The user resource.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: User not found.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+    put:
+      operationId: scimReplaceUser
+      summary: Replace a SCIM user
+      description: Full replace of the mapped attributes; an omitted `active` defaults to true.
+      tags: [SCIM]
+      security:
+        - scimBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/scim+json:
+            schema: { $ref: '#/components/schemas/ScimUser' }
+      responses:
+        '200':
+          description: The updated user resource.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimUser' }
+        '400':
+          description: '`invalidSyntax` / `invalidValue`.'
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: User not found.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+        '409':
+          description: '`uniqueness` — userName already exists.'
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+    patch:
+      operationId: scimPatchUser
+      summary: Patch a SCIM user
+      description: >-
+        Applies an RFC 7644 PatchOp list. The `replace` on `active` is the
+        deprovision path (disable → active=false). Accepts the string
+        `"True"`/`"False"` boolean form some IdPs send.
+      tags: [SCIM]
+      security:
+        - scimBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/scim+json:
+            schema: { $ref: '#/components/schemas/ScimPatchOp' }
+      responses:
+        '200':
+          description: The updated user resource.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimUser' }
+        '400':
+          description: '`invalidSyntax` / `invalidValue` / unsupported op.'
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: User not found.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+        '409':
+          description: '`uniqueness` — userName already exists.'
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+    delete:
+      operationId: scimDeleteUser
+      summary: Deactivate a SCIM user
+      description: >-
+        Soft-deactivates the account (is_active=false); history is preserved
+        and the account can no longer authenticate. Never a hard delete.
+      tags: [SCIM]
+      security:
+        - scimBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Deactivated (empty body).
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: User not found.
+          content:
+            application/scim+json:
+              schema: { $ref: '#/components/schemas/ScimError' }
+  /api/service-keys:
+    get:
+      operationId: listServiceKeys
+      summary: List service API keys
+      description: Lists tenant-wide inference-scoped service keys. Admin only. Secrets are never returned.
+      tags: [APIKeys]
+      responses:
+        '200':
+          description: The service keys.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceKeyList' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createServiceKey
+      summary: Mint a service API key
+      description: >-
+        Creates a tenant-wide, inference-scoped `nk_` key. Admin only. The full
+        secret is returned exactly once in this response and is never
+        recoverable afterward.
+      tags: [APIKeys]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateServiceKeyRequest' }
+      responses:
+        '201':
+          description: The minted key including its one-time secret.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceKeySecret' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/service-keys/self:
+    post:
+      operationId: createSelfServiceKey
+      summary: Self-serve an inference API key
+      description: >-
+        Any authenticated user may mint an inference-scoped `nk_` key bound to
+        their own account. The full secret is returned once. Available only when
+        Gateway Mode per-key policy is enabled.
+      tags: [APIKeys]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateServiceKeyRequest' }
+      responses:
+        '201':
+          description: The minted key including its one-time secret.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceKeySecret' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/service-keys/{keyId}:
+    delete:
+      operationId: deleteServiceKey
+      summary: Revoke a service API key
+      description: Soft-revokes (deactivates) the key. Admin only.
+      tags: [APIKeys]
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  id: { type: string }
+                  is_active: { type: boolean, example: false }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/agents/{id}/keys:
+    post:
+      operationId: createAgentKey
+      summary: Mint a per-agent API key
+      description: >-
+        Creates a long-lived `nk_` key scoped to a single agent. Admin only. The
+        full secret is returned exactly once and is never recoverable afterward.
+      tags: [APIKeys]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Agent id.
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        '201':
+          description: The minted key including its one-time secret.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentKey' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  # ==== opsapps ====
+  /v1/apps:
+    get:
+      operationId: listApps
+      summary: List installed apps
+      description: >-
+        Returns every installed app with its version, lifecycle status, and
+        live agent count. Admin-only. Returns 503 when persistent storage is
+        not configured.
+      tags: [Apps]
+      responses:
+        '200':
+          description: Installed apps.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503':
+          description: Apps registry not configured (persistent storage required).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/apps/{app}/agents:
+    get:
+      operationId: listAppAgents
+      summary: List an app's agents
+      description: Lists every agent registered under the given app namespace. Admin-only.
+      tags: [Apps]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Agents registered under the app.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppAgentList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /v1/apps/{app}/agents/{id}:
+    get:
+      operationId: getAppAgent
+      summary: Get one app-scoped agent
+      description: Returns a single agent (id + capabilities) scoped to the app namespace. Admin-only.
+      tags: [Apps]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema: { type: string }
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The app-scoped agent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppAgent' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/apps/{app}/agents/{id}/chat:
+    post:
+      operationId: appAgentChat
+      summary: Chat with an app-scoped agent
+      description: >-
+        Sends a chat turn to an agent resolved within the given app namespace.
+        Accepts the standard chat request body (simple `message` or OpenAI-style
+        `messages`); set `stream: true` for Server-Sent Events.
+      tags: [Apps]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema: { type: string }
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NativeChatRequest' }
+      responses:
+        '200':
+          description: Chat response (JSON), or an SSE stream when `stream` is true.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NativeChatResult' }
+            text/event-stream:
+              schema: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/apps/{app}/migrations:
+    get:
+      operationId: listAppMigrations
+      summary: List an app's migration history
+      description: >-
+        Returns the schema-migration audit rows for the app, ordered by
+        filename. Failed migrations carry their `error_message`. Admin-only;
+        503 when persistent storage is not configured.
+      tags: [Apps]
+      parameters:
+        - name: app
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Migration history for the app.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppMigrationList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503':
+          description: Apps registry not configured (persistent storage required).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/apps/{name}/install:
+    post:
+      operationId: installApp
+      summary: Install or reactivate an app
+      description: >-
+        Installs (or reactivates) the staged app: validates its manifest,
+        applies pending migrations, and registers its agents. Admin-only.
+      tags: [Apps]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Install result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppInstallResult' }
+        '400':
+          description: Malformed app name (e.g. path-traversal or empty).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Staged directory has no app manifest.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Validation, lint, or migration-apply errors.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppInstallResult' }
+  /v1/apps/{name}/reload:
+    post:
+      operationId: reloadApp
+      summary: Reload an installed app
+      description: Re-runs the install pipeline for an already-registered app. Admin-only.
+      tags: [Apps]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Reload result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppInstallResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Validation, lint, or migration-apply errors.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppInstallResult' }
+  /v1/apps/{name}/uninstall:
+    post:
+      operationId: uninstallApp
+      summary: Uninstall an app
+      description: >-
+        Soft-deletes an installed app and unregisters its agents. Admin-only.
+      tags: [Apps]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Uninstall result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppInstallResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Errors while unwinding the app.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppInstallResult' }
+  /api/mcp:
+    post:
+      operationId: mcpRpc
+      summary: MCP JSON-RPC endpoint
+      description: >-
+        Model Context Protocol endpoint speaking JSON-RPC 2.0. Supported methods:
+        `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`.
+        Requires an authenticated caller with the `mcp:read` scope. Feature-gated:
+        when MCP is disabled the endpoint returns 404. Protocol-level failures
+        (unknown method, invalid params, rate limit) are returned as HTTP 200 with
+        a JSON-RPC error object. The wildcard form `POST /api/mcp/*` behaves
+        identically.
+      tags: [MCP]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/McpRequest' }
+      responses:
+        '200':
+          description: JSON-RPC response envelope (result or error).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/McpResponse' }
+        '400':
+          description: Request body was not valid JSON.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Missing `mcp:read` scope or caller identity.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: MCP is disabled on this deployment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /api/skills/{skill}/{tool}/run:
+    post:
+      operationId: runSkillTool
+      summary: Run one skill tool directly
+      description: >-
+        Invokes a single tool belonging to a skill and returns its raw string
+        output, bypassing the agent loop. The request body is the tool's own
+        argument JSON (e.g. `{ "query": "..." }` or `{ "url": "..." }`); an empty
+        body is treated as `{}`.
+      tags: [Skills]
+      parameters:
+        - name: skill
+          in: path
+          required: true
+          schema: { type: string }
+        - name: tool
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: The tool's raw output.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SkillRunResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Skill or tool not found.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: The tool handler returned an error.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: Skills catalog not initialized.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/features:
+    get:
+      operationId: getFeatures
+      summary: Feature-status snapshot
+      description: >-
+        Returns an in-memory snapshot of each gated feature's resolved state
+        (on / off / degraded), where it resolved from, its flag name, and a
+        reason. Admin-only. No secret values are exposed. 503 when disabled via
+        the runtime hatch.
+      tags: [Ops]
+      responses:
+        '200':
+          description: Feature-status snapshot.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeatureList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503':
+          description: Feature-status endpoint disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/infra-health:
+    get:
+      operationId: getInfraHealth
+      summary: Infrastructure health aggregation
+      description: >-
+        On-read aggregation of recent call activity into error clusters, tool
+        errors, latency percentiles, identity errors, and grounding outcomes,
+        over a rolling window. Admin-only. Requires persistent storage.
+      tags: [Ops]
+      parameters:
+        - name: window
+          in: query
+          description: Rolling window as a duration (e.g. `24h`, `90m`). Default 24h, capped at 7d.
+          schema: { type: string, default: '24h' }
+        - name: limit
+          in: query
+          description: Max rows per aggregated list. Default 20, capped at 200.
+          schema: { type: integer, default: 20 }
+        - name: agent
+          in: query
+          schema: { type: string }
+        - name: model
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Aggregated infra-health report.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InfraHealth' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503':
+          description: Endpoint disabled, or persistent storage not configured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/logs:
+    get:
+      operationId: getLogs
+      summary: Read server or request logs
+      description: >-
+        Paginated read of server logs (`source=server`, in-memory ring buffer,
+        lost on restart) or request logs (`source=requests`, persisted call
+        rows). Admin-only. 503 when disabled via the runtime hatch or when
+        `source=requests` and persistent storage is not configured.
+      tags: [Ops]
+      parameters:
+        - name: source
+          in: query
+          description: Log source.
+          schema: { type: string, enum: [server, requests], default: server }
+        - name: limit
+          in: query
+          description: Max rows. Default 200, capped at 1000.
+          schema: { type: integer, default: 200 }
+        - name: since
+          in: query
+          description: RFC 3339 lower bound. Default 1h ago.
+          schema: { type: string, format: date-time }
+        - name: level
+          in: query
+          schema: { type: string, enum: [debug, info, warn, error] }
+        - name: q
+          in: query
+          description: Case-insensitive substring filter.
+          schema: { type: string }
+        - name: cursor
+          in: query
+          description: Opaque pagination cursor from a prior response's `next_cursor`.
+          schema: { type: string }
+        - name: request_id
+          in: query
+          description: Filter to a single request/call id (source=requests).
+          schema: { type: string }
+      responses:
+        '200':
+          description: A page of log entries.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LogList' }
+        '400':
+          description: Invalid `source` value.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503':
+          description: Endpoint disabled, or source=requests requires persistent storage.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
