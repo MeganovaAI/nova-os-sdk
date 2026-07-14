@@ -21,7 +21,7 @@ export interface SseFrame<T = unknown> {
 
 /**
  * Parse a fetch `Response` whose body is `text/event-stream` into an async
- * iterator of {@link SseFrame}. Comment lines (`:` prefix — e.g. Nova OS's
+ * iterator of {@link SseFrame}. Comment lines (`:` prefix — e.g. LibraOS's
  * `:nova-heartbeat`) and frames without a JSON-parseable `data` are skipped.
  */
 export async function* parseSse<T = unknown>(

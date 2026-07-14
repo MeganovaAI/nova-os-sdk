@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from nova_os.errors import (
+from libraos.errors import (
     BillingError,
     ModelNotFoundError,
     NovaOSError,

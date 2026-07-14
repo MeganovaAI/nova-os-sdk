@@ -1,14 +1,14 @@
 ---
-title: Nova OS SDK Documentation
+title: LibraOS SDK Documentation
 ---
 
-# Nova OS SDK Documentation
+# LibraOS SDK Documentation
 
-Partner integration docs for [Nova OS](https://github.com/MeganovaAI/nova-os-sdk) — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
+Partner integration docs for [LibraOS](https://github.com/libraos/sdk) — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
 
 > ⚠️ **License Notice**
 >
-> The **Nova OS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
+> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
 >
 > The **SDK** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially.
 
@@ -29,25 +29,25 @@ Partner integration docs for [Nova OS](https://github.com/MeganovaAI/nova-os-sdk
 
 | Surface | Doc |
 |---|---|
-| Python SDK | [`python/README.md`](https://github.com/MeganovaAI/nova-os-sdk/blob/main/python/README.md) |
-| CLI | [`cli/README.md`](https://github.com/MeganovaAI/nova-os-sdk/blob/main/cli/README.md) |
-| OpenAPI spec | [`openapi/nova-os-partner.v1.yaml`](https://github.com/MeganovaAI/nova-os-sdk/blob/main/openapi/nova-os-partner.v1.yaml) |
-| Worked examples | [`python/examples/`](https://github.com/MeganovaAI/nova-os-sdk/tree/main/python/examples) — 18 numbered examples covering every public surface |
+| Python SDK | [`python/README.md`](https://github.com/libraos/sdk/blob/main/python/README.md) |
+| CLI | [`cli/README.md`](https://github.com/libraos/sdk/blob/main/cli/README.md) |
+| OpenAPI spec | [`openapi/nova-os-partner.v1.yaml`](https://github.com/libraos/sdk/blob/main/openapi/nova-os-partner.v1.yaml) |
+| Worked examples | [`python/examples/`](https://github.com/libraos/sdk/tree/main/python/examples) — 18 numbered examples covering every public surface |
 
 ## Server-side
 
-For partners who need to operate Nova OS themselves:
+For partners who need to operate LibraOS themselves:
 
 | Doc | Where |
 |---|---|
-| Install Nova OS | [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) |
+| Install LibraOS | [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) |
 | Releases / cadence | [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases) |
 | Anthropic SDK quickstart | [docs.meganova.ai/nova-os/anthropic-sdk-quickstart](https://docs.meganova.ai/nova-os/anthropic-sdk-quickstart) |
 | Pre-built deploy stack | [`MeganovaAI/nova-os-stack`](https://github.com/MeganovaAI/nova-os-stack) — compose manifests + 8 companion apps |
 
 ## Status
 
-**Python SDK 1.0.0** — Public API stable. PyPI: `pip install nova-os-sdk`.
+**Python SDK 1.0.0** — Public API stable. PyPI: `pip install libraos-sdk`.
 
 **CLI 1.0.0** — Multi-arch binaries (`linux/darwin/windows × amd64/arm64`), cosign-signed, Docker image at `ghcr.io/meganovaai/nova-os-cli`.
 
@@ -59,10 +59,10 @@ See [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/release
 
 ## Contributing
 
-Issues and PRs welcome on the SDK side at [`MeganovaAI/nova-os-sdk`](https://github.com/MeganovaAI/nova-os-sdk). The Nova OS server itself is in a separate repository under a different license — see the notice above.
+Issues and PRs welcome on the SDK side at [`libraos/sdk`](https://github.com/libraos/sdk). The LibraOS server itself is in a separate repository under a different license — see the notice above.
 
 ## Contact
 
-- General SDK questions: open an issue on [`MeganovaAI/nova-os-sdk/issues`](https://github.com/MeganovaAI/nova-os-sdk/issues)
+- General SDK questions: open an issue on [`libraos/sdk/issues`](https://github.com/libraos/sdk/issues)
 - Server-side issues: [`MeganovaAI/nova-os/issues`](https://github.com/MeganovaAI/nova-os/issues) (private repo — file at the SDK level if you don't have access)
 - Commercial licensing: contact@meganova.ai

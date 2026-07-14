@@ -1,7 +1,7 @@
 {
-  "name": "@meganova/nova-os-ui",
+  "name": "@libraos/react-ui",
   "version": "0.1.0-alpha.0",
-  "description": "React UI kit for Nova OS — the Atelier design system + primitives.",
+  "description": "React UI kit for LibraOS — the Atelier design system + primitives.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

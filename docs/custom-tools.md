@@ -1,11 +1,11 @@
 # Custom Tools
 
-Nova OS supports two transport modes for partner-implemented tools: **Mode A (SSE inline)** and **Mode B (webhook)**. Same tool definition, same agent loop — different transport. Pick whichever matches your service shape.
+LibraOS supports two transport modes for partner-implemented tools: **Mode A (SSE inline)** and **Mode B (webhook)**. Same tool definition, same agent loop — different transport. Pick whichever matches your service shape.
 
 ## TL;DR
 
 - **Mode A — SSE inline.** Partner holds an open streaming connection while the agent runs. Tool calls flow back as `custom_tool_use` events; partner submits results via `submit_tool_result(...)` on the same socket.
-- **Mode B — Webhook.** Nova OS POSTs an HMAC-SHA256-signed JSON payload to a partner endpoint per tool call. Partner returns the result in the HTTP response. Idempotent via `tool_use_id` dedup.
+- **Mode B — Webhook.** LibraOS POSTs an HMAC-SHA256-signed JSON payload to a partner endpoint per tool call. Partner returns the result in the HTTP response. Idempotent via `tool_use_id` dedup.
 - **Both modes are first-class** — declare them per-agent in `custom_tools[]`. Same input schema, same output contract.
 
 ## Mode comparison
@@ -23,7 +23,7 @@ The two modes aren't mutually exclusive. A partner can register some tools as Mo
 
 ## Mode A — SSE inline
 
-Nova OS pauses the agent mid-run when it wants to call a custom tool, emits a `custom_tool_use` event over the open SSE stream, and waits for the partner's `submit_tool_result(...)` over the same socket before continuing.
+LibraOS pauses the agent mid-run when it wants to call a custom tool, emits a `custom_tool_use` event over the open SSE stream, and waits for the partner's `submit_tool_result(...)` over the same socket before continuing.
 
 ### When to pick Mode A
 
@@ -116,7 +116,7 @@ await s.submit_tool_result(
 
 ## Mode B — Webhook
 
-Nova OS POSTs a signed JSON payload to a partner-registered URL whenever the agent calls a custom tool. Partner runs the tool and returns the result in the HTTP response.
+LibraOS POSTs a signed JSON payload to a partner-registered URL whenever the agent calls a custom tool. Partner runs the tool and returns the result in the HTTP response.
 
 ### When to pick Mode B
 
@@ -194,7 +194,7 @@ app.include_router(router.fastapi_router(), prefix="/nova/cb")
 
 `WebhookRouter` handles:
 - HMAC-SHA256 signature verification (rejects with 401 on mismatch)
-- Idempotency dedup by `tool_use_id` (skips duplicate deliveries — Nova OS retries on transient failures)
+- Idempotency dedup by `tool_use_id` (skips duplicate deliveries — LibraOS retries on transient failures)
 - Replay-window enforcement (5min default — rejects requests with `t` outside the window)
 - Auto-serialisation of dict / str / list returns to JSON
 
@@ -208,13 +208,13 @@ t=<unix_ts>,v1=<hex(hmac_sha256(secret, ts + "." + tool_use_id + "." + body))>
 
 Three components separated by `.`:
 
-1. **Timestamp** (`ts`) — Unix seconds. Nova OS rejects deliveries with `|now - ts| > 300s` (5min replay window). Partners must verify the same window.
+1. **Timestamp** (`ts`) — Unix seconds. LibraOS rejects deliveries with `|now - ts| > 300s` (5min replay window). Partners must verify the same window.
 2. **`tool_use_id`** — pins the signature to a specific tool invocation. Replaying the body alone won't pass verification for a different `tool_use_id`.
 3. **Body** — the raw JSON body bytes (no whitespace normalization).
 
 ### Idempotency dedup
 
-Nova OS may retry webhook deliveries on transient network failures. The same `tool_use_id` may arrive 1-3 times. Partners should dedup:
+LibraOS may retry webhook deliveries on transient network failures. The same `tool_use_id` may arrive 1-3 times. Partners should dedup:
 
 ```python
 # WebhookRouter does this for you:
@@ -288,7 +288,7 @@ Without `callback`, the tool runs in Mode A (SSE inline). With `callback`, Mode 
 
 ### Input schema gotcha (Vertex AI)
 
-If you declare `type: array` in the schema **without** `items`, Nova OS validation rejects the agent on save. This catches a class of failure where Vertex AI strictly enforces JSON Schema and returns 400 at chat time:
+If you declare `type: array` in the schema **without** `items`, LibraOS validation rejects the agent on save. This catches a class of failure where Vertex AI strictly enforces JSON Schema and returns 400 at chat time:
 
 ```python
 # ✗ Rejected at validation:
@@ -317,7 +317,7 @@ The CLI's `nova-os-cli validate ./data/` runs this rule offline, before deploy.
 
 ## Mode B retries + dispatch
 
-When Nova OS POSTs to a partner endpoint and gets a non-2xx response or timeout:
+When LibraOS POSTs to a partner endpoint and gets a non-2xx response or timeout:
 
 | Response | Action |
 |---|---|

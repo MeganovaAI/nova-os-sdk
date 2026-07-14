@@ -9,9 +9,9 @@ local agent loop (Read / Write / Bash / Edit + custom MCP tools).
 The key compat trick: the Claude Agent SDK's transport inherits the
 parent process environment when it spawns the CLI. So setting
 ``ANTHROPIC_BASE_URL`` + ``ANTHROPIC_API_KEY`` — either globally or
-through ``ClaudeAgentOptions.env={...}`` — points every call at Nova OS
+through ``ClaudeAgentOptions.env={...}`` — points every call at LibraOS
 without any other code change. Existing Claude Agent SDK code runs
-unchanged against your Nova OS instance.
+unchanged against your LibraOS instance.
 
 Compared with 01_basic_chat.py (anthropic.Anthropic SDK):
 
@@ -24,7 +24,7 @@ Compared with 01_basic_chat.py (anthropic.Anthropic SDK):
 Choose 01_basic_chat when you want a stateless message round-trip from
 your own backend. Choose this script's pattern when you want the local
 CLI's tool ergonomics (Read/Bash/Edit working on local files) backed
-by Nova OS's multi-tenant runtime instead of api.anthropic.com.
+by LibraOS's multi-tenant runtime instead of api.anthropic.com.
 
 Prerequisites::
 
@@ -45,7 +45,7 @@ import anyio
 
 # Imported exactly as Anthropic's Quickstart shows. The only difference
 # vs that quickstart: ClaudeAgentOptions(env=...) routes the bundled
-# claude CLI's traffic to Nova OS instead of api.anthropic.com.
+# claude CLI's traffic to LibraOS instead of api.anthropic.com.
 from claude_agent_sdk import (
     AssistantMessage,
     ClaudeAgentOptions,
@@ -55,8 +55,8 @@ from claude_agent_sdk import (
 
 
 async def main() -> None:
-    nova_os_url = os.environ.get("NOVA_OS_URL", "https://nova.your-company.example")
-    nova_os_api_key = os.environ["NOVA_OS_API_KEY"]
+    libraos_url = os.environ.get("NOVA_OS_URL", "https://nova.your-company.example")
+    libraos_api_key = os.environ["NOVA_OS_API_KEY"]
 
     # ClaudeAgentOptions.env overrides the spawned CLI's env without
     # mutating the parent process — preferred over os.environ[...] = ...
@@ -65,8 +65,8 @@ async def main() -> None:
         system_prompt="You are a helpful assistant. Answer concisely.",
         max_turns=1,
         env={
-            "ANTHROPIC_BASE_URL": nova_os_url,
-            "ANTHROPIC_API_KEY": nova_os_api_key,
+            "ANTHROPIC_BASE_URL": libraos_url,
+            "ANTHROPIC_API_KEY": libraos_api_key,
         },
     )
 
@@ -74,7 +74,7 @@ async def main() -> None:
         if isinstance(message, AssistantMessage):
             for block in message.content:
                 if isinstance(block, TextBlock):
-                    print(f"Nova OS via Claude Agent SDK: {block.text}")
+                    print(f"LibraOS via Claude Agent SDK: {block.text}")
 
 
 if __name__ == "__main__":

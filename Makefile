@@ -27,10 +27,10 @@ codegen-go:
 	cd cli && go generate ./...
 
 codegen-python:
-	cd python && rm -rf nova_os/_generated nova-os-sdk-generated && \
+	cd python && rm -rf libraos/_generated libraos-sdk-generated && \
 	  openapi-python-client generate --path ../$(SPEC) --overwrite \
 	    --config openapi-python-client.yaml && \
-	  mv nova-os-sdk-generated/nova_os._generated nova_os/_generated && \
+	  mv libraos-sdk-generated/libraos._generated libraos/_generated && \
 	  rm -rf nova-os-sdk-generated
 
 codegen-ts:

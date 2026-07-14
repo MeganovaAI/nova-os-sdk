@@ -1,10 +1,10 @@
 # Deployment
 
-How to run Nova OS in production. For first-time install / evaluation, start with [`docs.meganova.ai/nova-os/install`](https://docs.meganova.ai/nova-os/install) — this doc covers what changes when you go from "kick the tires" to "production traffic."
+How to run LibraOS in production. For first-time install / evaluation, start with [`docs.meganova.ai/nova-os/install`](https://docs.meganova.ai/nova-os/install) — this doc covers what changes when you go from "kick the tires" to "production traffic."
 
 > ⚠️ **License Notice**
 >
-> The **Nova OS server** is provided for **evaluation and development use** under the Business Source License. **Production deployments require a commercial license** — contact contact@meganova.ai for pricing before pinning to production.
+> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. **Production deployments require a commercial license** — contact contact@meganova.ai for pricing before pinning to production.
 >
 > The **SDK** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially regardless of the server's license tier.
 
@@ -13,7 +13,7 @@ How to run Nova OS in production. For first-time install / evaluation, start wit
 - **Self-hosted is the v1 default.** Partner runs the binary; data never leaves your network.
 - **Three deploy shapes:** single-instance Docker, multi-service compose (recommended), Kubernetes.
 - **Postgres is required.** No SQLite fallback. Schema migrations run automatically on first boot.
-- **TLS terminates at your edge.** Nova OS speaks plain HTTP on `:8900`. Put Caddy / nginx / Traefik in front.
+- **TLS terminates at your edge.** LibraOS speaks plain HTTP on `:8900`. Put Caddy / nginx / Traefik in front.
 - **SSE flags are load-bearing** for streaming through Cloudflare / nginx.
 
 ## Self-hosted vs cloud
@@ -33,7 +33,7 @@ How to run Nova OS in production. For first-time install / evaluation, start wit
 
 ### Shape 1 — Single-instance Docker (small partner deployments)
 
-Recommended for production traffic up to roughly 50 concurrent SSE streams or 10 RPS sustained — enough for a small partner integration where Nova OS isn't the bottleneck.
+Recommended for production traffic up to roughly 50 concurrent SSE streams or 10 RPS sustained — enough for a small partner integration where LibraOS isn't the bottleneck.
 
 ```bash
 docker run -d --name nova-os \
@@ -51,7 +51,7 @@ Bind to `127.0.0.1` and let the reverse proxy expose it. Don't expose `:8900` to
 
 ### Shape 2 — Compose with companion apps (recommended)
 
-Use [`MeganovaAI/nova-os-stack`](https://github.com/MeganovaAI/nova-os-stack) — pre-built compose manifests for Nova OS + Postgres + SurrealDB + 8 optional companion apps (LibreChat chat UI, SearXNG, crawl4ai, Firecrawl, Docling, FlashRank, Phoenix, Hermes). Required secrets use the fail-fast `${VAR:?required - hint}` pattern instead of insecure inline defaults.
+Use [`MeganovaAI/nova-os-stack`](https://github.com/MeganovaAI/nova-os-stack) — pre-built compose manifests for LibraOS + Postgres + SurrealDB + 8 optional companion apps (LibreChat chat UI, SearXNG, crawl4ai, Firecrawl, Docling, FlashRank, Phoenix, Hermes). Required secrets use the fail-fast `${VAR:?required - hint}` pattern instead of insecure inline defaults.
 
 ```bash
 git clone https://github.com/MeganovaAI/nova-os-stack
@@ -145,7 +145,7 @@ Drop into your existing Ingress / TLS chain. See "Reverse proxy" below for the S
 
 ## Reverse proxy
 
-Nova OS speaks plain HTTP. TLS terminates at your edge. Three streaming-related flags are required for `/v1/messages` and `/v1/chat/completions` to work over HTTP/2 + Cloudflare — without them, Cloudflare returns `ERR_HTTP2_PROTOCOL_ERROR` mid-stream.
+LibraOS speaks plain HTTP. TLS terminates at your edge. Three streaming-related flags are required for `/v1/messages` and `/v1/chat/completions` to work over HTTP/2 + Cloudflare — without them, Cloudflare returns `ERR_HTTP2_PROTOCOL_ERROR` mid-stream.
 
 ### Caddy (simplest)
 
@@ -217,7 +217,7 @@ Schema migrations run on container start. **For multi-replica deploys, run one r
 
 ### Backup
 
-Standard Postgres patterns. Nova OS data is in a single database; `pg_dump` works. Key tables to verify after restore:
+Standard Postgres patterns. LibraOS data is in a single database; `pg_dump` works. Key tables to verify after restore:
 
 | Table | Contents |
 |---|---|
@@ -238,7 +238,7 @@ Three classes of secrets:
 |---|---|
 | `NOVA_OS_JWT_SECRET` | Signs user JWTs. Lose it and all existing tokens become invalid. ≥32 hex chars. Use `openssl rand -hex 32`. |
 | LLM provider API keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`) | Pass through to upstream. Use the MegaNova gateway's `msk_...` key for one-key-fits-all. |
-| Webhook callback secrets | Per-tool HMAC-SHA256 secrets. Stored in Nova OS settings DB; partners set via dashboard or `c.settings.set(...)`. |
+| Webhook callback secrets | Per-tool HMAC-SHA256 secrets. Stored in LibraOS settings DB; partners set via dashboard or `c.settings.set(...)`. |
 
 **Never inline secrets in compose YAML or Kubernetes manifests** — use Docker Secrets, Vault, AWS Secrets Manager, or Kubernetes Secrets. The compose file in [`docs.meganova.ai/nova-os/install`](https://docs.meganova.ai/nova-os/install) is for evaluation only.
 
@@ -282,7 +282,7 @@ Grep these for ops dashboards.
 
 ### Metrics
 
-Nova OS exposes Prometheus metrics at `/metrics` (when `NOVA_OS_METRICS_ENABLED=true`):
+LibraOS exposes Prometheus metrics at `/metrics` (when `NOVA_OS_METRICS_ENABLED=true`):
 
 | Metric | Notes |
 |---|---|
@@ -296,7 +296,7 @@ Wire these into your Grafana / Datadog / alerting stack.
 
 ## Upgrades
 
-Nova OS follows semver. Stable tags update `:latest` automatically; weekly partner-validation tags (`vX.Y.Z-week-YYYY-MM-DD`) do not. See [`docs.meganova.ai/nova-os/releases`](https://docs.meganova.ai/nova-os/releases) for the cadence.
+LibraOS follows semver. Stable tags update `:latest` automatically; weekly partner-validation tags (`vX.Y.Z-week-YYYY-MM-DD`) do not. See [`docs.meganova.ai/nova-os/releases`](https://docs.meganova.ai/nova-os/releases) for the cadence.
 
 **Recommended upgrade path:**
 
@@ -317,7 +317,7 @@ Nova OS follows semver. Stable tags update `:latest` automatically; weekly partn
 | WebSocket / SSE sticky sessions needed | Use `ip_hash` (nginx) or session affinity (Kubernetes Service `sessionAffinity: ClientIP`). |
 | Audit log inserts contend on advisory lock | Postgres serializable isolation handles it — don't optimize away. |
 
-For multi-tenant SaaS that spans multiple instances, each tenant should pin to a single Nova OS instance (no cross-instance routing) — per-tenant filesystem and per-tenant agent overrides exist within an instance, not across.
+For multi-tenant SaaS that spans multiple instances, each tenant should pin to a single LibraOS instance (no cross-instance routing) — per-tenant filesystem and per-tenant agent overrides exist within an instance, not across.
 
 ## See also
 

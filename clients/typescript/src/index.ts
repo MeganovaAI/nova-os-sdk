@@ -1,5 +1,5 @@
 /**
- * @meganova/nova-os-client — framework-agnostic TypeScript client kit for Nova OS.
+ * @libraos/client — framework-agnostic TypeScript client kit for LibraOS.
  *
  * Three layers, mirroring the Python SDK split (generated types + hand-written
  * ergonomics):

@@ -1,7 +1,7 @@
 """Async job — submit, poll status, retrieve final result.
 
 For long-running agent tasks (deep research, multi-section documents,
-full-document analyses) that exceed a reasonable HTTP timeout, Nova OS
+full-document analyses) that exceed a reasonable HTTP timeout, LibraOS
 provides an async job queue. This example demonstrates the submit-poll-result
 pattern.
 
@@ -11,10 +11,10 @@ Result → the ``result`` field on the completed job contains the agent's output
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.partner.com
     export NOVA_OS_API_KEY=msk_live_...
-    export NOVA_OS_AGENT_ID=research-agent  # agent must exist in Nova OS
+    export NOVA_OS_AGENT_ID=research-agent  # agent must exist in LibraOS
 
 Run::
 
@@ -27,7 +27,7 @@ import asyncio
 import os
 import time
 
-from nova_os import Client
+from libraos import Client
 
 # Terminal states — any of these means the job will not progress further.
 TERMINAL_STATES = {"completed", "failed", "cancelled"}

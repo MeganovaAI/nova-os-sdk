@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 import pytest
 
-from nova_os import Client
+from libraos import Client
 
 
 def _sse_body(*events: tuple[str, str]) -> bytes:

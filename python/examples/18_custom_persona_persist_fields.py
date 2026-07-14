@@ -7,12 +7,12 @@ Stitches three v0.1.7 server primitives end-to-end:
    baked into the release image. Partners use this for site-specific
    personas that shouldn't ship in the catalog.
 
-2. **Manifest refresh** — confirm Nova OS picked up the new persona via
+2. **Manifest refresh** — confirm LibraOS picked up the new persona via
    ``c.personas.list()``.
 
 3. **`output_type.persist_fields` slot collection** — across both sync
    (``c.messages.create()``) and streaming (``c.messages.stream()``)
-   calls, Nova OS auto-persists schema-validated slot values keyed by
+   calls, LibraOS auto-persists schema-validated slot values keyed by
    ``persist_scope`` (``session`` here) and injects a ``## Known
    fields`` block before the system prompt on subsequent turns so the
    model never re-asks for slots it has already collected. Merged
@@ -29,10 +29,10 @@ then::
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
-    # The directory must match what Nova OS scans server-side.
+    # The directory must match what LibraOS scans server-side.
     # Defaults to data/agents/_runtime/ inside the container.
     export NOVA_OS_AGENTS_RUNTIME_DIR=/srv/nova-os/data/agents/_runtime
 
@@ -48,7 +48,7 @@ import os
 import uuid
 from pathlib import Path
 
-from nova_os import Client
+from libraos import Client
 
 
 # Custom persona — appointment booking. Three slots accumulate across
@@ -64,7 +64,7 @@ model: gemini/gemini-2.5-flash
 system_prompt: |
   You are an appointment-booking assistant. Collect three slots from the
   user, one at a time, in this order: preferred date, preferred time,
-  contact email. Acknowledge values the user has already given (Nova OS
+  contact email. Acknowledge values the user has already given (LibraOS
   injects a "## Known fields" block before this prompt with current
   slot state) and ask for the next missing slot. Once all three are
   collected, confirm by echoing them back and set next_step=confirm.
@@ -113,7 +113,7 @@ async def main() -> None:
     print(f"Installed persona at {target}")
 
     async with Client(base_url=base_url, api_key=api_key) as c:
-        # 2. Refresh manifest — confirms Nova OS scanned the new YAML.
+        # 2. Refresh manifest — confirms LibraOS scanned the new YAML.
         manifest = await c.personas.list()
         ids = {p["id"] for p in (manifest or {}).get("personas", [])}
         if "appointment-booker" not in ids:
@@ -152,7 +152,7 @@ async def main() -> None:
 
         # 4. Streaming turn (final slot). Same session_id continues
         #    accumulation. Wire-shape: events arrive as
-        #    {"event": "<name>", "data": {...}} per nova_os._sse.parse_lines.
+        #    {"event": "<name>", "data": {...}} per libraos._sse.parse_lines.
         #    Terminal "done" event carries persisted_state.
         print("\n=== streaming turn (final slot) ===")
         async with c.messages.stream(

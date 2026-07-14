@@ -1,16 +1,16 @@
-# @meganova/nova-os-ui Foundation Implementation Plan
+# @libraos/react-ui Foundation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship `@meganova/nova-os-ui` slice 1 — the package, the `--nv-*` theme/token layer (Atelier as default, themeable), and five primitives (Button, IconButton, Card, Composer, Toggle).
+**Goal:** Ship `@libraos/react-ui` slice 1 — the package, the `--nv-*` theme/token layer (Atelier as default, themeable), and five primitives (Button, IconButton, Card, Composer, Toggle).
 
-**Architecture:** A React component library in `nova-os-sdk/clients/react-ui`, sibling to the framework-agnostic `clients/typescript`. Built with tsup (ESM/CJS/types). Styling ships as ONE stylesheet (`dist/styles.css`) of `--nv-*` CSS-variable tokens (scoped under a `.nv` root class) + prefixed `.nv-*` component classes; consumers import the CSS once and rebrand by overriding variables. Icon-agnostic; no product logic.
+**Architecture:** A React component library in `libraos-sdk/clients/react-ui`, sibling to the framework-agnostic `clients/typescript`. Built with tsup (ESM/CJS/types). Styling ships as ONE stylesheet (`dist/styles.css`) of `--nv-*` CSS-variable tokens (scoped under a `.nv` root class) + prefixed `.nv-*` component classes; consumers import the CSS once and rebrand by overriding variables. Icon-agnostic; no product logic.
 
 **Tech Stack:** React 19 (peer), TypeScript (strict), tsup, Vitest + @testing-library/react + jsdom, plain CSS.
 
 ## Global Constraints
 
-- Package name `@meganova/nova-os-ui`, version `0.1.0-alpha.0`, `"type": "module"`.
+- Package name `@libraos/react-ui`, version `0.1.0-alpha.0`, `"type": "module"`.
 - Class namespace **`.nv-*`**; token namespace **`--nv-*`** — both prefixed to avoid host-app collisions. Tokens live on a **`.nv` root class** (not bare `:root`).
 - Peer deps only `react` / `react-dom` `^19` (no other runtime deps). Icon-agnostic — components take icon elements via props/children.
 - All component CSS lives in the single `src/styles.css` (theme tokens + every component); the build copies it verbatim to `dist/styles.css`.
@@ -40,9 +40,9 @@
 
 ```json
 {
-  "name": "@meganova/nova-os-ui",
+  "name": "@libraos/react-ui",
   "version": "0.1.0-alpha.0",
-  "description": "React UI kit for Nova OS — the Atelier design system + primitives.",
+  "description": "React UI kit for LibraOS — the Atelier design system + primitives.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -128,7 +128,7 @@ copyFileSync("src/styles.css", "dist/styles.css");
 ```css
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Spline+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap");
 
-/* ── Nova OS UI — Atelier theme tokens (override any --nv-* to rebrand) ── */
+/* ── LibraOS UI — Atelier theme tokens (override any --nv-* to rebrand) ── */
 .nv {
   --nv-paper: #f3efe6;
   --nv-surface: #fcfaf5;
@@ -169,7 +169,7 @@ copyFileSync("src/styles.css", "dist/styles.css");
 - [ ] **Step 7: src/index.ts** (empty re-export barrel; components added later)
 
 ```ts
-// @meganova/nova-os-ui — component barrel. Primitives are added per task.
+// @libraos/react-ui — component barrel. Primitives are added per task.
 export {};
 ```
 
@@ -700,7 +700,7 @@ git commit -m "feat(react-ui): Composer floating-pill primitive"
 - Create: `examples/react-ui-demo/package.json`, `vite.config.ts`, `index.html`, `src/main.tsx`, `tsconfig.json`
 
 **Interfaces:**
-- Consumes: every exported primitive + `@meganova/nova-os-ui/styles.css`.
+- Consumes: every exported primitive + `@libraos/react-ui/styles.css`.
 
 - [ ] **Step 1: package.json** — `examples/react-ui-demo/package.json`
 
@@ -711,7 +711,7 @@ git commit -m "feat(react-ui): Composer floating-pill primitive"
   "type": "module",
   "scripts": { "dev": "vite", "build": "tsc -b && vite build" },
   "dependencies": {
-    "@meganova/nova-os-ui": "file:../../clients/react-ui",
+    "@libraos/react-ui": "file:../../clients/react-ui",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -756,8 +756,8 @@ export default defineConfig({ plugins: [react()] });
 ```tsx
 import { useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
-import { Button, IconButton, Card, Composer, Toggle } from "@meganova/nova-os-ui";
-import "@meganova/nova-os-ui/styles.css";
+import { Button, IconButton, Card, Composer, Toggle } from "@libraos/react-ui";
+import "@libraos/react-ui/styles.css";
 
 function Demo() {
   const [scope, setScope] = useState("corporate");
@@ -797,7 +797,7 @@ createRoot(document.getElementById("root")!).render(<Demo />);
 - [ ] **Step 4: Install + build the demo**
 
 Run (from `examples/react-ui-demo`): `npm install` then `npm run build`.
-Expected: the demo type-checks and builds against the published `dist` of `@meganova/nova-os-ui` (run `npm run build` in `clients/react-ui` first so `dist` exists). Confirms the consume path: import components + `styles.css`, `.nv` theme, `data-nv-scope`, and a `--nv-accent` override all resolve.
+Expected: the demo type-checks and builds against the published `dist` of `@libraos/react-ui` (run `npm run build` in `clients/react-ui` first so `dist` exists). Confirms the consume path: import components + `styles.css`, `.nv` theme, `data-nv-scope`, and a `--nv-accent` override all resolve.
 
 - [ ] **Step 5: Commit**
 

@@ -1,6 +1,6 @@
 # Web Search Backends
 
-Nova OS ships pluggable web-search with fallback chains. Five backends out of the box; partners pick per-persona via `web_search_config`. The configuration is resolved per-invocation, so a partner can run different personas on different backends in the same deployment.
+LibraOS ships pluggable web-search with fallback chains. Five backends out of the box; partners pick per-persona via `web_search_config`. The configuration is resolved per-invocation, so a partner can run different personas on different backends in the same deployment.
 
 ## TL;DR
 
@@ -54,7 +54,7 @@ Concrete numbers from the [API reference](https://docs.meganova.ai/api-reference
 | `max_results` cap | 20 |
 | Failure mode | 5xx when all upstream sources exhausted — **not charged** |
 
-A "group" is the billing unit — Nova OS sends a single `X-Request-Group-Id` per persona invocation, so multi-aspect deep research counts as one group regardless of how many sub-queries fan out. Personas configured with high `max_results` and `enrich: true` should plan for the 3-10s P50 latency; pair with `reformulator: false` since MegaNova handles reformulation internally.
+A "group" is the billing unit — LibraOS sends a single `X-Request-Group-Id` per persona invocation, so multi-aspect deep research counts as one group regardless of how many sub-queries fan out. Personas configured with high `max_results` and `enrich: true` should plan for the 3-10s P50 latency; pair with `reformulator: false` since MegaNova handles reformulation internally.
 
 ## Configuration
 
@@ -117,7 +117,7 @@ The primary backend is wrapped in a fallback chain. Promotion conditions:
 
 ## Per-call resolution
 
-`web_search_config` on the persona is read at invocation, not boot. A single Nova OS deployment can run different personas on different backends concurrently — the persona's YAML is the source of truth, and partners don't need to restart the server to change a backend.
+`web_search_config` on the persona is read at invocation, not boot. A single LibraOS deployment can run different personas on different backends concurrently — the persona's YAML is the source of truth, and partners don't need to restart the server to change a backend.
 
 ## Reformulator
 
@@ -206,7 +206,7 @@ await c.agents.update(
 
 ## Required env vars (operator-side)
 
-Each backend needs its own credential. Set as Nova OS env vars:
+Each backend needs its own credential. Set as LibraOS env vars:
 
 | Backend | Env var | Notes |
 |---|---|---|

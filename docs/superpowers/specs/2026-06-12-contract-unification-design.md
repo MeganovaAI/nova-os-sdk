@@ -1,11 +1,11 @@
-# Contract Unification — one Nova OS contract, web + iOS bindings
+# Contract Unification — one LibraOS contract, web + iOS bindings
 
-**Date:** 2026-06-12 · **Status:** Design (pre-implementation) · **Owner:** nova-os-sdk
+**Date:** 2026-06-12 · **Status:** Design (pre-implementation) · **Owner:** libraos-sdk
 (contract source of truth)
 
 **Scope (cross-repo):**
 - `nova-os` — kernel; OIDC token endpoint (refresh grant **already shipped**; hardened in #653), the REST surfaces clients call.
-- `nova-os-sdk` — **source of truth**: OpenAPI spec + generated bindings + OIDC/AG-UI shared specs.
+- `libraos-sdk` — **source of truth**: OpenAPI spec + generated bindings + OIDC/AG-UI shared specs.
 - `nova-ios` — iPhone client; retire its *assumed* `/api/v1`, adopt generated bindings + OIDC.
 - `nova-os-employee-assistant` / `nova-os-school` — web verticals; consume the generated TS kit.
 
@@ -46,7 +46,7 @@ only the first exists today:
 contracts (OIDC flow, AG-UI events) are shared **specs/helpers**, not generated from OpenAPI.
 
 ```
-nova-os-sdk/openapi/nova-os-partner.v1.yaml   ── REST source of truth
+libraos-sdk/openapi/nova-os-partner.v1.yaml   ── REST source of truth
         │  (codegen)
         ├── TS client-kit   →  employee-ui (web) + school-ui
         └── Swift NovaOSClient →  nova-ios   (replaces the "assumed" /api/v1)
@@ -55,7 +55,7 @@ nova-os-sdk/openapi/nova-os-partner.v1.yaml   ── REST source of truth
 
 ## 3. Diff — nova-ios assumed `/api/v1` vs reality
 
-| nova-ios assumes | Real Nova OS surface | Gap / action |
+| nova-ios assumes | Real LibraOS surface | Gap / action |
 |---|---|---|
 | `POST auth/login {email,password}` | OIDC `/oauth/authorize`+`/oauth/token` (PKCE; `nova-os-ios` + `novaos://oauth/callback` already registered) | **Replace** with Auth-Code+PKCE via `ASWebAuthenticationSession`. Isolated behind `AuthService`/`TokenProviding` → swappable. |
 | `POST auth/refresh {refresh_token}` | `/oauth/token` grant=`refresh_token` | **Already shipped** (`nova-os` commit `3a5857a3`, rotating refresh gated on `offline_access`). Residual filled in `nova-os#653`: reuse-detection family revocation + discovery `grant_types_supported`. Keep the `refresh()` seam, re-point it. |
@@ -82,7 +82,7 @@ This is the single decision that stops nova-ios's invented contract from leaking
 
 ## 5. Per-repo responsibilities
 
-**`nova-os-sdk` (owner)**
+**`libraos-sdk` (owner)**
 - Keep `openapi/nova-os-partner.v1.yaml` the REST truth; gap-fill the shapes both clients need
   (deployment/capabilities; confirm `sessions`, `documents/upload`, `agents/jobs`, `messages`).
 - Add two hand-authored shared artifacts:
@@ -98,7 +98,7 @@ This is the single decision that stops nova-ios's invented contract from leaking
   revocation + discovery `grant_types_supported`. No further grant work.
 - Confirm `/v1/managed/sessions`, `/v1/managed/documents/upload`, `/v1/managed/agents/jobs`,
   `/v1/messages` match the spec; add a small capabilities/`deployment` read if adopted
-  (contract added in `nova-os-sdk#34`; kernel endpoint still TODO).
+  (contract added in `libraos-sdk#34`; kernel endpoint still TODO).
 
 **`nova-ios`**
 - Replace `login(email,password)` with OIDC PKCE (`ASWebAuthenticationSession` → `/oauth/*`);
@@ -116,8 +116,8 @@ This is the single decision that stops nova-ios's invented contract from leaking
 
 1. ✅ **OIDC refresh hardening** (`nova-os#653`) — grant already shipped; this added
    reuse-detection + discovery advertisement. Unblocks durable web + mobile sessions.
-2. ✅ **SDK truth** (`nova-os-sdk#34`): OpenAPI gap-fill + `oidc-client-flow.md` + AG-UI event schema.
-3. ✅ **TS kit generation** (`nova-os-sdk#34`) → `employee-ui`/`school-ui` adopt it next (Phase 1 web).
+2. ✅ **SDK truth** (`libraos-sdk#34`): OpenAPI gap-fill + `oidc-client-flow.md` + AG-UI event schema.
+3. ✅ **TS kit generation** (`libraos-sdk#34`) → `employee-ui`/`school-ui` adopt it next (Phase 1 web).
 4. **Swift realign**: OIDC PKCE + generated DTOs → retires nova-ios's *assumed* `/api/v1`.
 5. **Recording→briefing vertical contract** (§4) → nova-ios V1 composes real primitives.
 6. **Assistant tab** (web parity) — last, once kit + AG-UI are stable.
@@ -144,7 +144,7 @@ This is the single decision that stops nova-ios's invented contract from leaking
 
 - `nova-os` CLAUDE.md §"Kernel discipline" (#361); `docs/research/technology/is-nova-os-a-kernel/`
 - `nova-os` `docs/architecture/nova-os-is-a-kernel.md`
-- `nova-os-sdk/openapi/nova-os-partner.v1.yaml` (REST truth)
+- `libraos-sdk/openapi/nova-os-partner.v1.yaml` (REST truth)
 - `nova-ios` `docs/superpowers/specs/2026-06-11-nova-os-connectivity-design.md` (the *assumed* contract)
 - `nova-os` branch `feat/oidc-ios-client`; `nova-os-school` branch `feat/i5-oidc-refresh`
 - `nova-os-school/services/school-ui` (the built web reference to extract the TS kit from)

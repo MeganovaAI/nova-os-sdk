@@ -22,7 +22,7 @@ var (
 // rootCmd is the entry point for `nova-os-cli ...`.
 var rootCmd = &cobra.Command{
 	Use:          "nova-os-cli",
-	Short:        "Nova OS partner CLI — sync agents/employees, validate, test webhook callbacks",
+	Short:        "LibraOS partner CLI — sync agents/employees, validate, test webhook callbacks",
 	SilenceUsage: true, // failed runs don't dump full --help spam
 }
 
@@ -35,7 +35,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&flagProfile, "profile", "", "Profile in ~/.nova-os/config.yaml (overrides NOVA_OS_PROFILE)")
-	rootCmd.PersistentFlags().StringVar(&flagURL, "url", "", "Nova OS server URL (overrides profile + NOVA_OS_URL)")
+	rootCmd.PersistentFlags().StringVar(&flagURL, "url", "", "LibraOS server URL (overrides profile + NOVA_OS_URL)")
 	rootCmd.PersistentFlags().StringVar(&flagAPIKey, "api-key", "", "Bearer token (overrides profile + NOVA_OS_API_KEY)")
 	rootCmd.PersistentFlags().BoolVar(&flagJSON, "json", false, "Emit one JSON object per record on stdout (default: human table)")
 }

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from nova_os.anthropic_compat import AnthropicCompatClient
+from libraos.anthropic_compat import AnthropicCompatClient
 
 
 def test_returns_anthropic_client_instance() -> None:

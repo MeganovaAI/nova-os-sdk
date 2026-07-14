@@ -1,12 +1,12 @@
-# Nova OS SDK
+# LibraOS SDK
 
-Partner integration SDK for **Nova OS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
+Partner integration SDK for **LibraOS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
 
 This repo ships:
 
 - **OpenAPI spec** (`openapi/nova-os-partner.v1.yaml`) — source of truth for the partner-facing API surface.
 - **CLI** (`cli/`) — single static Go binary for sync, validate, test-callback, export/import.
-- **Python SDK** (`python/`) — reference client library, published to PyPI as `nova-os-sdk`.
+- **Python SDK** (`python/`) — reference client library, published to PyPI as `libraos-sdk`.
 - **Docs** (`docs/`) — getting started, Anthropic compatibility, multi-model, web-search, custom tools.
 - **Examples** (`examples/`) — worked partner integrations (legaltech, healthcare, finance).
 
@@ -14,26 +14,26 @@ This repo ships:
 
 | Surface | Command |
 |---|---|
-| Python SDK | `pip install nova-os-sdk` |
+| Python SDK | `pip install libraos-sdk` |
 | CLI binary | `curl -L $(release_url)/nova-os-cli_linux_amd64.tar.gz \| tar -xz` |
 | CLI Docker | `docker pull ghcr.io/meganovaai/nova-os-cli:latest` |
 
 See `python/README.md` and `cli/README.md` for usage details.
 
-## Self-hosting the Nova OS server
+## Self-hosting the LibraOS server
 
-The SDK targets a running Nova OS server. To stand one up yourself:
+The SDK targets a running LibraOS server. To stand one up yourself:
 
 | Resource | What it is |
 |---|---|
 | [`ghcr.io/meganovaai/nova-os`](https://github.com/orgs/MeganovaAI/packages/container/package/nova-os) | Public, multi-arch Docker image of the server. `docker pull ghcr.io/meganovaai/nova-os:v0.1.7`. |
-| [`MeganovaAI/nova-os-stack`](https://github.com/MeganovaAI/nova-os-stack) | Reference docker-compose manifests — core (Nova OS + Postgres + SurrealDB) plus 8 optional companion apps (LibreChat chat UI, SearXNG, crawl4ai, Firecrawl, Docling, FlashRank, Phoenix, Hermes). |
+| [`MeganovaAI/nova-os-stack`](https://github.com/MeganovaAI/nova-os-stack) | Reference docker-compose manifests — core (LibraOS + Postgres + SurrealDB) plus 8 optional companion apps (LibreChat chat UI, SearXNG, crawl4ai, Firecrawl, Docling, FlashRank, Phoenix, Hermes). |
 | [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) | Step-by-step install guide: prerequisites, env vars, smoke tests, reverse-proxy templates. |
 | [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases) | Release notes + migration notes for each server version. |
 
 ### Minimal local evaluation
 
-Smallest practical local instance — Nova OS plus a disposable Postgres. **Not for production**:
+Smallest practical local instance — LibraOS plus a disposable Postgres. **Not for production**:
 
 ```bash
 docker network create nova-os-eval
@@ -60,21 +60,21 @@ client = AnthropicCompatClient(base_url="http://localhost:8900", api_key="msk_ev
 msg = client.messages.create(
     model="gemini/gemini-3.1-pro-preview",
     max_tokens=256,
-    messages=[{"role": "user", "content": "Hello, Nova OS!"}],
+    messages=[{"role": "user", "content": "Hello, LibraOS!"}],
 )
 ```
 
 For anything beyond evaluation (real Postgres, SurrealDB knowledge store, companion apps, TLS, OIDC) use the `MeganovaAI/nova-os-stack` manifests linked above and follow [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install).
 
-If you only need to call a hosted Nova OS that someone else operates, skip this section — the SDK works against any reachable Nova OS endpoint.
+If you only need to call a hosted LibraOS that someone else operates, skip this section — the SDK works against any reachable LibraOS endpoint.
 
 ## Three drop-in compat surfaces
 
-Existing partner code targeting any of the three Anthropic-published Python entry points works against Nova OS with at most an env-var or constructor change:
+Existing partner code targeting any of the three Anthropic-published Python entry points works against LibraOS with at most an env-var or constructor change:
 
-- **Anthropic Messages SDK** (`anthropic.Anthropic(base_url=...)`) — set `base_url` to your Nova OS instance. The 1:1 Messages-API surface plus the Managed Agents beta endpoints (`/v1/agents`, `/v1/sessions`, `/v1/messages` behind the `anthropic-beta: managed-agents-2026-04-01` header) work unchanged. See [`python/examples/01_basic_chat.py`](python/examples/01_basic_chat.py).
-- **Claude Agent SDK** (`claude_agent_sdk.query` / `ClaudeSDKClient`) — set `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY` (or `ClaudeAgentOptions(env={...})`) to redirect the bundled CLI subprocess to Nova OS. Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by Nova OS's multi-tenant runtime instead of `api.anthropic.com`. See [`python/examples/01b_claude_agent_sdk_drop_in.py`](python/examples/01b_claude_agent_sdk_drop_in.py).
-- **Nova OS native** (`from nova_os import Client`) — the extended surface partners reach for once they're past hello-world: multi-model `model_config` cascade at employee + agent level, structured-output `output_type` validation, custom-tool webhook callbacks (Mode A inline / Mode B webhook), portable employee bundles, async jobs. See [`python/examples/00_quickstart.py`](python/examples/00_quickstart.py).
+- **Anthropic Messages SDK** (`anthropic.Anthropic(base_url=...)`) — set `base_url` to your LibraOS instance. The 1:1 Messages-API surface plus the Managed Agents beta endpoints (`/v1/agents`, `/v1/sessions`, `/v1/messages` behind the `anthropic-beta: managed-agents-2026-04-01` header) work unchanged. See [`python/examples/01_basic_chat.py`](python/examples/01_basic_chat.py).
+- **Claude Agent SDK** (`claude_agent_sdk.query` / `ClaudeSDKClient`) — set `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY` (or `ClaudeAgentOptions(env={...})`) to redirect the bundled CLI subprocess to LibraOS. Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by LibraOS's multi-tenant runtime instead of `api.anthropic.com`. See [`python/examples/01b_claude_agent_sdk_drop_in.py`](python/examples/01b_claude_agent_sdk_drop_in.py).
+- **LibraOS native** (`from nova_os import Client`) — the extended surface partners reach for once they're past hello-world: multi-model `model_config` cascade at employee + agent level, structured-output `output_type` validation, custom-tool webhook callbacks (Mode A inline / Mode B webhook), portable employee bundles, async jobs. See [`python/examples/00_quickstart.py`](python/examples/00_quickstart.py).
 
 The first two are about meeting partners where they are. The third is the surface they grow into when their integration deepens.
 
@@ -86,6 +86,6 @@ The first two are about meeting partners where they are. The third is the surfac
 
 > ⚠️ **License Notice**
 >
-> The **Nova OS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
+> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
 >
 > The **SDK in this repository** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially.

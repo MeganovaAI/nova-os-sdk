@@ -17,7 +17,7 @@ export type NovaErrorType =
   | "validation_error"
   | "internal_error";
 
-/** The JSON body Nova OS returns on an error response. */
+/** The JSON body LibraOS returns on an error response. */
 export interface NovaErrorBody {
   type: NovaErrorType | string;
   message: string;
@@ -43,7 +43,7 @@ export class NovaApiError extends Error {
   readonly body?: NovaErrorBody;
 
   constructor(status: number, body?: NovaErrorBody, fallbackMessage?: string) {
-    super(body?.message ?? fallbackMessage ?? `Nova OS request failed (HTTP ${status})`);
+    super(body?.message ?? fallbackMessage ?? `LibraOS request failed (HTTP ${status})`);
     this.name = "NovaApiError";
     this.status = status;
     this.type = body?.type ?? "internal_error";

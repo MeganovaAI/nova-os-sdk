@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	gen "github.com/MeganovaAI/nova-os-sdk/cli/internal/client"
+	gen "github.com/libraos/sdk/cli/internal/client"
 )
 
 func TestPrintEmployeeList_Table(t *testing.T) {

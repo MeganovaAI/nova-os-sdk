@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/MeganovaAI/nova-os-sdk/cli/internal/client"
+	"github.com/libraos/sdk/cli/internal/client"
 )
 
 // CLIVersion is the published nova-os-cli version.

@@ -1,6 +1,6 @@
 """Mode A custom tool — inline (SSE stream) pattern.
 
-In Mode A, Nova OS pauses the agent mid-run and emits a ``custom_tool_use``
+In Mode A, LibraOS pauses the agent mid-run and emits a ``custom_tool_use``
 SSE event on the partner's open streaming connection. The partner runs the
 tool locally and submits the result back via
 ``MessageStream.submit_tool_result(...)`` — same socket, no separate HTTP
@@ -15,7 +15,7 @@ HTTP-server-shaped.
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
     export NOVA_OS_AGENT_ID=invoice-bot
@@ -31,7 +31,7 @@ import asyncio
 import os
 from typing import Any
 
-from nova_os import Client
+from libraos import Client
 
 
 # ---------------------------------------------------------------------------

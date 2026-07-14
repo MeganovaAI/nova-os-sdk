@@ -12,7 +12,7 @@ import json
 import httpx
 import pytest
 
-from nova_os import Client
+from libraos import Client
 
 
 def _make_client(handler) -> Client:
@@ -307,7 +307,7 @@ async def test_sessions_get():
     assert s["id"] == "sess_lookup"
 
 
-# ── Personas (#187 server / nova-os-sdk#14 SDK) ────────────────────
+# ── Personas (#187 server / libraos-sdk#14 SDK) ────────────────────
 
 
 @pytest.mark.asyncio
@@ -367,7 +367,7 @@ async def test_personas_get_returns_entry():
 
 @pytest.mark.asyncio
 async def test_personas_get_404_raises_persona_not_found():
-    from nova_os import PersonaNotFound
+    from libraos import PersonaNotFound
 
     def handler(req: httpx.Request) -> httpx.Response:
         return httpx.Response(

@@ -59,7 +59,7 @@ Run
 ---
 ::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export EVAL_NOVA_BASE_URL=http://localhost:8901
     export EVAL_NOVA_API_KEY=<your eval JWT or agent key>
     export EVAL_TARGET_AGENT_ID=default
@@ -75,8 +75,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from nova_os import Archetype, Client
-from nova_os.simulator import SimulationResult, TurnEvent
+from libraos import Archetype, Client
+from libraos.simulator import SimulationResult, TurnEvent
 
 
 def main() -> int:

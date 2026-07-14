@@ -12,7 +12,7 @@ End-to-end partner-side script:
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -28,7 +28,7 @@ import json
 import os
 from pathlib import Path
 
-from nova_os import Client
+from libraos import Client
 
 
 TRIAGE_SCHEMA: dict = {
@@ -103,7 +103,7 @@ async def main() -> None:
         )
 
         # 2. Attach the triage agent. `output_type.violation_mode=repair` means
-        #    if the model's first reply doesn't match TRIAGE_SCHEMA, Nova OS
+        #    if the model's first reply doesn't match TRIAGE_SCHEMA, LibraOS
         #    re-prompts once with the schema in the system prompt before
         #    returning the result. Better than a 422 in a clinical workflow.
         await c.agents.create(

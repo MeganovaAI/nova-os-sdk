@@ -21,7 +21,7 @@ export interface AuthProvider {
 }
 
 export interface RestClientOptions {
-  /** Base URL of the Nova OS instance, e.g. "https://api.example.com". */
+  /** Base URL of the LibraOS instance, e.g. "https://api.example.com". */
   baseUrl: string;
   /** Token provider; omit for unauthenticated (e.g. health) calls. */
   auth?: AuthProvider;

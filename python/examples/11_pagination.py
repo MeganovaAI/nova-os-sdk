@@ -15,7 +15,7 @@ Demonstrates two patterns:
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -29,7 +29,7 @@ from __future__ import annotations
 import asyncio
 import os
 
-from nova_os import Client
+from libraos import Client
 
 
 async def main() -> None:

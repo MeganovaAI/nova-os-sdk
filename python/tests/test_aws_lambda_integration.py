@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from nova_os.callbacks import WebhookRouter
+from libraos.callbacks import WebhookRouter
 
 
 def _sign(secret: str, tool_use_id: str, body: bytes) -> str:

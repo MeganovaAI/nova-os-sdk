@@ -1,10 +1,10 @@
 # Getting Started
 
-The front door for partners adopting Nova OS. Use the table below to jump to the doc that matches what you're trying to do — most adoption paths are 5-15 minutes.
+The front door for partners adopting LibraOS. Use the table below to jump to the doc that matches what you're trying to do — most adoption paths are 5-15 minutes.
 
 > ⚠️ **License Notice**
 >
-> The **Nova OS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
+> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
 >
 > The **SDK in this repository** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially.
 
@@ -12,10 +12,10 @@ The front door for partners adopting Nova OS. Use the table below to jump to the
 
 | Goal | Path | Doc |
 |---|---|---|
-| **Run a Nova OS server locally** | Pull the public Docker image, set three env vars, smoke-test `/api/health` | [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) |
-| **Point my existing Anthropic SDK at Nova OS** | Set `base_url` on `Anthropic(...)` — Messages API works unchanged | [`anthropic-compat.md`](anthropic-compat.md) |
-| **Use the Claude Agent SDK against Nova OS** | Set `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY` env to redirect the bundled CLI | [`python/examples/01b_claude_agent_sdk_drop_in.py`](../python/examples/01b_claude_agent_sdk_drop_in.py) |
-| **Use the Nova OS native SDK** | `pip install nova-os-sdk`; `from nova_os import Client` | [`python/examples/00_quickstart.py`](../python/examples/00_quickstart.py) |
+| **Run a LibraOS server locally** | Pull the public Docker image, set three env vars, smoke-test `/api/health` | [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) |
+| **Point my existing Anthropic SDK at LibraOS** | Set `base_url` on `Anthropic(...)` — Messages API works unchanged | [`anthropic-compat.md`](anthropic-compat.md) |
+| **Use the Claude Agent SDK against LibraOS** | Set `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY` env to redirect the bundled CLI | [`python/examples/01b_claude_agent_sdk_drop_in.py`](../python/examples/01b_claude_agent_sdk_drop_in.py) |
+| **Use the LibraOS native SDK** | `pip install libraos-sdk`; `from nova_os import Client` | [`python/examples/00_quickstart.py`](../python/examples/00_quickstart.py) |
 | **Manage employees / agents from the terminal** | Install `nova-os-cli`, set a profile, run `employees list` | [`cli/README.md`](../cli/README.md) |
 | **Validate a folder of agent/employee definitions before deploy** | `nova-os-cli validate ./data/` — offline CI gate | [`cli/README.md` → validate](../cli/README.md#validate-offline-ci-gate) |
 | **Sync a local folder of definitions to a server** | `nova-os-cli sync ./data/` (one-shot or `--watch`) | [`cli/README.md` → sync](../cli/README.md#sync-folder--server) |
@@ -28,7 +28,7 @@ The front door for partners adopting Nova OS. Use the table below to jump to the
 
 ## 5-minute first call
 
-The fastest path from zero to "I have a working Nova OS instance answering chat requests." Assumes Docker is installed.
+The fastest path from zero to "I have a working LibraOS instance answering chat requests." Assumes Docker is installed.
 
 ### 1. Stand up the server
 
@@ -69,7 +69,7 @@ msg = client.messages.create(
 print(msg.content[0].text)
 ```
 
-**Nova OS native SDK:**
+**LibraOS native SDK:**
 
 ```python
 from nova_os import Client
@@ -95,13 +95,13 @@ nova-os-cli messages send legal-assistant "What is contract clause 7.3 about?"
 
 ## Three drop-in compat surfaces
 
-Existing partner code targeting any of these works against Nova OS with at most an env-var or constructor change:
+Existing partner code targeting any of these works against LibraOS with at most an env-var or constructor change:
 
 | Surface | What it gives you | Redirect |
 |---|---|---|
 | **Anthropic Messages SDK** (`anthropic.Anthropic`) | The 1:1 Messages API + Managed Agents beta endpoints | `Anthropic(base_url="...")` |
-| **Claude Agent SDK** (`claude_agent_sdk.query`) | Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by Nova OS's multi-tenant runtime | `ANTHROPIC_BASE_URL` env |
-| **Nova OS native** (`from nova_os import Client`) | The extended surface partners reach for once past hello-world: multi-model `model_config`, `output_type` validation, custom-tool webhook callbacks, portable employee bundles, async jobs | `Client(base_url="...")` |
+| **Claude Agent SDK** (`claude_agent_sdk.query`) | Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by LibraOS's multi-tenant runtime | `ANTHROPIC_BASE_URL` env |
+| **LibraOS native** (`from nova_os import Client`) | The extended surface partners reach for once past hello-world: multi-model `model_config`, `output_type` validation, custom-tool webhook callbacks, portable employee bundles, async jobs | `Client(base_url="...")` |
 
 The first two meet partners where they are. The third is the surface they grow into when their integration deepens.
 
@@ -112,7 +112,7 @@ End-to-end paths for the most common partner tasks. Each row points at a worked 
 | Scenario | What it shows | Worked example |
 |---|---|---|
 | Hello-world chat | Bare `Anthropic(base_url=...)` round-trip | [`python/examples/01_basic_chat.py`](../python/examples/01_basic_chat.py) |
-| Claude Agent SDK redirect | Subprocess CLI redirected to Nova OS | [`python/examples/01b_claude_agent_sdk_drop_in.py`](../python/examples/01b_claude_agent_sdk_drop_in.py) |
+| Claude Agent SDK redirect | Subprocess CLI redirected to LibraOS | [`python/examples/01b_claude_agent_sdk_drop_in.py`](../python/examples/01b_claude_agent_sdk_drop_in.py) |
 | Create an employee + agent from scratch | Define employee, attach agents, set model_config | [`python/examples/02_create_employee_and_agent.py`](../python/examples/02_create_employee_and_agent.py) |
 | Upload knowledge to a collection | Ingest + verify retrieval at chat time | [`python/examples/03_upload_knowledge.py`](../python/examples/03_upload_knowledge.py) |
 | Mode A custom tool (SSE inline) | Stream + `submit_tool_result` round-trip | [`python/examples/04_custom_tool_inline.py`](../python/examples/04_custom_tool_inline.py) |
@@ -146,4 +146,4 @@ A partner running multiple environments (dev / staging / prod) keeps one profile
 
 - **Working in production?** [`deployment.md`](deployment.md) covers reverse-proxy templates, TLS, Postgres sizing, multi-replica deploys, and the SSE flag that's load-bearing for Cloudflare-fronted streaming.
 - **Building a vertical product?** [`examples/legaltech/`](../examples/legaltech) is the canonical reference integration — EqualDocs's `legal-assistant` shape, validated end-to-end at 7/7 against the latest server build.
-- **Running into an issue?** Open one at [`MeganovaAI/nova-os-sdk/issues`](https://github.com/MeganovaAI/nova-os-sdk/issues). Server-side issues live at [`MeganovaAI/nova-os/issues`](https://github.com/MeganovaAI/nova-os/issues).
+- **Running into an issue?** Open one at [`libraos/sdk/issues`](https://github.com/libraos/sdk/issues). Server-side issues live at [`MeganovaAI/nova-os/issues`](https://github.com/MeganovaAI/nova-os/issues).

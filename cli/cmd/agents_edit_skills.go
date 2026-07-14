@@ -1,8 +1,8 @@
 // Skill autocomplete + validation for `nova-os-cli agents edit`
-// (slice 3 of nova-os-sdk#18).
+// (slice 3 of libraos-sdk#18).
 //
 // `GET /api/skills` returns the skills available on the running
-// Nova OS. We use it two ways:
+// LibraOS. We use it two ways:
 //
 //   - Interactive mode: the `tools` field's prompt becomes a
 //     huh.NewMultiSelect populated from the live skill list instead of

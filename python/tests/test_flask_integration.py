@@ -14,7 +14,7 @@ flask = pytest.importorskip("flask")
 
 from flask import Flask
 
-from nova_os.callbacks import WebhookRouter
+from libraos.callbacks import WebhookRouter
 
 
 def _sign(secret: str, tool_use_id: str, body: bytes) -> str:

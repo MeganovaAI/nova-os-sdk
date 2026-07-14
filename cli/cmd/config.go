@@ -160,7 +160,7 @@ var configDeleteCmd = &cobra.Command{
 }
 
 func init() {
-	configSetCmd.Flags().StringVar(&configSetURL, "url", "", "Nova OS server URL")
+	configSetCmd.Flags().StringVar(&configSetURL, "url", "", "LibraOS server URL")
 	configSetCmd.Flags().StringVar(&configSetAPIKeyEnv, "api-key-env", "", "Env var name holding the bearer token")
 	configSetCmd.Flags().StringVar(&configSetCallbackURL, "callback-url", "", "Callback URL for partner webhooks")
 

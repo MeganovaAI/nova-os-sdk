@@ -7,9 +7,9 @@ import json
 import httpx
 import pytest
 
-from nova_os import Client
-from nova_os._retry import RetryConfig
-from nova_os.errors import NotFoundError, RateLimitedError
+from libraos import Client
+from libraos._retry import RetryConfig
+from libraos.errors import NotFoundError, RateLimitedError
 
 
 def _mock_transport(handler):

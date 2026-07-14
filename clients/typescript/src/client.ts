@@ -218,7 +218,7 @@ export interface Entitlements {
 }
 
 export interface NovaClientOptions {
-  /** Base URL of the Nova OS instance. */
+  /** Base URL of the LibraOS instance. */
   baseUrl: string;
   /**
    * Auth source. Either a static bearer token (partner-minted JWT), an

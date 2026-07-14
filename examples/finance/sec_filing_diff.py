@@ -11,12 +11,12 @@ End-to-end partner-side script:
 
 Async is the right fit because the analysis takes 60-180 seconds — well past
 HTTP timeouts on most reverse proxies. The pattern generalises to any
-long-running Nova OS workload (multi-document research, full-corpus risk
+long-running LibraOS workload (multi-document research, full-corpus risk
 review, multi-step plan execution).
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -32,7 +32,7 @@ import json
 import os
 from pathlib import Path
 
-from nova_os import Client
+from libraos import Client
 
 
 DIFF_SCHEMA: dict = {

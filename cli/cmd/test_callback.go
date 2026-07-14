@@ -13,7 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/MeganovaAI/nova-os-sdk/cli/internal/sign"
+	"github.com/libraos/sdk/cli/internal/sign"
 )
 
 var (
@@ -31,17 +31,17 @@ var (
 var testCallbackCmd = &cobra.Command{
 	Use:   "test-callback",
 	Short: "Forge a Nova-OS-shaped signed webhook POST to a partner endpoint",
-	Long: `Builds the same JSON payload Nova OS's Mode B custom-tool
+	Long: `Builds the same JSON payload LibraOS's Mode B custom-tool
 dispatcher sends, signs it with HMAC-SHA256 over ts + "." + tool_use_id
 + "." + body, and POSTs to --target. Prints response status + body.
 
 Use this to smoke-test a partner-side WebhookRouter handler before
-exposing it to live traffic — same signing scheme, no Nova OS server
+exposing it to live traffic — same signing scheme, no LibraOS server
 required.
 
 The --secret-env flag names an environment variable holding the shared
 HMAC secret. Must match the secret your WebhookRouter is configured
-with (and the secret_ref Nova OS uses to dispatch).`,
+with (and the secret_ref LibraOS uses to dispatch).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if tcFlagTarget == "" {
 			return fmt.Errorf("--target is required")

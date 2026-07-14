@@ -1,6 +1,6 @@
 """Documents — upload, list, delete.
 
-Demonstrates the partner-side document lifecycle on Nova OS:
+Demonstrates the partner-side document lifecycle on LibraOS:
 
 1. Upload a file (multipart). Super Nova auto-indexes it into the
    document engine on receipt — partners don't trigger indexing
@@ -14,7 +14,7 @@ tools, delete on tenant offboarding.
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -29,7 +29,7 @@ import asyncio
 import os
 
 
-from nova_os import Client
+from libraos import Client
 
 
 SAMPLE_CONTENT = b"""# Acme Onboarding Checklist

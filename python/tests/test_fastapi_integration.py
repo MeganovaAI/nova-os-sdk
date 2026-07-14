@@ -14,7 +14,7 @@ fastapi = pytest.importorskip("fastapi")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from nova_os.callbacks import WebhookRouter
+from libraos.callbacks import WebhookRouter
 
 
 def _sign(secret: str, tool_use_id: str, body: bytes) -> tuple[str, str]:

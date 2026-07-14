@@ -26,9 +26,9 @@ builds:
         goarch: arm64
     ldflags:
       - -s -w
-      - -X github.com/MeganovaAI/nova-os-sdk/cli/cmd.CLIVersion={{.Version}}
-      - -X github.com/MeganovaAI/nova-os-sdk/cli/cmd.commit={{.Commit}}
-      - -X github.com/MeganovaAI/nova-os-sdk/cli/cmd.buildDate={{.Date}}
+      - -X github.com/libraos/sdk/cli/cmd.CLIVersion={{.Version}}
+      - -X github.com/libraos/sdk/cli/cmd.commit={{.Commit}}
+      - -X github.com/libraos/sdk/cli/cmd.buildDate={{.Date}}
 
 archives:
   - id: default

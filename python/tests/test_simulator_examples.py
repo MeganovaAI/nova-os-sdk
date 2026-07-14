@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from nova_os import Archetype
+from libraos import Archetype
 
 # examples/simulator/ sits next to python/ at the repo root.
 EXAMPLES_DIR = (

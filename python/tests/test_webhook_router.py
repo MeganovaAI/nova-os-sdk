@@ -1,4 +1,4 @@
-"""WebhookRouter — receives Nova OS Mode B custom_tool dispatches."""
+"""WebhookRouter — receives LibraOS Mode B custom_tool dispatches."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from nova_os.callbacks import WebhookRouter
+from libraos.callbacks import WebhookRouter
 
 
 def _sign(secret: str, tool_use_id: str, body: bytes, ts: int | None = None) -> tuple[str, int]:

@@ -1,12 +1,12 @@
 """Anthropic-compat hello world — drop-in usage of the Anthropic SDK.
 
 Demonstrates that code written against ``anthropic.Anthropic(base_url=...)``
-works against Nova OS unchanged. Partners who already use the Anthropic SDK
+works against LibraOS unchanged. Partners who already use the Anthropic SDK
 only need to swap the base_url and API key — zero other code changes required.
 
 Prerequisites::
 
-    pip install nova-os-sdk anthropic
+    pip install libraos-sdk anthropic
     export NOVA_OS_URL=https://nova.partner.com
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import os
 
-from nova_os import AnthropicCompatClient
+from libraos import AnthropicCompatClient
 
 
 def main() -> None:
@@ -27,13 +27,13 @@ def main() -> None:
     api_key = os.environ["NOVA_OS_API_KEY"]
 
     # AnthropicCompatClient returns an anthropic.Anthropic instance pre-configured
-    # for Nova OS's /v1/managed compat path. The full Anthropic SDK API is available.
+    # for LibraOS's /v1/managed compat path. The full Anthropic SDK API is available.
     client = AnthropicCompatClient(base_url=base_url, api_key=api_key)
 
     msg = client.messages.create(
         model="anthropic/claude-opus-4-7",
         max_tokens=256,
-        messages=[{"role": "user", "content": "Hello, Nova OS!"}],
+        messages=[{"role": "user", "content": "Hello, LibraOS!"}],
     )
 
     print(f"Message ID : {msg.id}")

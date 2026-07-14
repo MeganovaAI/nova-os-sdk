@@ -1,6 +1,6 @@
 """Sessions — explicit session lifecycle.
 
-Demonstrates the Nova OS native ``c.sessions`` resource — partner-side
+Demonstrates the LibraOS native ``c.sessions`` resource — partner-side
 explicit sessions for cases where the implicit ``(API key, end_user,
 agent)`` triple isn't enough:
 
@@ -16,7 +16,7 @@ session management, just pass the ``X-End-User`` header on
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -30,7 +30,7 @@ from __future__ import annotations
 import asyncio
 import os
 
-from nova_os import Client
+from libraos import Client
 
 
 async def main() -> None:

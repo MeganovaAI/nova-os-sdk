@@ -1,8 +1,8 @@
 """Multi-model fallback — per-employee model_config cascade.
 
-Nova OS supports a primary model + ordered fallback chain per-employee.
+LibraOS supports a primary model + ordered fallback chain per-employee.
 When the primary model is unavailable (rate limit, quota, downstream error),
-Nova OS automatically promotes the first healthy fallback. The response
+LibraOS automatically promotes the first healthy fallback. The response
 includes ``model_used`` and ``fallback_triggered`` fields so partners can
 observe which tier served the request.
 
@@ -11,7 +11,7 @@ message, and inspects the routing result.
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.partner.com
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -25,7 +25,7 @@ from __future__ import annotations
 import asyncio
 import os
 
-from nova_os import Client
+from libraos import Client
 
 
 async def main() -> None:
@@ -38,7 +38,7 @@ async def main() -> None:
         #    - Fallback 1: gemini-2.5-flash (fast + cheap)
         #    - Fallback 2: gemini-2.5-pro (high quality backup)
         #
-        #    Nova OS promotes the next fallback automatically on:
+        #    LibraOS promotes the next fallback automatically on:
         #      - HTTP 429 rate limit
         #      - HTTP 503 / upstream timeout
         #      - provider billing exhaustion
@@ -70,7 +70,7 @@ async def main() -> None:
             messages=[{"role": "user", "content": "Summarise the benefits of multi-model routing."}],
         )
 
-        # The response dict includes Nova OS-specific fields alongside the
+        # The response dict includes LibraOS-specific fields alongside the
         # standard message response shape:
         if isinstance(resp, dict):
             model_used = resp.get("model_used", "unknown")

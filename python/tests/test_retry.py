@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from nova_os._retry import RetryConfig, with_retry
+from libraos._retry import RetryConfig, with_retry
 
 
 @pytest.mark.asyncio
@@ -79,7 +79,7 @@ class TransientNetworkError(Exception):
 # Patch is_transient to recognize our test class
 @pytest.fixture(autouse=True)
 def patch_transient(monkeypatch: Any) -> None:
-    from nova_os import _retry
+    from libraos import _retry
 
     def is_transient(exc: BaseException) -> bool:
         return isinstance(exc, TransientNetworkError)

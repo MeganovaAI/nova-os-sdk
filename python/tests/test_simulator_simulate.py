@@ -24,9 +24,9 @@ from typing import Any, Callable
 import httpx
 import pytest
 
-from nova_os import Archetype, Client
-from nova_os.simulator import SimulationResult, simulate
-from nova_os.simulator._wiring import (
+from libraos import Archetype, Client
+from libraos.simulator import SimulationResult, simulate
+from libraos.simulator._wiring import (
     HARNESS_AGENT_ID,
     _reset_cache_for_tests,
 )
@@ -538,7 +538,7 @@ def test_simulate_accepts_archetype_instance() -> None:
 
 def test_invalid_archetype_dict_raises_before_any_chat_call() -> None:
     """A bogus archetype dict raises ArchetypeValidationError before /chat fires."""
-    from nova_os import ArchetypeValidationError
+    from libraos import ArchetypeValidationError
 
     called: dict[str, int] = {"n": 0}
 

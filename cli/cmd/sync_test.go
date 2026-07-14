@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	gen "github.com/MeganovaAI/nova-os-sdk/cli/internal/client"
+	gen "github.com/libraos/sdk/cli/internal/client"
 )
 
 // TestSync_CreatesNewEmployee — server returns 404 on GET, sync POSTs.

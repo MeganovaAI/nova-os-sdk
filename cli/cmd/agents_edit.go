@@ -1,4 +1,4 @@
-// Schema-driven guided agent authoring (nova-os-sdk#18).
+// Schema-driven guided agent authoring (libraos-sdk#18).
 //
 // This subcommand consumes GET /v1/agents/schema (kernel surface
 // shipped in MeganovaAI/nova-os#393) so the CLI knows which fields are
@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	gen "github.com/MeganovaAI/nova-os-sdk/cli/internal/client"
+	gen "github.com/libraos/sdk/cli/internal/client"
 )
 
 var (

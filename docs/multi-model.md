@@ -1,12 +1,12 @@
 # Multi-Model Routing
 
-Nova OS routes each LLM call through a five-level cascade. The most-specific level wins. This lets a partner declare "use Opus for the answer, Flash for skill steps, Haiku for the planner" once at the employee level and let everything below inherit, while still being able to override per-call when needed.
+LibraOS routes each LLM call through a five-level cascade. The most-specific level wins. This lets a partner declare "use Opus for the answer, Flash for skill steps, Haiku for the planner" once at the employee level and let everything below inherit, while still being able to override per-call when needed.
 
 ## TL;DR
 
 - **Three slots:** `answer`, `planner`, `skill`. Each is independent.
 - **Five resolution levels:** per-call → per-skill → per-agent → per-employee → server default. Most-specific wins.
-- **Each slot carries a fallback chain** — Nova OS auto-promotes on rate-limit / 5xx / vendor outage / Vertex 400 schema-error.
+- **Each slot carries a fallback chain** — LibraOS auto-promotes on rate-limit / 5xx / vendor outage / Vertex 400 schema-error.
 - **Model shape:** `<vendor>/<model>` (e.g. `anthropic/claude-opus-4-7`). Bare names get a 400.
 - **Default since v0.1.5 (2026-05-05):** `gemini/gemini-2.5-flash`. Override via per-level config or `OPENAI_MODEL` env.
 
@@ -24,7 +24,7 @@ A typical production setup runs `answer` on a premium Anthropic model and pins `
 
 ## Resolution cascade
 
-For every LLM call, Nova OS walks from most-specific to least-specific until it finds a non-empty value:
+For every LLM call, LibraOS walks from most-specific to least-specific until it finds a non-empty value:
 
 ```
 per-call (request body)
@@ -63,7 +63,7 @@ For this call, the resolved selections are:
 
 ## Fallback chains
 
-Each slot has both a `primary` and an optional ordered `fallback[]`. Nova OS automatically promotes the next healthy fallback when the primary fails:
+Each slot has both a `primary` and an optional ordered `fallback[]`. LibraOS automatically promotes the next healthy fallback when the primary fails:
 
 ```python
 employee.model_config = {
@@ -141,7 +141,7 @@ client.messages.create(
 )
 ```
 
-Nova OS native shape:
+LibraOS native shape:
 
 ```python
 await c.messages.create(
@@ -182,7 +182,7 @@ Every model identifier must carry a vendor prefix. This is gateway-safe per `val
 
 Two channels:
 
-**1. Response body** (Nova OS native + Managed Agents):
+**1. Response body** (LibraOS native + Managed Agents):
 ```python
 resp = await c.messages.create(...)
 print(resp["model_used"], resp["fallback_triggered"])

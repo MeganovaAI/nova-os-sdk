@@ -92,7 +92,7 @@ jobs:
           cd clients/typescript
           VER=$(node -p "require('./package.json').version")
           if echo "$VER" | grep -q '-'; then TAG=next; else TAG=latest; fi
-          echo "Publishing @meganova/nova-os-client@$VER under dist-tag '$TAG'"
+          echo "Publishing @libraos/client@$VER under dist-tag '$TAG'"
           npm publish --access public --tag "$TAG"
 
   build-cli:

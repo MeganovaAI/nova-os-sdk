@@ -15,7 +15,7 @@ We deliberately do NOT execute ``main()`` — it makes live HTTP calls
 against an evaluation ``nova-os`` instance that the test environment is
 not expected to bring up. The point of this test is to catch
 public-surface drift (e.g. someone renaming
-``nova_os.simulator.SimulationResult``) at the unit-test gate rather
+``libraos.simulator.SimulationResult``) at the unit-test gate rather
 than at partner-CI runtime.
 """
 
@@ -55,7 +55,7 @@ def _load_module():
 
 
 def test_example_imports_cleanly() -> None:
-    """File parses + every ``from nova_os...`` import resolves."""
+    """File parses + every ``from libraos...`` import resolves."""
     _load_module()
 
 
@@ -80,6 +80,6 @@ def test_example_pulls_public_surface(name: str) -> None:
     example breaks and so do partner CI scripts that mirror it."""
     module = _load_module()
     assert name in dir(module), (
-        f"run_eval.py is expected to import {name!r} from nova_os; "
+        f"run_eval.py is expected to import {name!r} from libraos; "
         "if you renamed the public surface, update the example as well"
     )

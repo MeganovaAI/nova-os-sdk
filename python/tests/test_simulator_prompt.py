@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from nova_os.simulator import Archetype, build_simulator_prompt
+from libraos.simulator import Archetype, build_simulator_prompt
 
 FIXTURES = Path(__file__).parent / "simulator" / "fixtures"
 SNAPSHOTS = Path(__file__).parent / "simulator" / "snapshots"

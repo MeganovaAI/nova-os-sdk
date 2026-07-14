@@ -58,18 +58,18 @@ jobs:
       - name: Regenerate Python client
         run: |
           cd python
-          rm -rf nova_os/_generated nova-os-sdk-generated
+          rm -rf libraos/_generated libraos-sdk-generated
           openapi-python-client generate --path ../openapi/nova-os-partner.v1.yaml \
             --config openapi-python-client.yaml
-          mv nova-os-sdk-generated/nova_os._generated nova_os/_generated
+          mv libraos-sdk-generated/libraos._generated libraos/_generated
           rm -rf nova-os-sdk-generated
 
       - name: Fail on drift
         run: |
-          if ! git diff --quiet -- python/nova_os/_generated; then
-            echo "FAIL: python/nova_os/_generated drifted from spec."
+          if ! git diff --quiet -- python/libraos/_generated; then
+            echo "FAIL: python/libraos/_generated drifted from spec."
             echo "Run 'make codegen-python' locally and commit the result."
-            git diff --stat -- python/nova_os/_generated
+            git diff --stat -- python/libraos/_generated
             exit 1
           fi
 

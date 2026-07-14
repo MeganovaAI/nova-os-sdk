@@ -1,7 +1,7 @@
-# @meganova/nova-os-ui — Foundation (package + theme + primitives) design
+# @libraos/react-ui — Foundation (package + theme + primitives) design
 
 **Date:** 2026-06-19 · **Status:** Approved design, pre-implementation ·
-**Repo:** `nova-os-sdk` · **Slice 1 of a multi-slice kit** (later: chat/AG-UI
+**Repo:** `libraos-sdk` · **Slice 1 of a multi-slice kit** (later: chat/AG-UI
 layer, canvas, persona picker, docs site — each its own spec).
 
 ## Goal
@@ -22,17 +22,17 @@ this kit is for products that want the Atelier design language as components.
 
 ## Boundaries
 
-- Lives in `nova-os-sdk` (the shared SDK), a sibling of the existing
-  framework-agnostic client `clients/typescript` (`@meganova/nova-os-client`).
+- Lives in `libraos-sdk` (the shared SDK), a sibling of the existing
+  framework-agnostic client `clients/typescript` (`@libraos/client`).
 - **React-specific** (the client stays framework-agnostic; this kit is the React
-  layer). No product logic, no Nova OS API calls in this slice.
+  layer). No product logic, no LibraOS API calls in this slice.
 - Private package (the SDK is private); no public publishing.
 - Icon-agnostic — components accept icon elements as props/children; the kit does
   not depend on an icon library.
 
 ## Package
 
-- Path: `clients/react-ui` · name `@meganova/nova-os-ui` · `0.1.0-alpha.0`
+- Path: `clients/react-ui` · name `@libraos/react-ui` · `0.1.0-alpha.0`
   (matches the client's alpha line) · `"type": "module"`.
 - Build with **tsup** (consistent with `clients/typescript`): emits
   `dist/index.js` (ESM), `dist/index.cjs` (CJS), `dist/index.d.ts`, and a
@@ -102,8 +102,8 @@ Each component is one focused file under `src/components/`, applies prefixed
   `aria-label`; `Toggle` calls `onChange` with the clicked value and marks the
   active option; `Composer` calls `onSubmit` on Enter and `onChange` on input,
   newline on Shift+Enter; a render smoke for `Card`.
-- `examples/react-ui-demo` — a tiny Vite app that installs `@meganova/nova-os-ui`
-  (file: link), imports `@meganova/nova-os-ui/styles.css`, renders every
+- `examples/react-ui-demo` — a tiny Vite app that installs `@libraos/react-ui`
+  (file: link), imports `@libraos/react-ui/styles.css`, renders every
   primitive, and overrides `--nv-accent` to prove the consume + rebrand path.
 
 ## File structure

@@ -2,7 +2,7 @@
  * AG-UI streaming event types.
  *
  * Hand-maintained mirror of `openapi/ag-ui-events.schema.json` — the typed shape
- * of the AG-UI events Nova OS emits over SSE on the `X-Protocol: ag-ui` gated
+ * of the AG-UI events LibraOS emits over SSE on the `X-Protocol: ag-ui` gated
  * stream. This is a SEPARATE contract from the OpenAPI partner spec's
  * `StreamEvent` union (the #99-native snake_case dialect): AG-UI is the adopted
  * streaming standard (nova-os #370). Wire fields are camelCase and `type` carries
@@ -134,7 +134,7 @@ export interface RawEvent {
   data: unknown;
 }
 
-/** Discriminated union of every AG-UI event Nova OS emits. Switch on `.type`. */
+/** Discriminated union of every AG-UI event LibraOS emits. Switch on `.type`. */
 export type AgUiEvent =
   | RunStarted
   | RunFinished

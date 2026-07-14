@@ -7,7 +7,7 @@ from typing import Any, AsyncIterator
 
 import pytest
 
-from nova_os._sse import parse_lines
+from libraos._sse import parse_lines
 
 
 async def _lines(*items: str) -> AsyncIterator[str]:

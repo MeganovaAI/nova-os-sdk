@@ -1,6 +1,6 @@
 # nova-os-cli
 
-Single static Go binary for managing Nova OS employees, agents, and jobs from the terminal.
+Single static Go binary for managing LibraOS employees, agents, and jobs from the terminal.
 
 ## Install
 
@@ -11,7 +11,7 @@ Pre-built binaries for linux/darwin/windows × amd64/arm64 are attached to every
 ```bash
 # linux/amd64 example — adjust for your platform
 TAG=v0.9.0rc2  # or whichever tag you want
-curl -L "https://github.com/MeganovaAI/nova-os-sdk/releases/download/$TAG/nova-os-cli_linux_amd64.tar.gz" \
+curl -L "https://github.com/libraos/sdk/releases/download/$TAG/nova-os-cli_linux_amd64.tar.gz" \
   | tar -xz -C /usr/local/bin nova-os-cli
 
 nova-os-cli version
@@ -40,7 +40,7 @@ Every binary archive is signed with cosign keyless. Verify:
 ```bash
 TAG=v0.9.0rc2
 cosign verify-blob \
-  --certificate-identity-regexp 'https://github.com/MeganovaAI/nova-os-sdk/.+' \
+  --certificate-identity-regexp 'https://github.com/libraos/sdk/.+' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   --signature nova-os-cli_linux_amd64.tar.gz.sig \
   --certificate nova-os-cli_linux_amd64.tar.gz.pem \
@@ -50,7 +50,7 @@ cosign verify-blob \
 ### From source
 
 ```bash
-go install github.com/MeganovaAI/nova-os-sdk/cli@latest
+go install github.com/libraos/sdk/cli@latest
 ```
 
 (Installs as `cli` in `$GOPATH/bin`; rename to `nova-os-cli` for clarity.)
@@ -127,7 +127,7 @@ For each command, credentials are resolved in this priority order:
 | Flag | Description |
 |------|-------------|
 | `--profile <name>` | Override active profile |
-| `--url <url>` | Nova OS server URL |
+| `--url <url>` | LibraOS server URL |
 | `--api-key <token>` | Bearer token |
 | `--json` | Emit JSON output (one object per record, suitable for piping to `jq`) |
 
@@ -279,7 +279,7 @@ nova-os-cli test-callback \
   --tool fetch_invoice \
   --input '{"invoice_id":"INV-9912"}'
 
-# Same shape Nova OS's Mode B dispatcher would send. Verify your handler
+# Same shape LibraOS's Mode B dispatcher would send. Verify your handler
 # returns 200 with {"output":"...","is_error":false}.
 
 # Test idempotency dedup — POST 3x with the same tool_use_id, your handler

@@ -1,4 +1,4 @@
-module github.com/MeganovaAI/nova-os-sdk/cli
+module github.com/libraos/sdk/cli
 
 go 1.24.0
 

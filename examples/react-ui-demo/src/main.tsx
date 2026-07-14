@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
-import { Button, IconButton, Card, Composer, Toggle } from "@meganova/nova-os-ui";
-import "@meganova/nova-os-ui/styles.css";
+import { Button, IconButton, Card, Composer, Toggle } from "@libraos/react-ui";
+import "@libraos/react-ui/styles.css";
 
 function Demo() {
   const [scope, setScope] = useState("corporate");

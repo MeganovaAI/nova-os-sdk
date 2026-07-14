@@ -1,13 +1,13 @@
-# nova-os-sdk
+# libraos-sdk
 
-Python reference SDK for **Nova OS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
+Python reference SDK for **LibraOS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
 
-Published to PyPI as `nova-os-sdk`. Status: **v0.9.0-rc1** — public API frozen for `v1.0.0`.
+Published to PyPI as `libraos-sdk`. Status: **v0.9.0-rc1** — public API frozen for `v1.0.0`.
 
 ## Install
 
 ```bash
-pip install nova-os-sdk
+pip install libraos-sdk
 # Optional — for Anthropic SDK drop-in compatibility
 pip install anthropic
 ```
@@ -17,7 +17,7 @@ pip install anthropic
 ```python
 from nova_os import Client, AnthropicCompatClient, WebhookRouter
 
-# Nova OS extended client (multi-model, employees, bundles, async jobs, ...)
+# LibraOS extended client (multi-model, employees, bundles, async jobs, ...)
 async with Client(base_url="https://nova.partner.com", api_key="...") as c:
     agents = [a async for a in c.agents.list()]
     msg = await c.messages.create(
@@ -45,7 +45,7 @@ See `python/examples/` for 21 worked examples covering every public surface.
 
 ## Model names — vendor prefix required for the gateway
 
-When Nova OS routes through the MegaNova gateway (the default for cloud + most self-hosted deployments), every model name MUST carry a `<vendor>/` prefix:
+When LibraOS routes through the MegaNova gateway (the default for cloud + most self-hosted deployments), every model name MUST carry a `<vendor>/` prefix:
 
 | Right | Wrong (returns `model_not_found`) |
 |---|---|
@@ -59,7 +59,7 @@ This applies to:
 - `model_config.{answer,planner,skill}.primary` in agent + employee YAML
 - The `model:` field in agent markdown frontmatter
 
-**For partners using the Anthropic SDK directly:** the SDK's natural default (`claude-opus-4-7` without prefix) won't resolve through the gateway. Either pin to a gateway-safe prefixed model in your config (for example, `ANTHROPIC_HIGH_MODEL=gemini/gemini-3.1-pro-preview`) or add a translation layer that prefixes bare Anthropic model names with `anthropic/` when routing through Nova OS.
+**For partners using the Anthropic SDK directly:** the SDK's natural default (`claude-opus-4-7` without prefix) won't resolve through the gateway. Either pin to a gateway-safe prefixed model in your config (for example, `ANTHROPIC_HIGH_MODEL=gemini/gemini-3.1-pro-preview`) or add a translation layer that prefixes bare Anthropic model names with `anthropic/` when routing through LibraOS.
 
 The `agent_inference_model` and `ollama_embed_model` settings are exempt — they route to a local Ollama and use `<tag>:<version>` shape (e.g. `gemma4:e4b`).
 
@@ -79,11 +79,11 @@ Anthropic-provided server-side tools (`web_search_20250305`, `code_execution_202
 **Visible:** the model's text response references the search; `MessageResponse.content[]` (non-streaming) contains `server_tool_use` blocks.
 **Not visible:** discrete tool-invocation events on the streaming path. Affects observability hooks that watch the SSE stream for `tool_use` events.
 
-This is a pre-existing constraint of the underlying Anthropic API; Nova OS forwards what it receives. Partner-defined custom tools (Mode B via `WebhookRouter`) emit `custom_tool_use` events normally.
+This is a pre-existing constraint of the underlying Anthropic API; LibraOS forwards what it receives. Partner-defined custom tools (Mode B via `WebhookRouter`) emit `custom_tool_use` events normally.
 
 **Workaround for partners on v1.0.0:** inspect `MessageResponse.content` after the stream completes for `server_tool_use` blocks; OR use the non-streaming `messages.create` path when discrete tool observability matters.
 
-Tracking [`MeganovaAI/nova-os-sdk#10`](https://github.com/MeganovaAI/nova-os-sdk/issues/10) for v1.1 — adds gateway-side synthetic event emission so audit hooks Just Work for server-side tools.
+Tracking [`libraos/sdk#10`](https://github.com/libraos/sdk/issues/10) for v1.1 — adds gateway-side synthetic event emission so audit hooks Just Work for server-side tools.
 
 ## Error handling
 
@@ -171,7 +171,7 @@ async with c.messages.stream(
 
 ## Webhook router (Mode B)
 
-`WebhookRouter` receives Nova OS custom-tool dispatches on your HTTP endpoint, verifies the HMAC-SHA256 signature, dedupes by idempotency key, and dispatches to registered handlers:
+`WebhookRouter` receives LibraOS custom-tool dispatches on your HTTP endpoint, verifies the HMAC-SHA256 signature, dedupes by idempotency key, and dispatches to registered handlers:
 
 ```python
 from nova_os import WebhookRouter

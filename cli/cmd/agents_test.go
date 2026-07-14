@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	gen "github.com/MeganovaAI/nova-os-sdk/cli/internal/client"
+	gen "github.com/libraos/sdk/cli/internal/client"
 )
 
 func TestAgentsList_HTTPIntegration(t *testing.T) {

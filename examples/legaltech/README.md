@@ -1,11 +1,11 @@
 # Legaltech — contract clause extraction
 
-End-to-end worked example: a legal-tech partner ingests an MSA (Master Services Agreement) text, has Nova OS extract clauses by type with risk flags, and lets the agent call back to the partner's clause-precedent database via a Mode B webhook.
+End-to-end worked example: a legal-tech partner ingests an MSA (Master Services Agreement) text, has LibraOS extract clauses by type with risk flags, and lets the agent call back to the partner's clause-precedent database via a Mode B webhook.
 
 ## What this demonstrates
 
-- **Structured output (`output_type`)** — the agent's reply is validated against a JSON Schema before it leaves Nova OS, so the partner gets a typed `{clauses: [...]}` object instead of free-text it has to re-parse.
-- **Mode B custom-tool webhook** — when the agent decides it needs to look up precedent for a clause, Nova OS POSTs a signed JSON payload to the partner's webhook. The partner runs the lookup against its own clause DB and returns the result. This is the integration pattern most legal-tech partners use because the precedent corpus is partner IP and never leaves their network.
+- **Structured output (`output_type`)** — the agent's reply is validated against a JSON Schema before it leaves LibraOS, so the partner gets a typed `{clauses: [...]}` object instead of free-text it has to re-parse.
+- **Mode B custom-tool webhook** — when the agent decides it needs to look up precedent for a clause, LibraOS POSTs a signed JSON payload to the partner's webhook. The partner runs the lookup against its own clause DB and returns the result. This is the integration pattern most legal-tech partners use because the precedent corpus is partner IP and never leaves their network.
 - **Per-employee model cascade** — answer model on `claude-opus-4-7` for nuanced legal reasoning; skill model on `gemini-2.5-flash` for the cheaper extraction sub-tasks.
 
 ## Files
@@ -21,12 +21,12 @@ End-to-end worked example: a legal-tech partner ingests an MSA (Master Services 
 In one terminal, start the partner's webhook server:
 
 ```bash
-pip install nova-os-sdk fastapi uvicorn
+pip install libraos-sdk fastapi uvicorn
 export NOVA_CB_SECRET=$(openssl rand -hex 32)
 uvicorn webhook_server:app --port 8080
 ```
 
-In another terminal, run the extraction with the matching secret + your Nova OS credentials:
+In another terminal, run the extraction with the matching secret + your LibraOS credentials:
 
 ```bash
 export NOVA_OS_URL=https://nova.your-company.example

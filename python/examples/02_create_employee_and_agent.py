@@ -1,13 +1,13 @@
 """Full lifecycle — create an employee, attach an owned agent, send first chat.
 
-Demonstrates the Nova OS extended client surface:
+Demonstrates the LibraOS extended client surface:
 - ``c.employees.create(...)`` — define a digital employee with model config
 - ``c.agents.create(...)`` — attach a skill agent owned by that employee
 - ``c.messages.create(...)`` — send the first message to the agent
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.partner.com
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -21,7 +21,7 @@ from __future__ import annotations
 import asyncio
 import os
 
-from nova_os import Client
+from libraos import Client
 
 
 async def main() -> None:

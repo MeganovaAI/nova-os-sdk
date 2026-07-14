@@ -1,8 +1,8 @@
 # OIDC client flow — Auth-Code + PKCE + refresh
 
-**Status:** contract reference for client kits (web + iOS). **Owner:** nova-os-sdk.
+**Status:** contract reference for client kits (web + iOS). **Owner:** libraos-sdk.
 
-Interactive login for Nova OS clients is **OpenID Connect Authorization Code + PKCE**
+Interactive login for LibraOS clients is **OpenID Connect Authorization Code + PKCE**
 against the kernel's embedded OIDC provider (`/oauth/*`). This contract is **not** part of
 the OpenAPI partner spec — that spec's `bearerAuth` assumes a partner-minted JWT. Interactive
 end-user login is a separate auth contract, documented here, and consumed by the hand-written
@@ -15,7 +15,7 @@ REST call described by `openapi/nova-os-partner.v1.yaml`.
 
 ## 1. Endpoints
 
-The Nova OS server exposes a minimal OIDC provider. Base URL is the instance's public URL
+The LibraOS server exposes a minimal OIDC provider. Base URL is the instance's public URL
 (`NOVA_OS_PUBLIC_URL`, falling back to `http://<host>:<port>`); the `Deployment.auth.issuer`
 field (`GET /v1/managed/deployment`) advertises it and whether OIDC is enabled.
 
@@ -31,8 +31,8 @@ The issued JWT is HS256 and carries `sub`, `email`, `role`, `name`.
 > **Sign in with X (upstream IdP brokering):** when the operator configures upstream providers,
 > the `/oauth/authorize` login screen also renders "Sign in with X" buttons (Google/Okta/Azure/
 > Authentik via OIDC discovery, GitHub via OAuth2). This is transparent to the client — the
-> client still does the same Auth-Code+PKCE dance against Nova OS; the upstream round-trip happens
-> server-side behind the Nova OS login screen.
+> client still does the same Auth-Code+PKCE dance against LibraOS; the upstream round-trip happens
+> server-side behind the LibraOS login screen.
 
 ---
 
@@ -55,7 +55,7 @@ that replaces it. Additional clients are operator-configured (`NOVA_OS_OIDC_CLIE
 ## 3. Auth-Code + PKCE sequence
 
 ```
-Client                         Nova OS /oauth                       Token store
+Client                         LibraOS /oauth                       Token store
   │                                  │                                   │
   │ 1. generate code_verifier (43–128 char, [A-Za-z0-9-._~])            │
   │    code_challenge = BASE64URL(SHA256(code_verifier))               │
@@ -169,8 +169,8 @@ JWTs, so client-side clearing is the logout primitive; short token lifetimes bou
 
 ## 7. References
 
-- Nova OS OIDC provider — `/oauth/{authorize,login,token,userinfo}`; HS256 id_token; PKCE S256.
+- LibraOS OIDC provider — `/oauth/{authorize,login,token,userinfo}`; HS256 id_token; PKCE S256.
 - `openapi/nova-os-partner.v1.yaml` — `Deployment.auth` advertises `oidc_enabled` + `issuer`.
 - Contract-unification design — `docs/superpowers/specs/2026-06-12-contract-unification-design.md`
-  (§2 "the contract is three specs", §5 nova-os-sdk owns this doc, §6 refresh grant is the kernel gap).
+  (§2 "the contract is three specs", §5 libraos-sdk owns this doc, §6 refresh grant is the kernel gap).
 - RFC 7636 (PKCE), RFC 6749 §4.1 (Authorization Code), RFC 6749 §6 (Refresh grant).

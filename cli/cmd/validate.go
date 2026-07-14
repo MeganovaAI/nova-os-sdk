@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/MeganovaAI/nova-os-sdk/cli/internal/frontmatter"
-	"github.com/MeganovaAI/nova-os-sdk/cli/internal/validate"
+	"github.com/libraos/sdk/cli/internal/frontmatter"
+	"github.com/libraos/sdk/cli/internal/validate"
 )
 
 var validateCmd = &cobra.Command{

@@ -1,6 +1,6 @@
 # Comparing Search Backends
 
-A side-by-side comparison of the five `web_search_config` backends Nova OS supports, plus the Anthropic Claude web search tool for partners weighing whether to use the model-driven path instead. Public-source data only; vendor pricing changes — verify against each vendor's docs before committing to a budget.
+A side-by-side comparison of the five `web_search_config` backends LibraOS supports, plus the Anthropic Claude web search tool for partners weighing whether to use the model-driven path instead. Public-source data only; vendor pricing changes — verify against each vendor's docs before committing to a budget.
 
 ## At a glance
 

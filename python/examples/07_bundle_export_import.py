@@ -1,8 +1,8 @@
 """Bundle export / import — tenant onboarding round-trip.
 
-Nova OS employee bundles (``*.nova-bundle.zip``) let you snapshot a fully
+LibraOS employee bundles (``*.nova-bundle.zip``) let you snapshot a fully
 configured employee (model config, owned agents, custom tools, persona
-prompt) from one Nova OS instance and import it into another. This is the
+prompt) from one LibraOS instance and import it into another. This is the
 primary tenant onboarding mechanism for multi-tenant deployments.
 
 The export endpoint returns raw ZIP bytes. The import endpoint accepts the
@@ -12,7 +12,7 @@ bundle endpoints directly.
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_SRC_URL=https://nova-source.partner.com
     export NOVA_OS_DST_URL=https://nova-dest.partner.com
     export NOVA_OS_API_KEY=msk_live_...
@@ -29,7 +29,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from nova_os import Client
+from libraos import Client
 
 
 async def main() -> None:

@@ -4,7 +4,7 @@ End-to-end partner-side script:
     1. Creates a `legal-clause-extractor` employee with a model cascade
        (Opus answer, Flash skill) and a Mode B custom tool that the agent
        can call to look up precedent in the partner's own clause DB.
-    2. Submits an MSA text. Nova OS routes it through the agent, which
+    2. Submits an MSA text. LibraOS routes it through the agent, which
        extracts clauses, calls back to the precedent-lookup tool one or
        more times, and returns a structured JSON object.
     3. Pretty-prints the validated structured output.
@@ -14,7 +14,7 @@ precedent-lookup tool callback has somewhere to land.
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
     export NOVA_CB_URL=https://partner.example/nova/cb
@@ -32,7 +32,7 @@ import json
 import os
 from pathlib import Path
 
-from nova_os import Client
+from libraos import Client
 
 
 CLAUSE_OUTPUT_SCHEMA: dict = {

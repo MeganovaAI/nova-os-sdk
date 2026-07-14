@@ -1,6 +1,6 @@
 """Idempotency keys — safely retry create() across network failures.
 
-Every Nova OS ``create()`` call accepts ``idempotency_key=``. The server
+Every LibraOS ``create()`` call accepts ``idempotency_key=``. The server
 remembers the key + the canonical request body for ~24 hours and returns
 the same response if the same key + body arrives again. Different body
 with the same key returns 409.
@@ -17,7 +17,7 @@ a duplicate having been created.
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -32,7 +32,7 @@ import asyncio
 import os
 import uuid
 
-from nova_os import Client
+from libraos import Client
 
 
 async def main() -> None:

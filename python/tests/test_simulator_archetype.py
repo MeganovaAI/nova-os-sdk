@@ -13,8 +13,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from nova_os import Archetype, ArchetypeValidationError
-from nova_os.simulator import TerminationConditions
+from libraos import Archetype, ArchetypeValidationError
+from libraos.simulator import TerminationConditions
 
 FIXTURES = Path(__file__).parent / "simulator" / "fixtures"
 

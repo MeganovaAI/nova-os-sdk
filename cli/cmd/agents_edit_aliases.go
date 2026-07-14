@@ -1,5 +1,5 @@
 // Legacy-alias mapping + once-per-run deprecation warnings for
-// `nova-os-cli agents edit` (slice 3 of nova-os-sdk#18).
+// `nova-os-cli agents edit` (slice 3 of libraos-sdk#18).
 //
 // The AgentDef schema declares `x-legacy-aliases` (a legacy → canonical
 // field-name map) and `x-deprecation-target` (the version the legacy

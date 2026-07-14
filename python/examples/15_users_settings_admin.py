@@ -13,7 +13,7 @@ middleware enforces that upstream.
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...   # must be a partner-admin token
 
@@ -27,7 +27,7 @@ from __future__ import annotations
 import asyncio
 import os
 
-from nova_os import Client
+from libraos import Client
 
 
 NEW_USERS = [

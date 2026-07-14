@@ -27,14 +27,14 @@ import anyio
 import httpx
 import pytest
 
-from nova_os import Archetype, Client
-from nova_os.simulator import (
+from libraos import Archetype, Client
+from libraos.simulator import (
     SimulationResult,
     TurnEvent,
     async_simulate_stream,
     simulate_stream,
 )
-from nova_os.simulator._wiring import (
+from libraos.simulator._wiring import (
     HARNESS_AGENT_ID,
     _reset_cache_for_tests,
 )

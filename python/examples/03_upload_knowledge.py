@@ -1,6 +1,6 @@
 """Knowledge — ingest a document then search it back.
 
-Demonstrates the full ingest → search round-trip on a Nova OS
+Demonstrates the full ingest → search round-trip on a LibraOS
 knowledge collection. Useful as a smoke test that retrieval is wired
 correctly end-to-end before pointing real agents at the corpus.
 
@@ -11,7 +11,7 @@ whatever name your tenant has provisioned) to scope explicitly.
 
 Prerequisites::
 
-    pip install nova-os-sdk
+    pip install libraos-sdk
     export NOVA_OS_URL=https://nova.your-company.example
     export NOVA_OS_API_KEY=msk_live_...
 
@@ -25,7 +25,7 @@ from __future__ import annotations
 import asyncio
 import os
 
-from nova_os import Client
+from libraos import Client
 
 
 SAMPLE_DOC = """

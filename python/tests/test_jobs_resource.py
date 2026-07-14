@@ -5,7 +5,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from nova_os import Client
+from libraos import Client
 
 
 def _mock_transport(handler):

@@ -1,6 +1,6 @@
 # Worked partner integrations
 
-End-to-end examples for the three verticals Nova OS most commonly ships into. Each is a runnable, partner-side script demonstrating how to wire your application against a Nova OS instance — not server-side internals.
+End-to-end examples for the three verticals LibraOS most commonly ships into. Each is a runnable, partner-side script demonstrating how to wire your application against a LibraOS instance — not server-side internals.
 
 | Vertical | What it shows |
 |---|---|
@@ -13,7 +13,7 @@ For surface-level "how do I call this one API" examples, see the numbered script
 ## Common prerequisites
 
 ```bash
-pip install nova-os-sdk
+pip install libraos-sdk
 export NOVA_OS_URL=https://nova.your-company.example
 export NOVA_OS_API_KEY=msk_live_...
 ```

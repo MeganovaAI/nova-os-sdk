@@ -11,8 +11,8 @@ The Messages API is 1:1 compatible. The Managed Agents beta API is implemented b
 | Surface | Constructor / env | What you get | Best when |
 |---|---|---|---|
 | **Anthropic Messages SDK** | `Anthropic(base_url="...")` | `client.messages.*`, `client.beta.agents.*`, `client.beta.sessions.*` | You already have `anthropic`-SDK code — change one line |
-| **Claude Agent SDK** | `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` env | Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by Nova OS's multi-tenant runtime | You want autonomous agent loops with the Anthropic UX |
-| **Nova OS native** | `from nova_os import Client` | Multi-model `model_config` cascade, `output_type` validation, custom-tool webhook callbacks, portable employee bundles, async jobs | You're past hello-world and want Nova OS's extensions |
+| **Claude Agent SDK** | `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` env | Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by LibraOS's multi-tenant runtime | You want autonomous agent loops with the Anthropic UX |
+| **LibraOS native** | `from nova_os import Client` | Multi-model `model_config` cascade, `output_type` validation, custom-tool webhook callbacks, portable employee bundles, async jobs | You're past hello-world and want LibraOS's extensions |
 
 The first two meet partners where they are. The third is the surface they grow into.
 
@@ -31,7 +31,7 @@ If both are set, `Authorization: Bearer` wins. Set one and forget.
 
 ## Endpoint matrix
 
-| Anthropic endpoint | Nova OS path | Status | Notes |
+| Anthropic endpoint | LibraOS path | Status | Notes |
 |---|---|---|---|
 | `POST /v1/messages` | `POST /v1/messages` | ✅ 1:1 | Drop-in. Streaming SSE matches upstream event sequence. |
 | `POST /v1/messages` (streaming) | same, `stream: true` | ✅ 1:1 | `message_start` → `content_block_delta*` → `message_stop` event sequence. |
@@ -42,7 +42,7 @@ If both are set, `Authorization: Bearer` wins. Set one and forget.
 | `GET /v1/agents/{id}` | same | ✅ Beta | |
 | `POST /v1/agents/{id}` (update) | same | ✅ Beta | |
 | `DELETE /v1/agents/{id}` | same | ✅ Beta | |
-| `POST /v1/agents/{id}/messages` | `POST /v1/agents/{id}/chat` | ✅ Beta | Path differs: Anthropic spec calls it `messages`, Nova OS calls it `chat`. SDK consumers using `client.beta.agents.messages.create(agent_id=..., ...)` work unchanged because the SDK constructs the path from operation, not URL. |
+| `POST /v1/agents/{id}/messages` | `POST /v1/agents/{id}/chat` | ✅ Beta | Path differs: Anthropic spec calls it `messages`, LibraOS calls it `chat`. SDK consumers using `client.beta.agents.messages.create(agent_id=..., ...)` work unchanged because the SDK constructs the path from operation, not URL. |
 | `POST /v1/sessions` | `POST /v1/sessions` | ✅ Beta | |
 | `GET /v1/sessions/{id}` | same | ✅ Beta | |
 | `DELETE /v1/sessions/{id}` | same | ✅ Beta | |
@@ -78,7 +78,7 @@ print(msg.content[0].text)
 - `Anthropic-Version: 2023-06-01` (SDK sends; server accepts)
 - Tool use loop (`tool_use` content block → caller submits `tool_result` → server completes)
 
-**What Nova OS extends (transparent if unused):**
+**What LibraOS extends (transparent if unused):**
 - `model` accepts `<vendor>/<model>` prefix to route across providers (`anthropic/...`, `openai/...`, `gemini/...`). Bare model names without a prefix are rejected at validation; default model is `gemini/gemini-2.5-flash` if unset.
 - `metadata.nova_*` fields surface Nova-OS-specific signals on responses (e.g., `nova_route_hint` for the brain dispatch contract). Anthropic-only consumers ignore these freely.
 
@@ -114,7 +114,7 @@ reply = client.beta.agents.messages.create(
 - The beta header gate (`anthropic-beta: managed-agents-2026-04-01`)
 - Request bodies for agent + session creation (apart from Nova-OS-only optional fields like `model_config`)
 
-**What Nova OS extends:**
+**What LibraOS extends:**
 - `model_config` field on agents — declares per-tier (answer / skill / brain / memory_worker) model selections with fallback chains. See [`multi-model.md`](multi-model.md).
 - `output_type` field on agents — JSON Schema 2020-12 contract for response validation. Three violation modes: `error` / `log` / `repair`.
 - `custom_tools` field on agents — Mode A (SSE inline) and Mode B (webhook) custom-tool registration. See [`custom-tools.md`](custom-tools.md).
@@ -150,13 +150,13 @@ The bundled `claude` CLI binary inherits `os.environ` from the parent process �
 
 ### Tool use schemas
 
-Anthropic accepts `type: "array"` without an `items` schema; Vertex (which Nova OS may route to) strictly enforces it and returns 400. Always declare `items` on array tool params, even when `items: {}` is the only constraint.
+Anthropic accepts `type: "array"` without an `items` schema; Vertex (which LibraOS may route to) strictly enforces it and returns 400. Always declare `items` on array tool params, even when `items: {}` is the only constraint.
 
 ### Model identifier prefixes
 
-Anthropic uses bare model names (`claude-opus-4-7`); Nova OS requires `<vendor>/<model>` (`anthropic/claude-opus-4-7`) for gateway-safe routing. The default has been gateway-safe since the 2026-05-05 v0.1.5 force-update.
+Anthropic uses bare model names (`claude-opus-4-7`); LibraOS requires `<vendor>/<model>` (`anthropic/claude-opus-4-7`) for gateway-safe routing. The default has been gateway-safe since the 2026-05-05 v0.1.5 force-update.
 
-| You write | Anthropic accepts | Nova OS accepts |
+| You write | Anthropic accepts | LibraOS accepts |
 |---|---|---|
 | `claude-opus-4-7` | ✅ | ❌ — 400 at validation |
 | `anthropic/claude-opus-4-7` | ✅ (passes through) | ✅ — routes to Anthropic |
@@ -165,7 +165,7 @@ Anthropic uses bare model names (`claude-opus-4-7`); Nova OS requires `<vendor>/
 
 ### Streaming events
 
-Identical event shapes. Nova OS may insert one extra event class — `route_hint` — between `agent_execution` and `content`/`done` when the agent emits a brain-dispatch hint. Consumers that don't recognize the event type ignore it (per Anthropic SDK's tolerant parser).
+Identical event shapes. LibraOS may insert one extra event class — `route_hint` — between `agent_execution` and `content`/`done` when the agent emits a brain-dispatch hint. Consumers that don't recognize the event type ignore it (per Anthropic SDK's tolerant parser).
 
 ### Response IDs
 
@@ -176,11 +176,11 @@ Identical event shapes. Nova OS may insert one extra event class — `route_hint
 - **Message Batches API** (`POST /v1/messages/batches`) — use synchronous `messages.create` or `c.jobs.create` for async.
 - **Files API** (`POST /v1/files`) — use `c.documents` (Nova-OS-native partner-prefix) for file uploads.
 - **Admin API** (`POST /v1/admin/*`) — use `c.users` / `c.settings` (Nova-OS-native partner-prefix) instead.
-- **Vertex AI direct mode** — Nova OS itself routes to Vertex when configured; partners don't talk Vertex protocol directly.
+- **Vertex AI direct mode** — LibraOS itself routes to Vertex when configured; partners don't talk Vertex protocol directly.
 
 ## Verifying compatibility
 
-The SDK ships a recorded-fixture test (`python/tests/test_anthropic_fixture.py`) that replays a captured Anthropic-shaped request against Nova OS and asserts the response matches. Run as part of the SDK test suite.
+The SDK ships a recorded-fixture test (`python/tests/test_anthropic_fixture.py`) that replays a captured Anthropic-shaped request against LibraOS and asserts the response matches. Run as part of the SDK test suite.
 
 For your own verification:
 

@@ -1,11 +1,11 @@
-# Nova OS SDK improvement pass — design
+# LibraOS SDK improvement pass — design
 
 **Status:** approved 2026-05-05; issues filed; examples shipped; spec captured for reference.
 **Tracking:** [`MeganovaAI/nova-os#123`](https://github.com/MeganovaAI/nova-os/issues/123) (epic).
 
 ## Goal
 
-Compare the Nova OS Python SDK against Anthropic's three Python entry points (`anthropic.Anthropic`, Claude Agent SDK, Managed Agents API) and Nova OS's own server-side surface, identify gaps, file the gaps that are server-side as issues, and ship the gaps that are SDK-side as examples.
+Compare the LibraOS Python SDK against Anthropic's three Python entry points (`anthropic.Anthropic`, Claude Agent SDK, Managed Agents API) and LibraOS's own server-side surface, identify gaps, file the gaps that are server-side as issues, and ship the gaps that are SDK-side as examples.
 
 ## Non-goals
 
@@ -44,7 +44,7 @@ These ship server-side but the partner contract doesn't declare them. SDK can't 
 
 Comparing against Claude Agent SDK and Managed Agents:
 
-| Anthropic surface | Nova OS state | Issue |
+| Anthropic surface | LibraOS state | Issue |
 |---|---|---|
 | In-process MCP custom tools | Mode A (SSE inline) + Mode B (webhook); no in-process | [#182](https://github.com/MeganovaAI/nova-os/issues/182) |
 | 6 `permission_mode` values | Binary firewall + custom-tool callbacks | [#183](https://github.com/MeganovaAI/nova-os/issues/183) |
@@ -68,13 +68,13 @@ CLI is mature (`agents`, `employees`, `jobs`, `config`, `sync`, `validate`, `tes
 - No `messages` subcommand (smoke-test path partners reach for first when the gateway misbehaves)
 - `sync --prune` declared "Coming soon" but not tracked
 
-Filed as [`MeganovaAI/nova-os-sdk#13`](https://github.com/MeganovaAI/nova-os-sdk/issues/13).
+Filed as [`libraos/sdk#13`](https://github.com/libraos/sdk/issues/13).
 
 ## What ships in this design
 
 ### Issues filed (13)
 
-12 on `MeganovaAI/nova-os` (#175–#186), 1 on `MeganovaAI/nova-os-sdk` (#13). Each issue describes:
+12 on `MeganovaAI/nova-os` (#175–#186), 1 on `libraos/sdk` (#13). Each issue describes:
 - The gap (with link to the release notes / changelog evidence)
 - Why partners need it (concrete scenarios, not abstract parity)
 - Suggested OpenAPI / SDK shape (so the implementer doesn't start from blank)
@@ -133,7 +133,7 @@ Each of the OpenAPI-expansion issues (#175–#179) is one resource. Allows the s
 ## Acceptance
 
 - [x] 12 issues filed on `MeganovaAI/nova-os` (#175–#186), each linked to epic #123
-- [x] 1 issue filed on `MeganovaAI/nova-os-sdk` (#13)
+- [x] 1 issue filed on `libraos/sdk` (#13)
 - [x] `04_custom_tool_inline.py` refreshed to use `c.messages.stream()` directly
 - [x] `09_streaming_messages.py`, `10_idempotency.py`, `11_pagination.py` added
 - [x] `python/examples/README.md` index updated

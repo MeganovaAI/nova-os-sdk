@@ -1,6 +1,6 @@
 # Release-image workflow — one-time setup
 
-The `release-image.yml` workflow in this repo publishes the Nova OS server as a public Docker image at `ghcr.io/meganovaai/nova-os`. The Go source lives in the private `MeganovaAI/nova-os` repo and is never copied here — the workflow checks it out at runtime via an SSH deploy key.
+The `release-image.yml` workflow in this repo publishes the LibraOS server as a public Docker image at `ghcr.io/meganovaai/nova-os`. The Go source lives in the private `MeganovaAI/nova-os` repo and is never copied here — the workflow checks it out at runtime via an SSH deploy key.
 
 This page is the one-time bootstrap. Once it's done, releasing a new version is a single `gh workflow run` invocation (see "Cutting a release" at the bottom).
 
@@ -13,7 +13,7 @@ The published Docker package on GitHub auto-links to the **publisher** repo (the
 On any machine:
 
 ```bash
-ssh-keygen -t ed25519 -C "nova-os-sdk release-image deploy key" -f /tmp/nova-os-deploy-key -N ""
+ssh-keygen -t ed25519 -C "libraos-sdk release-image deploy key" -f /tmp/nova-os-deploy-key -N ""
 ```
 
 Two files are produced:
@@ -25,14 +25,14 @@ Two files are produced:
 
 1. Open <https://github.com/MeganovaAI/nova-os/settings/keys>
 2. Click **Add deploy key**
-3. Title: `nova-os-sdk release-image (read-only)`
+3. Title: `libraos-sdk release-image (read-only)`
 4. Paste the contents of `/tmp/nova-os-deploy-key.pub`
 5. **Leave "Allow write access" unchecked** — read is sufficient
 6. **Add key**
 
-## Step 3 — Add the private key as a secret on MeganovaAI/nova-os-sdk
+## Step 3 — Add the private key as a secret on libraos/sdk
 
-1. Open <https://github.com/MeganovaAI/nova-os-sdk/settings/secrets/actions>
+1. Open <https://github.com/libraos/sdk/settings/secrets/actions>
 2. Click **New repository secret**
 3. Name: `NOVA_OS_DEPLOY_KEY`
 4. Value: paste the entire contents of `/tmp/nova-os-deploy-key` including the `-----BEGIN OPENSSH PRIVATE KEY-----` and `-----END OPENSSH PRIVATE KEY-----` lines
@@ -51,18 +51,18 @@ The package `ghcr.io/meganovaai/nova-os` is currently linked to the private nova
 1. Open <https://github.com/orgs/MeganovaAI/packages/container/package/nova-os/settings>
 2. Scroll to **Manage Actions access**
 3. Click **Add repository**
-4. Select `MeganovaAI/nova-os-sdk`
+4. Select `libraos/sdk`
 5. Role: **Write**
 6. **Add**
 
-After the first successful push from this repo, GitHub will re-link the package's "source repository" to `MeganovaAI/nova-os-sdk` automatically — at which point the private nova-os repo can be removed from the package's Manage Actions access list (and its old release-image workflow can be archived).
+After the first successful push from this repo, GitHub will re-link the package's "source repository" to `libraos/sdk` automatically — at which point the private nova-os repo can be removed from the package's Manage Actions access list (and its old release-image workflow can be archived).
 
 ## Step 5 — Cutting a release
 
 Once steps 1-4 are done, every subsequent release is one command:
 
 ```bash
-gh workflow run release-image.yml -R MeganovaAI/nova-os-sdk -f tag=v0.1.7
+gh workflow run release-image.yml -R libraos/sdk -f tag=v0.1.7
 ```
 
 Or via the UI: **Actions → Release Docker image → Run workflow → tag: `v0.1.7`**.

@@ -19,7 +19,7 @@ Ten end-to-end partner workflows. Each scenario shows what happens from the user
 
 ## 1. Partner onboarding
 
-**Goal:** A new partner stands up an employee + one agent, validates locally, and syncs to a running Nova OS instance.
+**Goal:** A new partner stands up an employee + one agent, validates locally, and syncs to a running LibraOS instance.
 
 **What the user does:**
 - Drops `data/employees/<id>.md` and `data/agents/<id>.md` files in their git repo
@@ -90,17 +90,17 @@ POST /v1/messages
 
 ```
 1. Partner backend authenticates the end-user (their own auth — JWT, session cookie, etc.)
-2. Partner backend calls Nova OS:
+2. Partner backend calls LibraOS:
 
    POST /v1/messages
-     headers: x-api-key: <partner JWT for Nova OS>
+     headers: x-api-key: <partner JWT for LibraOS>
      body: {
        "model": "anthropic/claude-opus-4-7",
        "messages": [{"role": "user", "content": "What's clause 7.3 about?"}],
        "metadata": {"end_user_id": "user_42"}
      }
 
-3. Nova OS:
+3. LibraOS:
    - Resolves model via cascade (per-call → per-skill → per-agent → per-employee → server-default)
    - Retrieves relevant knowledge if knowledge_bindings is set
    - Calls upstream LLM (Anthropic / OpenAI / Vertex / NebulaBlock)
@@ -113,7 +113,7 @@ POST /v1/messages
 
 **Surface choice:**
 - **Anthropic SDK** if the partner already has Anthropic-SDK code — change `base_url` only.
-- **Nova OS native SDK** for partners who want extensions (multi-model, output_type, custom tools).
+- **LibraOS native SDK** for partners who want extensions (multi-model, output_type, custom tools).
 
 **Worked example:** [`01_basic_chat.py`](../python/examples/01_basic_chat.py).
 
@@ -154,7 +154,7 @@ server → client : event: message_stop
 
 ```
 1. Agent run starts: POST /v1/messages (server-side)
-2. Mid-run, agent decides to call fetch_invoice. Nova OS:
+2. Mid-run, agent decides to call fetch_invoice. LibraOS:
 
    POST https://partner.example.com/nova/cb/tools/fetch_invoice
      headers: X-Nova-Signature: t=<ts>,v1=<hmac_sha256(secret, ts.tool_use_id.body)>
@@ -168,7 +168,7 @@ server → client : event: message_stop
    - Runs the registered handler
    - Returns: {"output": "Invoice ... status=paid", "is_error": false}
 
-4. Nova OS:
+4. LibraOS:
    - Continues the agent loop with the tool result
    - Returns final assembled response to the original /v1/messages caller
 ```
@@ -181,7 +181,7 @@ server → client : event: message_stop
 
 ## 6. Multi-model fallback fires under load
 
-**Goal:** Primary model is rate-limited; Nova OS automatically promotes the next fallback so the user's request still succeeds.
+**Goal:** Primary model is rate-limited; LibraOS automatically promotes the next fallback so the user's request still succeeds.
 
 **What flows on the wire (transparent to the partner):**
 
@@ -192,9 +192,9 @@ Employee model_config:
     fallback: [gemini/gemini-2.5-pro, openai/gpt-5]
 
 Request comes in:
-  1. Nova OS calls anthropic/claude-opus-4-7
+  1. LibraOS calls anthropic/claude-opus-4-7
      → 429 rate limit
-  2. Nova OS catches it, calls gemini/gemini-2.5-pro instead
+  2. LibraOS catches it, calls gemini/gemini-2.5-pro instead
      → 200 OK
   3. Response includes model_used: "gemini/gemini-2.5-pro" + fallback_triggered: true
 ```
@@ -250,7 +250,7 @@ The end-user's chat experience is unaffected — they get a response on the same
 
 ## 8. Persona update — git → live
 
-**Goal:** Partner edits an agent's system prompt or `model_config` in their git repo; changes propagate to the running Nova OS instance.
+**Goal:** Partner edits an agent's system prompt or `model_config` in their git repo; changes propagate to the running LibraOS instance.
 
 **What the user does:**
 
@@ -263,7 +263,7 @@ $ git diff data/agents/legal-assistant.md
 -system_prompt: "You answer questions about contracts."
 +system_prompt: "You answer questions about contracts and cite the relevant clause."
 
-# Push to running Nova OS:
+# Push to running LibraOS:
 $ nova-os-cli sync ./data/
 PLAN
   UPDATE agent legal-assistant
@@ -275,7 +275,7 @@ $ nova-os-cli sync --watch ./data/
 [watching ./data/ for changes...]
 ```
 
-The change is hot — next chat request uses the new prompt without restarting Nova OS.
+The change is hot — next chat request uses the new prompt without restarting LibraOS.
 
 **Surface choice:**
 - **Shared folder + CLI sync** is the production-grade path. Git history captures every change.
@@ -302,7 +302,7 @@ await c.hooks.create(
     auth={"type": "hmac_sha256", "secret_ref": "audit_hook_secret"},
 )
 
-# Now, every time an agent run completes, Nova OS POSTs:
+# Now, every time an agent run completes, LibraOS POSTs:
 POST https://partner.example/hooks/audit
   headers: X-Nova-Signature: t=<ts>,v1=<hmac>
   body: {
@@ -334,7 +334,7 @@ POST https://partner.example/hooks/audit
 
 ## 10. Bundle export → import across instances
 
-**Goal:** Partner exports an employee + all owned agents + knowledge collections as a single `.nova-bundle.zip`, imports on another Nova OS instance (e.g., staging → prod, or migrating between regions).
+**Goal:** Partner exports an employee + all owned agents + knowledge collections as a single `.nova-bundle.zip`, imports on another LibraOS instance (e.g., staging → prod, or migrating between regions).
 
 **What flows on the wire:**
 
