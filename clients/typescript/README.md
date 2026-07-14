@@ -1,6 +1,6 @@
-# @meganova/nova-os-client
+# @libraos/client
 
-Framework-agnostic TypeScript client kit for Nova OS. No React/framework
+Framework-agnostic TypeScript client kit for LibraOS. No React/framework
 dependencies — consumable by employee-ui, school-ui, or any web/Node/React Native
 app. Mirrors the Python SDK split: **generated REST types** + **hand-written**
 auth/streaming ergonomics.
@@ -20,23 +20,23 @@ Codegen emits types only — SSE, OIDC, and multipart ergonomics are hand-writte
 ## Install
 
 > **Pre-release (alpha).** The kit publishes under the `next` dist-tag, so a bare
-> `npm install @meganova/nova-os-client` will **not** resolve until a stable
+> `npm install @libraos/client` will **not** resolve until a stable
 > `latest` is cut. Until then, install from `@next` (or pin an exact version):
 
 ```sh
-npm install @meganova/nova-os-client@next
+npm install @libraos/client@next
 ```
 
 Once a stable version is released, the tag drops:
 
 ```sh
-npm install @meganova/nova-os-client   # after a stable `latest` is published
+npm install @libraos/client   # after a stable `latest` is published
 ```
 
 ## Quick start (partner-minted JWT)
 
 ```ts
-import { NovaClient } from "@meganova/nova-os-client";
+import { NovaClient } from "@libraos/client";
 
 const nova = new NovaClient({ baseUrl: "https://nova.example", auth: process.env.NOVA_JWT! });
 
@@ -60,7 +60,7 @@ the code; the consumer opens the browser / `ASWebAuthenticationSession` and hand
 the callback URL back. See `docs/oidc-client-flow.md` for the full contract.
 
 ```ts
-import { NovaClient, OidcClient, MemoryTokenStore } from "@meganova/nova-os-client";
+import { NovaClient, OidcClient, MemoryTokenStore } from "@libraos/client";
 
 const oidc = new OidcClient({
   issuer: dep.auth!.issuer!,        // from getDeployment()

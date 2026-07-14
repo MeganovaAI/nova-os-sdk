@@ -1,7 +1,7 @@
 {
-  "name": "@meganova/nova-os-client",
+  "name": "@libraos/client",
   "version": "0.1.0-alpha.0",
-  "description": "Framework-agnostic TypeScript client kit for Nova OS — typed REST client (generated from the partner OpenAPI spec), OIDC Auth-Code+PKCE+refresh helper, and AG-UI streaming event types. No React/framework dependencies; runs in browsers, Node 22, and React Native.",
+  "description": "Framework-agnostic TypeScript client kit for LibraOS — typed REST client (generated from the partner OpenAPI spec), OIDC Auth-Code+PKCE+refresh helper, and AG-UI streaming event types. No React/framework dependencies; runs in browsers, Node 22, and React Native.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -45,7 +45,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/MeganovaAI/nova-os-sdk",
+    "url": "https://github.com/libraos/sdk",
     "directory": "clients/typescript"
   }
 }

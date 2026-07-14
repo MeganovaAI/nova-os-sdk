@@ -1,0 +1,36 @@
+{
+  "name": "@meganova/nova-os-client",
+  "version": "0.1.0-alpha.1",
+  "description": "DEPRECATED — renamed to @libraos/client (LibraOS is the public brand; Nova OS is retired). This package re-exports @libraos/client unchanged so existing imports keep working. Install @libraos/client instead.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "files": [
+    "index.mjs",
+    "index.cjs",
+    "index.d.ts",
+    "README.md"
+  ],
+  "main": "./index.cjs",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.cjs"
+    }
+  },
+  "dependencies": {
+    "@libraos/client": "^0.1.0-alpha.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/libraos/sdk",
+    "directory": "clients/compat-nova-os-client"
+  }
+}
