@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libraos-adk"
+version = "0.1.0"
+description = "LibraOS Agent Development Kit — author agents in code, run them on the LibraOS managed stack (governed, hosted execution)."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "LibraOS Team", email = "engineering@meganova.ai" }]
+requires-python = ">=3.10"
+dependencies = ["httpx>=0.27"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+adk = "libraos_adk.cli:main"
+
+[project.urls]
+Repository = "https://github.com/libraos/sdk"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["libraos_adk*"]
