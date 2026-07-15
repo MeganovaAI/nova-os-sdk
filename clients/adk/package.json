@@ -1,6 +1,6 @@
 {
   "name": "@libraos/adk",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "LibraOS Agent Development Kit — author agents in code, run them on the LibraOS managed stack (governed, hosted execution). Companion to @libraos/client.",
   "license": "MIT",
   "type": "module",
