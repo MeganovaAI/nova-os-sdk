@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libraos-adk"
-version = "0.1.0a0"
+version = "0.1.0"
 description = "LibraOS Agent Development Kit — author agents in code, run them on the LibraOS managed stack (governed, hosted execution)."
 readme = "README.md"
 license = { text = "MIT" }
