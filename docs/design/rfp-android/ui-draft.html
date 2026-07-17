@@ -1,0 +1,597 @@
+<title>LibraOS Personal Assistant — Android UI draft</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ---- Page chrome tokens (theme-aware) ---- */
+  :root{
+    --page-bg:#e7e1d4; --page-panel:#efe9dd; --page-ink:#211e18;
+    --page-soft:#5c5648; --page-muted:#847c6c; --page-line:rgba(33,30,24,.14);
+    --page-accent:#0d5a52;
+    --font-display:"Hoefler Text","Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman",serif;
+    --font-ui:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:ui-monospace,"SF Mono","Menlo","Consolas",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --page-bg:#141209; --page-panel:#1f1c14; --page-ink:#f2ede2;
+      --page-soft:#bcb3a1; --page-muted:#8f8674; --page-line:rgba(243,239,230,.12);
+      --page-accent:#7fc9bd;
+    }
+  }
+  :root[data-theme="light"]{
+    --page-bg:#e7e1d4; --page-panel:#efe9dd; --page-ink:#211e18;
+    --page-soft:#5c5648; --page-muted:#847c6c; --page-line:rgba(33,30,24,.14); --page-accent:#0d5a52;
+  }
+  :root[data-theme="dark"]{
+    --page-bg:#141209; --page-panel:#1f1c14; --page-ink:#f2ede2;
+    --page-soft:#bcb3a1; --page-muted:#8f8674; --page-line:rgba(243,239,230,.12); --page-accent:#7fc9bd;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--page-bg); color:var(--page-ink);
+    font-family:var(--font-ui); line-height:1.5;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+
+  /* ---- Masthead ---- */
+  .wrap{max-width:1200px; margin:0 auto; padding:clamp(28px,5vw,64px) clamp(18px,4vw,48px)}
+  .masthead{max-width:64ch; margin-bottom:clamp(28px,4vw,48px)}
+  .eyebrow{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--page-accent); margin:0 0 14px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:""; width:26px; height:1px; background:currentColor; opacity:.6}
+  h1.title{
+    font-family:var(--font-display); font-weight:600; letter-spacing:-.01em;
+    font-size:clamp(30px,5.4vw,52px); line-height:1.04; margin:0 0 18px; text-wrap:balance;
+  }
+  .dek{font-size:clamp(15px,1.6vw,18px); color:var(--page-soft); margin:0 0 20px; max-width:60ch}
+  .meta{
+    display:flex; flex-wrap:wrap; gap:8px 10px; font-family:var(--font-mono); font-size:12px;
+    color:var(--page-muted);
+  }
+  .meta span{
+    border:1px solid var(--page-line); border-radius:999px; padding:5px 11px; background:var(--page-panel);
+  }
+  .meta a{color:var(--page-accent); text-decoration:none; border-bottom:1px solid transparent}
+  .meta a:hover,.meta a:focus-visible{border-bottom-color:currentColor}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--page-accent); outline-offset:3px; border-radius:4px}
+
+  /* ---- Gallery ---- */
+  .gallery{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(288px,1fr));
+    gap:clamp(30px,4vw,52px) clamp(24px,3vw,40px); align-items:start;
+  }
+  figure.phone{margin:0; display:flex; flex-direction:column; align-items:center; gap:16px}
+  figcaption{max-width:300px}
+  .cap-name{font-family:var(--font-display); font-size:19px; font-weight:600; margin:0 0 4px; letter-spacing:-.01em}
+  .cap-desc{font-size:13.5px; color:var(--page-soft); margin:0 0 9px}
+  .ids{display:flex; flex-wrap:wrap; gap:6px}
+  .ids b{
+    font-family:var(--font-mono); font-weight:500; font-size:10.5px; letter-spacing:.04em;
+    color:var(--page-accent); background:color-mix(in srgb,var(--page-accent) 12%,transparent);
+    border-radius:5px; padding:2px 7px;
+  }
+
+  /* ================= DEVICE ================= */
+  .device{
+    /* fixed LibraOS app palette — the screens keep the product's light look in any theme */
+    --paper:#f3efe6; --surface:#fcfaf5; --surface-2:#efe9dd; --raise:#ffffff;
+    --ink:#211e18; --ink-soft:#514b40; --muted:#8a8273;
+    --line:rgba(33,30,24,.10); --line-2:rgba(33,30,24,.16);
+    --accent:#0d5a52; --accent-ink:#08423c; --accent-tint:rgba(13,90,82,.10);
+    --live:#c0492e; --live-tint:rgba(192,73,46,.12);
+    --amber:#8a5a12; --amber-tint:rgba(138,90,18,.13);
+    width:300px; max-width:88vw; padding:11px; border-radius:46px;
+    background:linear-gradient(160deg,#26221b,#141109);
+    box-shadow:0 2px 6px rgba(33,30,24,.18), 0 22px 46px -14px rgba(33,30,24,.5),
+               inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .screen{
+    position:relative; border-radius:36px; overflow:hidden; background:var(--paper);
+    aspect-ratio:9/19.4; display:flex; flex-direction:column; color:var(--ink);
+    font-size:13px;
+  }
+  .screen *{box-sizing:border-box}
+  /* status bar */
+  .status{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    padding:11px 20px 5px; font-family:var(--font-mono); font-size:11px; color:var(--ink);
+    letter-spacing:.02em;
+  }
+  .status .sig{display:flex; align-items:center; gap:5px}
+  .batt{width:20px; height:10px; border:1.4px solid var(--ink); border-radius:2.5px; position:relative; opacity:.85}
+  .batt::before{content:""; position:absolute; inset:1.6px; right:6px; background:var(--ink); border-radius:1px}
+  .batt::after{content:""; position:absolute; right:-3px; top:3px; width:2px; height:4px; background:var(--ink); border-radius:0 1px 1px 0; opacity:.7}
+
+  .body{flex:1 1 auto; overflow-y:auto; scrollbar-width:none}
+  .body::-webkit-scrollbar{display:none}
+  .pad{padding:6px 16px 16px}
+
+  /* app bar */
+  .appbar{
+    display:flex; align-items:center; gap:10px; padding:6px 16px 12px;
+  }
+  .appbar .grow{flex:1}
+  .wordmark{font-family:var(--font-display); font-size:20px; font-weight:600; letter-spacing:-.01em}
+  .iconbtn{
+    width:34px; height:34px; border-radius:11px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink-soft); display:grid; place-items:center; flex:0 0 auto;
+  }
+  .avatar{
+    width:34px; height:34px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center;
+    font-family:var(--font-display); font-weight:600; font-size:15px; color:#fff;
+    background:radial-gradient(120% 120% at 30% 20%,#12786c,#0b4a43);
+  }
+  .avatar.d{background:radial-gradient(120% 120% at 30% 20%,#a8632a,#7a3f16)}
+  .avatar.sm{width:26px;height:26px;font-size:12px}
+  .scope{
+    display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
+    color:var(--accent-ink); background:var(--accent-tint); border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);
+    padding:5px 9px 5px 11px; border-radius:999px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:0 0 auto}
+
+  /* greeting */
+  .hello{font-family:var(--font-display); font-size:25px; line-height:1.12; font-weight:600; letter-spacing:-.015em; margin:2px 0 5px; text-wrap:balance}
+  .hello .m{color:var(--muted)}
+  .subline{color:var(--muted); font-size:12.5px; margin:0 0 15px}
+
+  /* quick actions */
+  .quick{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:16px}
+  .qa{
+    display:flex; flex-direction:column; align-items:center; gap:7px; padding:13px 6px 11px;
+    background:var(--surface); border:1px solid var(--line); border-radius:16px; color:var(--ink);
+    box-shadow:0 1px 2px rgba(33,30,24,.04);
+  }
+  .qa .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--accent);color:#f4f7f5}
+  .qa .ic.live{background:var(--live)}
+  .qa .ic.warm{background:#b8862f}
+  .qa span{font-size:11.5px; font-weight:600}
+
+  /* section label */
+  .slabel{
+    display:flex; align-items:center; justify-content:space-between; margin:4px 2px 9px;
+    font-family:var(--font-mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+  }
+  .slabel a{color:var(--accent); text-decoration:none; letter-spacing:.02em; text-transform:none; font-weight:600}
+
+  /* card */
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:0 1px 2px rgba(33,30,24,.05), 0 10px 22px -16px rgba(33,30,24,.4); overflow:hidden}
+  .card + .card{margin-top:12px}
+  .card .row{display:flex; align-items:center; gap:11px; padding:12px 14px}
+  .card .row + .row{border-top:1px solid var(--line)}
+
+  /* task item */
+  .check{width:20px;height:20px;border-radius:7px;border:1.6px solid var(--line-2);flex:0 0 auto;display:grid;place-items:center;color:transparent}
+  .check.done{background:var(--accent);border-color:var(--accent);color:#f4f7f5}
+  .task-t{flex:1; font-size:13px}
+  .task-t.done{color:var(--muted); text-decoration:line-through}
+  .task-meta{font-family:var(--font-mono); font-size:10.5px; color:var(--muted)}
+
+  /* meeting card */
+  .meet{padding:14px}
+  .meet .when{font-family:var(--font-mono);font-size:11px;color:var(--accent-ink);background:var(--accent-tint);display:inline-block;padding:3px 8px;border-radius:6px;margin-bottom:8px}
+  .meet h4{font-family:var(--font-display);font-size:17px;margin:0 0 4px;font-weight:600}
+  .meet p{margin:0;font-size:12px;color:var(--muted)}
+  .meet .foot{display:flex;gap:8px;margin-top:12px}
+
+  /* buttons */
+  .btn{font-family:var(--font-ui);font-weight:600;font-size:12.5px;border-radius:11px;padding:9px 14px;border:1px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#f5f8f7}
+  .btn.ghost{background:var(--surface);border-color:var(--line-2);color:var(--ink)}
+  .btn.block{width:100%}
+  .btn.sm{padding:7px 11px;font-size:11.5px;border-radius:9px}
+
+  /* chip / citation */
+  .chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:4px 8px}
+  .chip.live{color:var(--live);background:var(--live-tint);border-color:color-mix(in srgb,var(--live) 22%,transparent)}
+  .chip svg{width:12px;height:12px}
+
+  /* ===== chat ===== */
+  .thread{display:flex;flex-direction:column;gap:12px;padding:8px 16px 4px}
+  .msg{max-width:84%;font-size:13px;line-height:1.42}
+  .msg.me{align-self:flex-end;background:var(--accent);color:#f4f7f5;padding:10px 13px;border-radius:16px 16px 5px 16px}
+  .msg.ai{align-self:flex-start}
+  .ai-head{display:flex;align-items:center;gap:7px;margin-bottom:6px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .spark{width:20px;height:20px;border-radius:6px;background:var(--accent);color:#f4f7f5;display:grid;place-items:center;flex:0 0 auto}
+  .bubble{background:var(--surface);border:1px solid var(--line);border-radius:5px 16px 16px 16px;padding:11px 13px;box-shadow:0 1px 2px rgba(33,30,24,.04)}
+  .bubble p{margin:0 0 7px}
+  .bubble ul{margin:2px 0 8px;padding-left:16px}
+  .bubble li{margin:3px 0}
+  .bubble .cites{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line-2)}
+  .caret{display:inline-block;width:7px;height:14px;background:var(--accent);border-radius:1px;vertical-align:-2px;margin-left:2px;animation:blink 1.05s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* composer */
+  .composer{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:9px 12px 12px;border-top:1px solid var(--line);background:var(--paper)}
+  .field{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:999px;padding:8px 8px 8px 13px}
+  .field input{border:0;background:transparent;flex:1;font:inherit;font-size:12.5px;color:var(--ink);outline:none;min-width:0}
+  .field input::placeholder{color:var(--muted)}
+  .round{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}
+  .round.accent{background:var(--accent);color:#f5f8f7}
+  .round.mic{background:var(--surface);border:1px solid var(--line-2);color:var(--ink-soft)}
+
+  /* ===== voice capture ===== */
+  .voice{flex:1;display:flex;flex-direction:column;background:radial-gradient(130% 80% at 50% 0%,#faf7f0,var(--paper))}
+  .voice .vtop{display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;font-family:var(--font-mono);font-size:12px;color:var(--live)}
+  .rec-dot{width:9px;height:9px;border-radius:50%;background:var(--live);animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.82)}}
+  .timer{font-family:var(--font-mono);font-size:34px;text-align:center;letter-spacing:.04em;color:var(--ink);margin:6px 0 2px;font-variant-numeric:tabular-nums}
+  .wave{display:flex;align-items:center;justify-content:center;gap:3px;height:60px;padding:0 22px;margin:6px 0 14px}
+  .wave i{flex:1;max-width:5px;background:var(--accent);border-radius:3px;opacity:.85}
+  .transcript{margin:0 18px;padding:13px 15px;background:var(--surface);border:1px solid var(--line);border-radius:16px;font-size:13.5px;line-height:1.5;color:var(--ink-soft)}
+  .transcript .live{color:var(--ink)}
+  .transcript .cursor{color:var(--accent)}
+  .voice .vacts{margin-top:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .vchips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .stopbtn{width:60px;height:60px;border-radius:50%;background:var(--live);margin:0 auto;display:grid;place-items:center;box-shadow:0 8px 20px -6px var(--live)}
+  .stopbtn i{width:20px;height:20px;background:#fff;border-radius:5px}
+
+  /* ===== call summary ===== */
+  .callhead{display:flex;align-items:center;gap:12px;padding:8px 16px 14px}
+  .callhead .name{font-family:var(--font-display);font-size:18px;font-weight:600;line-height:1.1}
+  .callhead .sub{font-size:11.5px;color:var(--muted);font-family:var(--font-mono)}
+  .keypoints{list-style:none;margin:0;padding:0}
+  .keypoints li{display:flex;gap:9px;padding:8px 0;font-size:12.5px;line-height:1.42;border-top:1px solid var(--line)}
+  .keypoints li:first-child{border-top:0}
+  .keypoints .bd{width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:6px;flex:0 0 auto}
+  .action-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .action-row:first-child{border-top:0}
+  .action-row .t{flex:1;font-size:12.5px}
+  .mini-add{font-family:var(--font-mono);font-size:10.5px;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);background:var(--accent-tint);border-radius:7px;padding:4px 8px;white-space:nowrap}
+  .consent{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--muted);margin:10px 2px 0;font-family:var(--font-mono)}
+
+  /* ===== approval / meeting ===== */
+  .approve{border:1px solid var(--amber);background:var(--amber-tint);border-radius:14px;padding:12px 13px;margin-top:12px}
+  .approve .ah{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;color:var(--amber);margin-bottom:8px}
+  .approve p{margin:0 0 11px;font-size:12px;color:var(--ink-soft)}
+  .approve .arow{display:flex;gap:8px}
+  .slots{display:flex;flex-direction:column;gap:7px;margin:2px 0 2px}
+  .slot{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line-2);border-radius:11px;font-size:12.5px;background:var(--surface)}
+  .slot.pick{border-color:var(--accent);background:var(--accent-tint);color:var(--accent-ink);font-weight:600}
+  .slot .k{font-family:var(--font-mono);font-size:11px}
+
+  /* ===== calls / recall list ===== */
+  .search{display:flex;align-items:center;gap:9px;margin:2px 16px 12px;padding:9px 13px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;color:var(--muted);font-size:12.5px}
+  .clist{list-style:none;margin:0;padding:0 8px}
+  .crow{display:flex;gap:11px;padding:12px 8px;border-top:1px solid var(--line)}
+  .crow:first-child{border-top:0}
+  .crow .col{flex:1;min-width:0}
+  .crow .nm{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .crow .sm{font-size:11.5px;color:var(--ink-soft);margin:2px 0 0;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .crow .tm{font-family:var(--font-mono);font-size:10px;color:var(--muted);white-space:nowrap}
+
+  /* tab bar */
+  .tabbar{flex:0 0 auto;display:flex;align-items:flex-end;justify-content:space-around;padding:9px 12px 15px;border-top:1px solid var(--line);background:var(--surface);position:relative}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);font-size:9.5px;font-weight:600;flex:1}
+  .tab.on{color:var(--accent)}
+  .fab{width:50px;height:50px;border-radius:50%;background:var(--accent);color:#f4f7f5;display:grid;place-items:center;margin-top:-24px;box-shadow:0 8px 18px -6px var(--accent);flex:0 0 auto}
+  .fab.live{background:var(--live);box-shadow:0 8px 18px -6px var(--live)}
+
+  svg.i{width:18px;height:18px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  svg.i.sm{width:14px;height:14px}
+  svg.i.lg{width:20px;height:20px}
+
+  footer{margin-top:clamp(36px,5vw,60px);padding-top:22px;border-top:1px solid var(--page-line);color:var(--page-muted);font-size:12.5px;max-width:70ch;line-height:1.6}
+  footer b{color:var(--page-soft);font-weight:600}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  @media (max-width:560px){.device{width:min(300px,86vw)}}
+</style>
+
+<!-- icon sprite -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12Z"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M4 5c0 9 6 15 15 15l1-3-4-2-2 2c-2-1-4-3-5-5l2-2-2-4Z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="M20 11 12 19a5 5 0 0 1-7-7l8-8a3.5 3.5 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7-7"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 20V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 10v9h12v-9"/></symbol>
+  <symbol id="i-task" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M4 7l8 6 8-6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5S13.9 16 14.5 19M16 5.2a3 3 0 0 1 0 5.8M20.5 19c-.4-2-1.5-3.3-3-4"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">LibraOS · Draft UI · v0.1</p>
+    <h1 class="title">Personal Assistant, on Android</h1>
+    <p class="dek">A first visual pass for the app in <a class="under" style="color:var(--page-accent);text-decoration:none">issue&nbsp;#68</a> — voice-first, chat-native, and built for daily work. Each screen is labeled with the RFP requirements it answers, so design and spec stay in step.</p>
+    <div class="meta">
+      <span>6 key screens</span>
+      <span>Android · Kotlin / Compose</span>
+      <span>LibraOS design language</span>
+      <span><a href="https://github.com/libraos/sdk/issues/68">libraos/sdk#68 ↗</a></span>
+    </div>
+  </header>
+
+  <main class="gallery">
+
+    <!-- 1 · HOME / TODAY -->
+    <figure class="phone">
+      <div class="device"><div class="screen">
+        <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
+        <div class="body">
+          <div class="appbar">
+            <div class="avatar">M</div>
+            <div class="grow"></div>
+            <button class="scope">Personal <svg class="i sm"><use href="#i-down"/></svg></button>
+          </div>
+          <div class="pad" style="padding-top:0">
+            <h2 class="hello">Good morning, Maya.</h2>
+            <p class="subline">3 tasks today · next meeting 2:30 PM</p>
+            <div class="quick">
+              <div class="qa"><span class="ic"><svg class="i"><use href="#i-msg"/></svg></span><span>Ask</span></div>
+              <div class="qa"><span class="ic live"><svg class="i"><use href="#i-mic"/></svg></span><span>Record</span></div>
+              <div class="qa"><span class="ic warm"><svg class="i"><use href="#i-phone"/></svg></span><span>Call</span></div>
+            </div>
+            <div class="slabel">Today <a href="#">All tasks</a></div>
+            <div class="card">
+              <div class="row"><span class="check done"><svg class="i sm"><use href="#i-check"/></svg></span><span class="task-t done">Send Q3 recap to Devan</span></div>
+              <div class="row"><span class="check"></span><span class="task-t">Prep pricing-call notes</span><span class="task-meta">11:00</span></div>
+              <div class="row"><span class="check"></span><span class="task-t">Review vendor RFP</span><span class="task-meta">4:00</span></div>
+            </div>
+            <div class="slabel" style="margin-top:16px">Next up</div>
+            <div class="card meet">
+              <span class="when">Wed · 2:30–3:00 PM</span>
+              <h4>Pricing sync</h4>
+              <p>with Devan Rao · Google Meet</p>
+              <div class="foot"><button class="btn primary sm">Join</button><button class="btn ghost sm">Brief me</button></div>
+            </div>
+          </div>
+        </div>
+        <nav class="tabbar">
+          <div class="tab on"><svg class="i"><use href="#i-home"/></svg>Home</div>
+          <div class="tab"><svg class="i"><use href="#i-msg"/></svg>Chat</div>
+          <div class="fab live"><svg class="i lg"><use href="#i-mic"/></svg></div>
+          <div class="tab"><svg class="i"><use href="#i-phone"/></svg>Calls</div>
+          <div class="tab"><svg class="i"><use href="#i-task"/></svg>Tasks</div>
+        </nav>
+      </div></div>
+      <figcaption>
+        <p class="cap-name">Today</p>
+        <p class="cap-desc">Daily briefing, quick capture, and what's next — the home surface.</p>
+        <div class="ids"><b>WORK-6</b><b>WORK-2</b><b>AUTH-4</b></div>
+      </figcaption>
+    </figure>
+
+    <!-- 2 · CHAT -->
+    <figure class="phone">
+      <div class="device"><div class="screen">
+        <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
+        <div class="appbar">
+          <button class="iconbtn"><svg class="i"><use href="#i-back"/></svg></button>
+          <div class="grow"><div class="wordmark" style="font-size:16px">Assistant</div></div>
+          <button class="scope" style="color:var(--amber);background:var(--amber-tint);border-color:color-mix(in srgb,var(--amber) 26%,transparent)"><span class="dot" style="background:var(--amber)"></span>Corporate <svg class="i sm"><use href="#i-down"/></svg></button>
+        </div>
+        <div class="body">
+          <div class="thread">
+            <div class="msg me">Summarize the vendor RFP and list the open risks.</div>
+            <div class="msg ai">
+              <div class="ai-head"><span class="spark"><svg class="i sm"><use href="#i-spark"/></svg></span>Libra · grounded</div>
+              <div class="bubble">
+                <p><b>RFP summary —</b> a client-only Android assistant on LibraOS: voice, chat, calling, and daily-work tools, integrating over OIDC + streaming.</p>
+                <p style="margin-bottom:3px">Open risks:</p>
+                <ul>
+                  <li>Call-recording consent varies by jurisdiction</li>
+                  <li>No Kotlin SDK yet — client module is net-new</li>
+                  <li>Voice latency target ≤ 3s to validate<span class="caret"></span></li>
+                </ul>
+                <div class="cites">
+                  <span class="chip"><svg class="i sm"><use href="#i-msg"/></svg>RFP-Personal-Assistant.md</span>
+                  <span class="chip">§4.1 · CALL-3</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="composer">
+          <button class="round mic"><svg class="i"><use href="#i-mic"/></svg></button>
+          <div class="field"><input placeholder="Message the assistant…" aria-label="Message"><button class="round accent" style="width:30px;height:30px"><svg class="i sm"><use href="#i-up"/></svg></button></div>
+        </div>
+      </div></div>
+      <figcaption>
+        <p class="cap-name">Assistant chat</p>
+        <p class="cap-desc">Streaming answers with citations and scope-aware context; voice or type.</p>
+        <div class="ids"><b>CHAT-1</b><b>CHAT-2</b><b>CHAT-4</b><b>AUTH-4</b></div>
+      </figcaption>
+    </figure>
+
+    <!-- 3 · VOICE -->
+    <figure class="phone">
+      <div class="device"><div class="screen">
+        <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
+        <div class="appbar">
+          <button class="iconbtn"><svg class="i"><use href="#i-down"/></svg></button>
+          <div class="grow" style="text-align:center"><div class="wordmark" style="font-size:16px">Voice memo</div></div>
+          <span style="width:34px"></span>
+        </div>
+        <div class="voice">
+          <div class="vtop"><span class="rec-dot"></span> Recording</div>
+          <div class="timer">00:42</div>
+          <div class="wave" aria-hidden="true" id="wave"></div>
+          <div class="transcript">
+            <span>“Remind me to follow up with Devan about the pricing tiers, and </span><span class="live">draft the recap email before Friday</span><span class="cursor">▌</span>”
+          </div>
+          <div class="vacts">
+            <div class="vchips">
+              <span class="chip"><svg class="i sm"><use href="#i-task"/></svg>Create task</span>
+              <span class="chip"><svg class="i sm"><use href="#i-plus"/></svg>Save as note</span>
+              <span class="chip"><svg class="i sm"><use href="#i-msg"/></svg>Send to chat</span>
+            </div>
+            <div class="stopbtn"><i></i></div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption>
+        <p class="cap-name">Voice memo</p>
+        <p class="cap-desc">Record with live transcription, then turn it into a task, note, or chat.</p>
+        <div class="ids"><b>VOICE-1</b><b>VOICE-2</b><b>VOICE-4</b></div>
+      </figcaption>
+    </figure>
+
+    <!-- 4 · CALL SUMMARY -->
+    <figure class="phone">
+      <div class="device"><div class="screen">
+        <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
+        <div class="appbar">
+          <button class="iconbtn"><svg class="i"><use href="#i-back"/></svg></button>
+          <div class="grow"><div class="wordmark" style="font-size:16px">Call summary</div></div>
+          <button class="iconbtn"><svg class="i"><use href="#i-more"/></svg></button>
+        </div>
+        <div class="body"><div class="pad" style="padding-top:0">
+          <div class="callhead" style="padding-left:0;padding-right:0">
+            <div class="avatar d">D</div>
+            <div class="grow">
+              <div class="name">Devan Rao</div>
+              <div class="sub">Outbound · 12:04 · today</div>
+            </div>
+            <span class="chip live"><span class="rec-dot" style="width:7px;height:7px"></span>Recorded</span>
+          </div>
+          <div class="slabel">Summary</div>
+          <ul class="keypoints">
+            <li><span class="bd"></span><span>Agreed to move to the <b>3-tier pricing</b> model; Devan sends revised figures Thu.</span></li>
+            <li><span class="bd"></span><span>Enterprise tier gets SSO + audit export at no extra cost.</span></li>
+            <li><span class="bd"></span><span>Pilot start pushed to <b>Aug 4</b> to align with their finance close.</span></li>
+          </ul>
+          <div class="slabel" style="margin-top:14px">Action items</div>
+          <div class="card" style="padding:2px 14px">
+            <div class="action-row"><span class="check"></span><span class="t">Draft recap email to Devan</span><span class="mini-add">+ Task</span></div>
+            <div class="action-row"><span class="check"></span><span class="t">Update RFP pilot date → Aug 4</span><span class="mini-add">+ Task</span></div>
+          </div>
+          <div class="consent"><svg class="i sm"><use href="#i-shield"/></svg>Recorded with consent · 2-party · audited</div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn primary" style="flex:1"><svg class="i sm"><use href="#i-mail"/></svg>Draft follow-up</button>
+            <button class="btn ghost sm"><svg class="i sm"><use href="#i-plus"/></svg>Save</button>
+          </div>
+        </div></div>
+      </div></div>
+      <figcaption>
+        <p class="cap-name">Call, summarized</p>
+        <p class="cap-desc">Recorded (with consent), transcribed, and distilled to decisions + action items.</p>
+        <div class="ids"><b>CALL-3</b><b>CALL-4</b><b>CALL-7</b></div>
+      </figcaption>
+    </figure>
+
+    <!-- 5 · BOOK A MEETING -->
+    <figure class="phone">
+      <div class="device"><div class="screen">
+        <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
+        <div class="appbar">
+          <button class="iconbtn"><svg class="i"><use href="#i-back"/></svg></button>
+          <div class="grow"><div class="wordmark" style="font-size:16px">Assistant</div></div>
+          <button class="scope"><span class="dot"></span>Personal</button>
+        </div>
+        <div class="body">
+          <div class="thread">
+            <div class="msg me">Book a 30-min pricing review with Devan next week.</div>
+            <div class="msg ai" style="max-width:92%">
+              <div class="ai-head"><span class="spark"><svg class="i sm"><use href="#i-spark"/></svg></span>Libra</div>
+              <div class="bubble">
+                <p style="margin-bottom:9px">Devan is free at these times —</p>
+                <div class="slots">
+                  <div class="slot"><span>Tue, Jul 22</span><span class="k">10:00 AM</span></div>
+                  <div class="slot pick"><span>Wed, Jul 23</span><span class="k">2:30 PM ✓</span></div>
+                  <div class="slot"><span>Thu, Jul 24</span><span class="k">9:00 AM</span></div>
+                </div>
+                <div class="approve">
+                  <div class="ah"><svg class="i sm"><use href="#i-shield"/></svg>Needs your approval</div>
+                  <p>Creates “Pricing review” Wed 2:30 PM and invites <b>Devan Rao</b>.</p>
+                  <div class="arow"><button class="btn primary sm" style="flex:1"><svg class="i sm"><use href="#i-cal"/></svg>Approve &amp; send</button><button class="btn ghost sm">Edit</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="composer">
+          <button class="round mic"><svg class="i"><use href="#i-mic"/></svg></button>
+          <div class="field"><input placeholder="Message the assistant…" aria-label="Message"><button class="round accent" style="width:30px;height:30px"><svg class="i sm"><use href="#i-up"/></svg></button></div>
+        </div>
+      </div></div>
+      <figcaption>
+        <p class="cap-name">Book a meeting</p>
+        <p class="cap-desc">The assistant finds times and drafts the invite — you approve before it sends.</p>
+        <div class="ids"><b>CALL-6</b><b>CHAT-5</b><b>WORK-5</b></div>
+      </figcaption>
+    </figure>
+
+    <!-- 6 · CALLS / RECALL -->
+    <figure class="phone">
+      <div class="device"><div class="screen">
+        <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
+        <div class="appbar">
+          <div class="grow"><div class="wordmark">Calls</div></div>
+          <button class="iconbtn"><svg class="i"><use href="#i-phone"/></svg></button>
+        </div>
+        <div class="body">
+          <div class="search"><svg class="i sm"><use href="#i-search"/></svg>“what did I agree with Devan?”</div>
+          <div class="slabel" style="margin-left:16px;margin-right:16px">Recall · 1 match</div>
+          <ul class="clist">
+            <li class="crow">
+              <div class="avatar d sm">D</div>
+              <div class="col">
+                <div class="nm">Devan Rao <span class="chip live" style="padding:2px 6px"><svg class="i sm" style="width:10px;height:10px"><use href="#i-spark"/></svg>summary</span></div>
+                <p class="sm">Agreed to 3-tier pricing; enterprise tier includes SSO + audit; pilot moved to Aug 4.</p>
+              </div>
+              <span class="tm">12:04</span>
+            </li>
+            <li class="crow">
+              <div class="avatar sm" style="background:radial-gradient(120% 120% at 30% 20%,#4a5a68,#2c3641)">P</div>
+              <div class="col">
+                <div class="nm">Priya Nair</div>
+                <p class="sm">Missed call · voicemail transcribed</p>
+              </div>
+              <span class="tm">Tue</span>
+            </li>
+            <li class="crow">
+              <div class="avatar sm" style="background:radial-gradient(120% 120% at 30% 20%,#6b5aa0,#453a70)">O</div>
+              <div class="col">
+                <div class="nm">Ops standup</div>
+                <p class="sm">Recorded · 4 action items → tasks</p>
+              </div>
+              <span class="tm">Mon</span>
+            </li>
+          </ul>
+        </div>
+        <nav class="tabbar">
+          <div class="tab"><svg class="i"><use href="#i-home"/></svg>Home</div>
+          <div class="tab"><svg class="i"><use href="#i-msg"/></svg>Chat</div>
+          <div class="fab live"><svg class="i lg"><use href="#i-mic"/></svg></div>
+          <div class="tab on"><svg class="i"><use href="#i-phone"/></svg>Calls</div>
+          <div class="tab"><svg class="i"><use href="#i-task"/></svg>Tasks</div>
+        </nav>
+      </div></div>
+      <figcaption>
+        <p class="cap-name">Calls &amp; recall</p>
+        <p class="cap-desc">Every call summarized and searchable — ask in plain language, get grounded answers.</p>
+        <div class="ids"><b>CALL-2</b><b>CALL-5</b></div>
+      </figcaption>
+    </figure>
+
+  </main>
+
+  <footer>
+    <p><b>Draft, not final.</b> Screens are a directional pass in the LibraOS visual language (production uses the <b>Fraunces</b> display face + <b>IBM&nbsp;Plex&nbsp;Mono</b>, approximated here with system fonts since embedded webfonts are blocked). Requirement IDs map back to the RFP in <b>libraos/sdk#68</b>. Call transport (VoIP/telephony) is the app layer; LibraOS supplies transcription, summary, recall, and meeting-booking through its agents, knowledge, and connectors.</p>
+  </footer>
+</div>
+
+<script>
+  // Static-but-organic waveform bars (no animation loop — set once from a fixed pattern).
+  (function(){
+    var w = document.getElementById('wave'); if(!w) return;
+    var h = [30,52,74,46,88,62,40,70,94,58,34,66,82,50,72,44,90,60,38,56,78,48,68,42,84,54,64,46];
+    for(var k=0;k<h.length;k++){ var b=document.createElement('i'); b.style.height=h[k]+'%'; b.style.opacity=(0.5+h[k]/220).toFixed(2); w.appendChild(b); }
+  })();
+</script>
