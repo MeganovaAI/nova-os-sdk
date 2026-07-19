@@ -169,6 +169,23 @@
   .task-t{flex:1; font-size:13px}
   .task-t.done{color:var(--muted); text-decoration:line-through}
   .task-meta{font-family:var(--font-mono); font-size:10.5px; color:var(--muted)}
+  .attention{display:flex;flex-direction:column;gap:9px}
+  .attention .item{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+  .attention .badge{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--accent-tint);color:var(--accent);flex:0 0 auto}
+  .attention .copy{min-width:0;flex:1}
+  .attention .copy b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .attention .copy small{display:block;color:var(--muted);font-size:10.5px;margin-top:2px}
+  .next-action{font-size:10px;font-weight:700;color:var(--accent);white-space:nowrap}
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}
+  .metric{padding:10px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+  .metric.hot{background:var(--accent-tint);border-color:color-mix(in srgb,var(--accent) 22%,transparent)}
+  .metric b{display:block;font-family:var(--font-display);font-size:20px;line-height:1}
+  .metric small{display:block;font-size:9px;color:var(--muted);margin-top:4px;line-height:1.15}
+  .review-copy{padding:13px 14px;font-size:12.5px;line-height:1.48;color:var(--ink-soft)}
+  .review-copy p{margin:0 0 8px}
+  .review-copy p:last-child{margin-bottom:0}
+  .review-foot{margin-top:auto;padding:12px 16px 16px;border-top:1px solid var(--line);background:var(--paper)}
+  .review-note{display:flex;align-items:center;gap:7px;margin-bottom:9px;color:var(--muted);font-size:10.5px}
 
   /* meeting card */
   .meet{padding:14px}
@@ -306,9 +323,9 @@
 
 <div class="wrap">
   <header class="masthead">
-    <p class="eyebrow">LibraOS · Draft UI · v0.1</p>
+    <p class="eyebrow">LibraOS · Draft UI · v0.2</p>
     <h1 class="title">Personal Assistant, on Android</h1>
-    <p class="dek">A first visual pass for the app in <a class="under" style="color:var(--page-accent);text-decoration:none">issue&nbsp;#68</a> — voice-first, chat-native, and built for daily work. Each screen is labeled with the RFP requirements it answers, so design and spec stay in step.</p>
+    <p class="dek">An attention-first mobile direction for <a class="under" style="color:var(--page-accent);text-decoration:none">issue&nbsp;#68</a> — daily work first, voice-native, and governed by design. Each screen is labeled with the RFP requirements it answers.</p>
     <div class="meta">
       <span>6 key screens</span>
       <span>Android · Kotlin / Compose</span>
@@ -327,21 +344,20 @@
           <div class="appbar">
             <div class="avatar">M</div>
             <div class="grow"></div>
-            <button class="scope">Personal <svg class="i sm"><use href="#i-down"/></svg></button>
+            <button class="scope"><span class="dot"></span>Company <svg class="i sm"><use href="#i-down"/></svg></button>
           </div>
           <div class="pad" style="padding-top:0">
             <h2 class="hello">Good morning, Maya.</h2>
-            <p class="subline">3 tasks today · next meeting 2:30 PM</p>
-            <div class="quick">
-              <div class="qa"><span class="ic"><svg class="i"><use href="#i-msg"/></svg></span><span>Ask</span></div>
-              <div class="qa"><span class="ic live"><svg class="i"><use href="#i-mic"/></svg></span><span>Record</span></div>
-              <div class="qa"><span class="ic warm"><svg class="i"><use href="#i-phone"/></svg></span><span>Call</span></div>
+            <p class="subline">2 items need you · agents completed 4</p>
+            <div class="metrics">
+              <div class="metric hot"><b>2</b><small>Ready for review</small></div>
+              <div class="metric"><b>1</b><small>Needs response</small></div>
+              <div class="metric"><b>4</b><small>Completed</small></div>
             </div>
-            <div class="slabel">Today <a href="#">All tasks</a></div>
-            <div class="card">
-              <div class="row"><span class="check done"><svg class="i sm"><use href="#i-check"/></svg></span><span class="task-t done">Send Q3 recap to Devan</span></div>
-              <div class="row"><span class="check"></span><span class="task-t">Prep pricing-call notes</span><span class="task-meta">11:00</span></div>
-              <div class="row"><span class="check"></span><span class="task-t">Review vendor RFP</span><span class="task-meta">4:00</span></div>
+            <div class="slabel">Needs your attention <a href="#">View all</a></div>
+            <div class="attention">
+              <div class="item"><span class="badge"><svg class="i sm"><use href="#i-spark"/></svg></span><span class="copy"><b>Reply to Devan Rao</b><small>Agent drafted from call notes</small></span><span class="next-action">Review &amp; send</span></div>
+              <div class="item"><span class="badge" style="color:var(--amber);background:var(--amber-tint)"><svg class="i sm"><use href="#i-mail"/></svg></span><span class="copy"><b>Vendor security question</b><small>Waiting 2h · high priority</small></span><span class="next-action">Draft response</span></div>
             </div>
             <div class="slabel" style="margin-top:16px">Next up</div>
             <div class="card meet">
@@ -362,50 +378,43 @@
       </div></div>
       <figcaption>
         <p class="cap-name">Today</p>
-        <p class="cap-desc">Daily briefing, quick capture, and what's next — the home surface.</p>
-        <div class="ids"><b>WORK-6</b><b>WORK-2</b><b>AUTH-4</b></div>
+        <p class="cap-desc">One governed queue for reviews, responses, reminders, and completed agent work.</p>
+        <div class="ids"><b>WORK-6</b><b>WORK-2</b><b>CHAT-5</b><b>AUTH-4</b></div>
       </figcaption>
     </figure>
 
-    <!-- 2 · CHAT -->
+    <!-- 2 · REVIEW AND SEND -->
     <figure class="phone">
       <div class="device"><div class="screen">
         <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
         <div class="appbar">
           <button class="iconbtn"><svg class="i"><use href="#i-back"/></svg></button>
-          <div class="grow"><div class="wordmark" style="font-size:16px">Assistant</div></div>
-          <button class="scope" style="color:var(--amber);background:var(--amber-tint);border-color:color-mix(in srgb,var(--amber) 26%,transparent)"><span class="dot" style="background:var(--amber)"></span>Corporate <svg class="i sm"><use href="#i-down"/></svg></button>
+          <div class="grow"><div class="wordmark" style="font-size:16px">Review reply</div></div>
+          <span class="chip"><svg class="i sm"><use href="#i-shield"/></svg>Governed</span>
         </div>
         <div class="body">
-          <div class="thread">
-            <div class="msg me">Summarize the vendor RFP and list the open risks.</div>
-            <div class="msg ai">
-              <div class="ai-head"><span class="spark"><svg class="i sm"><use href="#i-spark"/></svg></span>Libra · grounded</div>
-              <div class="bubble">
-                <p><b>RFP summary —</b> a client-only Android assistant on LibraOS: voice, chat, calling, and daily-work tools, integrating over OIDC + streaming.</p>
-                <p style="margin-bottom:3px">Open risks:</p>
-                <ul>
-                  <li>Call-recording consent varies by jurisdiction</li>
-                  <li>No Kotlin SDK yet — client module is net-new</li>
-                  <li>Voice latency target ≤ 3s to validate<span class="caret"></span></li>
-                </ul>
-                <div class="cites">
-                  <span class="chip"><svg class="i sm"><use href="#i-msg"/></svg>RFP-Personal-Assistant.md</span>
-                  <span class="chip">§4.1 · CALL-3</span>
-                </div>
-              </div>
+          <div class="pad" style="padding-top:4px">
+            <div class="slabel">Customer message</div>
+            <div class="card review-copy"><p><b>Devan Rao</b></p><p>Can you confirm the three pricing tiers and whether SSO is included in Enterprise?</p></div>
+            <div class="slabel" style="margin-top:16px">Agent draft <span class="chip"><svg class="i sm"><use href="#i-spark"/></svg>3 sources</span></div>
+            <div class="card review-copy">
+              <p>Hi Devan,</p>
+              <p>Yes — the proposal includes three tiers. Enterprise includes SSO and audit export at no additional cost.</p>
+              <p>I’ve attached the revised pricing summary. Let me know if you’d like to review it together.</p>
+              <p>Best,<br>Maya</p>
             </div>
+            <div style="display:flex;gap:7px;margin-top:11px"><span class="chip">Pricing v3</span><span class="chip">Call summary</span><button class="btn ghost sm" style="margin-left:auto">Edit</button></div>
           </div>
         </div>
-        <div class="composer">
-          <button class="round mic"><svg class="i"><use href="#i-mic"/></svg></button>
-          <div class="field"><input placeholder="Message the assistant…" aria-label="Message"><button class="round accent" style="width:30px;height:30px"><svg class="i sm"><use href="#i-up"/></svg></button></div>
+        <div class="review-foot">
+          <div class="review-note"><svg class="i sm"><use href="#i-shield"/></svg>Sends one customer email · action is audited</div>
+          <div style="display:flex;gap:8px"><button class="btn primary" style="flex:1"><svg class="i sm"><use href="#i-mail"/></svg>Approve &amp; send</button><button class="btn ghost">Reject</button></div>
         </div>
       </div></div>
       <figcaption>
-        <p class="cap-name">Assistant chat</p>
-        <p class="cap-desc">Streaming answers with citations and scope-aware context; voice or type.</p>
-        <div class="ids"><b>CHAT-1</b><b>CHAT-2</b><b>CHAT-4</b><b>AUTH-4</b></div>
+        <p class="cap-name">Review &amp; send</p>
+        <p class="cap-desc">One linear decision: inspect sources, edit if needed, then approve the governed action.</p>
+        <div class="ids"><b>CHAT-5</b><b>WORK-5</b><b>CHAT-2</b></div>
       </figcaption>
     </figure>
 
@@ -491,8 +500,8 @@
         <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
         <div class="appbar">
           <button class="iconbtn"><svg class="i"><use href="#i-back"/></svg></button>
-          <div class="grow"><div class="wordmark" style="font-size:16px">Assistant</div></div>
-          <button class="scope"><span class="dot"></span>Personal</button>
+          <div class="grow"><div class="wordmark" style="font-size:16px">Schedule meeting</div></div>
+          <span style="width:34px"></span>
         </div>
         <div class="body">
           <div class="thread">
@@ -583,7 +592,7 @@
   </main>
 
   <footer>
-    <p><b>Draft, not final.</b> Screens are a directional pass in the LibraOS visual language (production uses the <b>Fraunces</b> display face + <b>IBM&nbsp;Plex&nbsp;Mono</b>, approximated here with system fonts since embedded webfonts are blocked). Requirement IDs map back to the RFP in <b>libraos/sdk#68</b>. Call transport (VoIP/telephony) is the app layer; LibraOS supplies transcription, summary, recall, and meeting-booking through its agents, knowledge, and connectors.</p>
+    <p><b>Draft v0.2, not final.</b> The mobile experience starts with human attention, keeps AI output inside the relevant work item, and makes governed actions explicit. Production uses the <b>Fraunces</b> display face + <b>IBM&nbsp;Plex&nbsp;Mono</b>, approximated here with system fonts since embedded webfonts are blocked. Requirement IDs map back to the RFP in <b>libraos/sdk#68</b>. Call transport (VoIP/telephony) is the app layer; LibraOS supplies transcription, summary, recall, and meeting-booking through its agents, knowledge, and connectors.</p>
   </footer>
 </div>
 
