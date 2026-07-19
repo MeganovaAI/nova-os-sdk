@@ -186,6 +186,23 @@
   .review-copy p:last-child{margin-bottom:0}
   .review-foot{margin-top:auto;padding:12px 16px 16px;border-top:1px solid var(--line);background:var(--paper)}
   .review-note{display:flex;align-items:center;gap:7px;margin-bottom:9px;color:var(--muted);font-size:10.5px}
+  .desk-banner{display:flex;align-items:center;gap:9px;margin:0 16px 12px;padding:9px 11px;border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);border-radius:12px;background:var(--accent-tint)}
+  .desk-mark{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;background:var(--accent);color:#fff}
+  .desk-banner b{display:block;font-size:11.5px}.desk-banner small{display:block;font-size:9.5px;color:var(--muted)}
+  .members{display:flex;align-items:center;margin-left:auto}
+  .member{width:25px;height:25px;margin-left:-6px;border:2px solid var(--paper);border-radius:50%;display:grid;place-items:center;background:#8b6a45;color:#fff;font:600 9px var(--font-ui)}
+  .member.agent{background:var(--accent);border-radius:8px}
+  .team-tabs{display:flex;gap:4px;margin:0 16px 10px;padding:3px;background:var(--surface-2);border-radius:10px}
+  .team-tab{flex:1;padding:6px 3px;text-align:center;border-radius:8px;color:var(--muted);font-size:10.5px;font-weight:600}
+  .team-tab.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(33,30,24,.08)}
+  .team-thread{display:flex;flex-direction:column;gap:10px;padding:0 16px}
+  .team-msg{display:flex;align-items:flex-start;gap:8px}
+  .team-msg .who{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#8b6a45;color:#fff;font-size:9px;font-weight:700;flex:0 0 auto}
+  .team-msg .who.agent{border-radius:8px;background:var(--accent)}
+  .team-msg .text{padding:9px 10px;background:var(--surface);border:1px solid var(--line);border-radius:4px 12px 12px 12px;font-size:11.5px;line-height:1.4}
+  .team-msg .text b{display:block;font-size:10px;margin-bottom:3px}.team-msg .text small{color:var(--muted)}
+  .agent-work{margin-top:8px;padding:8px 9px;border-radius:9px;background:var(--accent-tint);color:var(--accent-ink)}
+  .agent-work strong{display:block;font-size:10.5px}.agent-work span{display:block;font-size:9.5px;margin-top:2px}
 
   /* meeting card */
   .meet{padding:14px}
@@ -323,11 +340,11 @@
 
 <div class="wrap">
   <header class="masthead">
-    <p class="eyebrow">LibraOS · Draft UI · v0.2</p>
+    <p class="eyebrow">LibraOS · Draft UI · v0.3</p>
     <h1 class="title">Personal Assistant, on Android</h1>
-    <p class="dek">An attention-first mobile direction for <a class="under" style="color:var(--page-accent);text-decoration:none">issue&nbsp;#68</a> — daily work first, voice-native, and governed by design. Each screen is labeled with the RFP requirements it answers.</p>
+    <p class="dek">A personal assistant that connects the individual to their Libra Desk teams — attention-first, voice-native, and governed by design. Each screen maps to the requirements in <a class="under" style="color:var(--page-accent);text-decoration:none">issue&nbsp;#68</a>.</p>
     <div class="meta">
-      <span>6 key screens</span>
+      <span>7 key screens</span>
       <span>Android · Kotlin / Compose</span>
       <span>LibraOS design language</span>
       <span><a href="https://github.com/libraos/sdk/issues/68">libraos/sdk#68 ↗</a></span>
@@ -383,7 +400,46 @@
       </figcaption>
     </figure>
 
-    <!-- 2 · REVIEW AND SEND -->
+    <!-- 2 · LIBRA DESK TEAM SPACE -->
+    <figure class="phone">
+      <div class="device"><div class="screen">
+        <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
+        <div class="appbar">
+          <button class="iconbtn"><svg class="i"><use href="#i-back"/></svg></button>
+          <div class="grow"><div class="wordmark" style="font-size:16px">EqualDocs</div></div>
+          <button class="iconbtn"><svg class="i"><use href="#i-more"/></svg></button>
+        </div>
+        <div class="desk-banner">
+          <span class="desk-mark"><svg class="i sm"><use href="#i-users"/></svg></span>
+          <span><b>Company · Libra Desk</b><small>Team space · governed</small></span>
+          <span class="members"><span class="member">M</span><span class="member">D</span><span class="member agent"><svg class="i sm"><use href="#i-spark"/></svg></span></span>
+        </div>
+        <div class="team-tabs">
+          <span class="team-tab on">Messages</span><span class="team-tab">Tasks · 4</span><span class="team-tab">Files</span>
+        </div>
+        <div class="body">
+          <div class="team-thread">
+            <div class="team-msg"><span class="who">D</span><div class="text"><b>Devan · 9:12</b>Can we confirm SSO is included before the pricing call?</div></div>
+            <div class="team-msg"><span class="who">M</span><div class="text"><b>Maya · 9:18</b>Yes. I’ll have the team update the summary.</div></div>
+            <div class="team-msg"><span class="who agent"><svg class="i sm"><use href="#i-spark"/></svg></span><div class="text"><b>Libra Research Agent · now</b>I checked the proposal and last call summary. Enterprise includes SSO and audit export.
+              <div class="agent-work"><strong>Draft reply ready for Maya</strong><span>3 sources · waiting for approval</span></div>
+            </div></div>
+            <div class="team-msg"><span class="who">A</span><div class="text"><b>Alex · now</b>I assigned the pricing summary update to the agent.</div></div>
+          </div>
+        </div>
+        <div class="composer">
+          <button class="round mic"><svg class="i"><use href="#i-plus"/></svg></button>
+          <div class="field"><input placeholder="Message people and agents…" aria-label="Team message"><button class="round accent" style="width:30px;height:30px"><svg class="i sm"><use href="#i-up"/></svg></button></div>
+        </div>
+      </div></div>
+      <figcaption>
+        <p class="cap-name">Company · Libra Desk</p>
+        <p class="cap-desc">A team space where people and agents share messages, tasks, files, and governed work.</p>
+        <div class="ids"><b>DESK-1</b><b>CHAT-1</b><b>CHAT-5</b><b>WORK-5</b></div>
+      </figcaption>
+    </figure>
+
+    <!-- 3 · REVIEW AND SEND -->
     <figure class="phone">
       <div class="device"><div class="screen">
         <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
@@ -418,7 +474,7 @@
       </figcaption>
     </figure>
 
-    <!-- 3 · VOICE -->
+    <!-- 4 · VOICE -->
     <figure class="phone">
       <div class="device"><div class="screen">
         <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
@@ -451,7 +507,7 @@
       </figcaption>
     </figure>
 
-    <!-- 4 · CALL SUMMARY -->
+    <!-- 5 · CALL SUMMARY -->
     <figure class="phone">
       <div class="device"><div class="screen">
         <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
@@ -494,7 +550,7 @@
       </figcaption>
     </figure>
 
-    <!-- 5 · BOOK A MEETING -->
+    <!-- 6 · BOOK A MEETING -->
     <figure class="phone">
       <div class="device"><div class="screen">
         <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
@@ -536,7 +592,7 @@
       </figcaption>
     </figure>
 
-    <!-- 6 · CALLS / RECALL -->
+    <!-- 7 · CALLS / RECALL -->
     <figure class="phone">
       <div class="device"><div class="screen">
         <div class="status"><span>9:41</span><span class="sig"><span style="font-family:var(--font-mono)">LTE</span><span class="batt"></span></span></div>
@@ -592,7 +648,7 @@
   </main>
 
   <footer>
-    <p><b>Draft v0.2, not final.</b> The mobile experience starts with human attention, keeps AI output inside the relevant work item, and makes governed actions explicit. Production uses the <b>Fraunces</b> display face + <b>IBM&nbsp;Plex&nbsp;Mono</b>, approximated here with system fonts since embedded webfonts are blocked. Requirement IDs map back to the RFP in <b>libraos/sdk#68</b>. Call transport (VoIP/telephony) is the app layer; LibraOS supplies transcription, summary, recall, and meeting-booking through its agents, knowledge, and connectors.</p>
+    <p><b>Draft v0.3, not final.</b> Personal Today gathers the individual’s work; Company opens governed Libra Desk team spaces where people and agents collaborate through messages, tasks, files, and approvals. Production uses the <b>Fraunces</b> display face + <b>IBM&nbsp;Plex&nbsp;Mono</b>, approximated here with system fonts since embedded webfonts are blocked. Requirement IDs map back to the RFP in <b>libraos/sdk#68</b>. Call transport (VoIP/telephony) is the app layer; LibraOS supplies transcription, summary, recall, and meeting-booking through its agents, knowledge, and connectors.</p>
   </footer>
 </div>
 
