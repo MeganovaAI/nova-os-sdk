@@ -15,7 +15,7 @@ pip install anthropic
 ## Usage
 
 ```python
-from nova_os import Client, AnthropicCompatClient, WebhookRouter
+from libraos import Client, AnthropicCompatClient, WebhookRouter
 
 # LibraOS extended client (multi-model, employees, bundles, async jobs, ...)
 async with Client(base_url="https://nova.partner.com", api_key="...") as c:
@@ -29,7 +29,7 @@ async with Client(base_url="https://nova.partner.com", api_key="...") as c:
 # can switch base_url and ship without any other code changes.
 client = AnthropicCompatClient(base_url="https://nova.partner.com", api_key="...")
 msg = client.messages.create(
-    model="gemini/gemini-3.1-pro-preview",
+    model="Qwen/Qwen3.6-35B-A3B",
     messages=[{"role": "user", "content": "hello"}],
     max_tokens=256,
 )
@@ -49,7 +49,7 @@ When LibraOS routes through the MegaNova gateway (the default for cloud + most s
 
 | Right | Wrong (returns `model_not_found`) |
 |---|---|
-| `gemini/gemini-3.1-pro-preview` | `gemini-3.1-pro-preview` |
+| `Qwen/Qwen3.6-35B-A3B` | `Qwen3.6-35B-A3B` |
 | `anthropic/claude-sonnet-4-6` | `claude-sonnet-4-6` |
 | `anthropic/claude-haiku-4-5-20251001` | `claude-haiku-4-5-20251001` |
 | `openai/gpt-5` | `gpt-5` |
@@ -59,7 +59,7 @@ This applies to:
 - `model_config.{answer,planner,skill}.primary` in agent + employee YAML
 - The `model:` field in agent markdown frontmatter
 
-**For partners using the Anthropic SDK directly:** the SDK's natural default (`claude-opus-4-7` without prefix) won't resolve through the gateway. Either pin to a gateway-safe prefixed model in your config (for example, `ANTHROPIC_HIGH_MODEL=gemini/gemini-3.1-pro-preview`) or add a translation layer that prefixes bare Anthropic model names with `anthropic/` when routing through LibraOS.
+**For partners using the Anthropic SDK directly:** the SDK's natural default (`claude-opus-4-7` without prefix) won't resolve through the gateway. Either pin to a gateway-safe prefixed model in your config (for example, `ANTHROPIC_HIGH_MODEL=Qwen/Qwen3.6-35B-A3B`) or add a translation layer that prefixes bare Anthropic model names with `anthropic/` when routing through LibraOS.
 
 The `agent_inference_model` and `ollama_embed_model` settings are exempt â€” they route to a local Ollama and use `<tag>:<version>` shape (e.g. `gemma4:e4b`).
 
@@ -88,7 +88,7 @@ Tracking [`libraos/sdk#10`](https://github.com/libraos/sdk/issues/10) for v1.1 â
 ## Error handling
 
 ```python
-from nova_os import (
+from libraos import (
     NovaOSError,
     NotFoundError,
     RateLimitedError,
@@ -174,7 +174,7 @@ async with c.messages.stream(
 `WebhookRouter` receives LibraOS custom-tool dispatches on your HTTP endpoint, verifies the HMAC-SHA256 signature, dedupes by idempotency key, and dispatches to registered handlers:
 
 ```python
-from nova_os import WebhookRouter
+from libraos import WebhookRouter
 
 router = WebhookRouter(secret="your-webhook-secret")
 
