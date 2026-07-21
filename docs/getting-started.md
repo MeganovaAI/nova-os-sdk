@@ -4,7 +4,7 @@ The front door for partners adopting LibraOS. Use the table below to jump to the
 
 > ⚠️ **License Notice**
 >
-> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
+> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@libraos.com for pricing.
 >
 > The **SDK in this repository** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially.
 
