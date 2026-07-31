@@ -287,7 +287,7 @@ nova-os-cli test-callback \
 nova-os-cli test-callback --target ... --tool ... --repeat 3 --tool-use-id toolu_dedupe_test
 ```
 
-The signature scheme is `t=<unix_ts>,v1=<hex(hmac_sha256(secret, ts + "." + tool_use_id + "." + body))>` — matches what `nova_os.callbacks.WebhookRouter` (Python SDK) verifies.
+The signature scheme is `t=<unix_ts>,v1=<hex(hmac_sha256(secret, ts + "." + tool_use_id + "." + body))>` — matches what `libraos.callbacks.WebhookRouter` (Python SDK) verifies.
 
 | Flag | Default | Description |
 |------|---------|-------------|

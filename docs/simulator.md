@@ -43,7 +43,7 @@ pip install nova-os
 ### 3. Run a single archetype
 
 ```python
-from nova_os import Client, Archetype
+from libraos import Client, Archetype
 
 eval_client = Client(base_url="http://localhost:8901", api_key="<eval-jwt>")
 

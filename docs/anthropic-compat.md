@@ -12,7 +12,7 @@ The Messages API is 1:1 compatible. The Managed Agents beta API is implemented b
 |---|---|---|---|
 | **Anthropic Messages SDK** | `Anthropic(base_url="...")` | `client.messages.*`, `client.beta.agents.*`, `client.beta.sessions.*` | You already have `anthropic`-SDK code — change one line |
 | **Claude Agent SDK** | `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` env | Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by LibraOS's multi-tenant runtime | You want autonomous agent loops with the Anthropic UX |
-| **LibraOS native** | `from nova_os import Client` | Multi-model `model_config` cascade, `output_type` validation, custom-tool webhook callbacks, portable employee bundles, async jobs | You're past hello-world and want LibraOS's extensions |
+| **LibraOS native** | `from libraos import Client` | Multi-model `model_config` cascade, `output_type` validation, custom-tool webhook callbacks, portable employee bundles, async jobs | You're past hello-world and want LibraOS's extensions |
 
 The first two meet partners where they are. The third is the surface they grow into.
 

@@ -7,7 +7,7 @@ AI agent must elicit through appropriate questioning.
 ## Quickstart
 
 ```python
-from nova_os import Archetype
+from libraos import Archetype
 a = Archetype.from_yaml_path("examples/simulator/legal-immigration-pgwp.yaml")
 print(a.name, a.disclosure_willingness)
 ```
