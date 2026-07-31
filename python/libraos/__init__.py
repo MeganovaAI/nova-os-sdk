@@ -21,6 +21,7 @@ from libraos.errors import (
 )
 from libraos.callbacks import WebhookRouter
 from libraos.streaming import MessageStream
+from libraos.models import Message, ContentBlock, Usage
 from libraos.simulator import (
     Archetype,
     ArchetypeValidationError,
@@ -47,6 +48,9 @@ __all__ = [
     "PersonaNotFound",
     "WebhookRouter",
     "MessageStream",
+    "Message",
+    "ContentBlock",
+    "Usage",
     "Archetype",
     "ArchetypeValidationError",
     "SimulationResult",
