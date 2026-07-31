@@ -6,6 +6,8 @@ The LibraOS GHCR image (`ghcr.io/meganovaai/nova-os:v0.1.6+`) ships with a small
 
 Each template uses the runtime YAML frontmatter LibraOS's loader parses — `cp employees/<vertical>/<name>.md ./data/agents/` works directly without conversion.
 
+Templates ship **without a pinned `model:`** — each agent inherits your deployment's default (server `OPENAI_MODEL`, or the owning employee's `model_config`), so they work out of the box on any gateway. Pin a model in the frontmatter only when a persona needs a specific id your gateway serves.
+
 ---
 
 ## Catalog

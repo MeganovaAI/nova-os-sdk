@@ -11,7 +11,10 @@ capabilities:
 skills:
     - skill_deep_research
 tools: []
-model: gemini/gemini-2.5-flash
+# model: is intentionally omitted — the agent inherits the deployment's
+# default (server OPENAI_MODEL, or the owning employee's model_config).
+# Pin one only if this persona needs a specific model YOUR gateway serves:
+# model: gemini/gemini-2.5-flash
 max_turns: 8
 connectors: []
 ---
