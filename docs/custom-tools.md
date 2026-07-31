@@ -37,7 +37,7 @@ LibraOS pauses the agent mid-run when it wants to call a custom tool, emits a `c
 ```python
 import os
 from typing import Any
-from nova_os import Client
+from libraos import Client
 
 
 async def fetch_invoice(input: dict[str, Any]) -> str:
@@ -169,7 +169,7 @@ Or for errors:
 ```python
 import os
 from fastapi import FastAPI
-from nova_os.callbacks import WebhookRouter
+from libraos.callbacks import WebhookRouter
 
 router = WebhookRouter(secret=os.environ["NOVA_CB_SECRET"])
 

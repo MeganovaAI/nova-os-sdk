@@ -58,7 +58,7 @@ docker run --rm --network nova-os-eval -p 8900:8900 \
 Then point the SDK at it:
 
 ```python
-from nova_os import AnthropicCompatClient
+from libraos import AnthropicCompatClient
 
 client = AnthropicCompatClient(base_url="http://localhost:8900", api_key="msk_eval_...")
 msg = client.messages.create(
@@ -78,7 +78,7 @@ Existing partner code targeting any of the three Anthropic-published Python entr
 
 - **Anthropic Messages SDK** (`anthropic.Anthropic(base_url=...)`) — set `base_url` to your LibraOS instance. The 1:1 Messages-API surface plus the Managed Agents beta endpoints (`/v1/agents`, `/v1/sessions`, `/v1/messages` behind the `anthropic-beta: managed-agents-2026-04-01` header) work unchanged. See [`python/examples/01_basic_chat.py`](python/examples/01_basic_chat.py).
 - **Claude Agent SDK** (`claude_agent_sdk.query` / `ClaudeSDKClient`) — set `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY` (or `ClaudeAgentOptions(env={...})`) to redirect the bundled CLI subprocess to LibraOS. Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by LibraOS's multi-tenant runtime instead of `api.anthropic.com`. See [`python/examples/01b_claude_agent_sdk_drop_in.py`](python/examples/01b_claude_agent_sdk_drop_in.py).
-- **LibraOS native** (`from nova_os import Client`) — the extended surface partners reach for once they're past hello-world: multi-model `model_config` cascade at employee + agent level, structured-output `output_type` validation, custom-tool webhook callbacks (Mode A inline / Mode B webhook), portable employee bundles, async jobs. See [`python/examples/00_quickstart.py`](python/examples/00_quickstart.py).
+- **LibraOS native** (`from libraos import Client`) — the extended surface partners reach for once they're past hello-world: multi-model `model_config` cascade at employee + agent level, structured-output `output_type` validation, custom-tool webhook callbacks (Mode A inline / Mode B webhook), portable employee bundles, async jobs. See [`python/examples/00_quickstart.py`](python/examples/00_quickstart.py).
 
 The first two are about meeting partners where they are. The third is the surface they grow into when their integration deepens.
 

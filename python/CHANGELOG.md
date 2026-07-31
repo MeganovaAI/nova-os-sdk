@@ -55,7 +55,7 @@ consumers can integrate against this tag.
 - `nova_os.Client(base_url, api_key)` — async-first with `.sync` proxy mirror
 - 4 resources: `agents`, `employees`, `messages`, `jobs` — CRUD + auto-paginating `list()`
 - `c.messages.stream(...)` — async context manager + Mode A `submit_tool_result`
-- `nova_os.callbacks.WebhookRouter` — Mode B HMAC verification + idempotency dedup
+- `libraos.callbacks.WebhookRouter` — Mode B HMAC verification + idempotency dedup
 - FastAPI / Flask / AWS Lambda integration mounts (lazy-imported)
 - `nova_os.AnthropicCompatClient(...)` — drop-in factory pre-configured for LibraOS's `/v1/managed` path
 - Recorded fixture test proving Anthropic SDK round-trips against LibraOS-shaped responses

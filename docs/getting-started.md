@@ -15,7 +15,7 @@ The front door for partners adopting LibraOS. Use the table below to jump to the
 | **Run a LibraOS server locally** | Pull the public Docker image, set three env vars, smoke-test `/api/health` | [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) |
 | **Point my existing Anthropic SDK at LibraOS** | Set `base_url` on `Anthropic(...)` — Messages API works unchanged | [`anthropic-compat.md`](anthropic-compat.md) |
 | **Use the Claude Agent SDK against LibraOS** | Set `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY` env to redirect the bundled CLI | [`python/examples/01b_claude_agent_sdk_drop_in.py`](../python/examples/01b_claude_agent_sdk_drop_in.py) |
-| **Use the LibraOS native SDK** | `pip install libraos-sdk`; `from nova_os import Client` | [`python/examples/00_quickstart.py`](../python/examples/00_quickstart.py) |
+| **Use the LibraOS native SDK** | `pip install libraos-sdk`; `from libraos import Client` | [`python/examples/00_quickstart.py`](../python/examples/00_quickstart.py) |
 | **Manage employees / agents from the terminal** | Install `nova-os-cli`, set a profile, run `employees list` | [`cli/README.md`](../cli/README.md) |
 | **Validate a folder of agent/employee definitions before deploy** | `nova-os-cli validate ./data/` — offline CI gate | [`cli/README.md` → validate](../cli/README.md#validate-offline-ci-gate) |
 | **Sync a local folder of definitions to a server** | `nova-os-cli sync ./data/` (one-shot or `--watch`) | [`cli/README.md` → sync](../cli/README.md#sync-folder--server) |
@@ -72,7 +72,7 @@ print(msg.content[0].text)
 **LibraOS native SDK:**
 
 ```python
-from nova_os import Client
+from libraos import Client
 
 c = Client(base_url="http://localhost:8900", api_key="msk_...")
 msg = await c.messages.create(
@@ -101,7 +101,7 @@ Existing partner code targeting any of these works against LibraOS with at most 
 |---|---|---|
 | **Anthropic Messages SDK** (`anthropic.Anthropic`) | The 1:1 Messages API + Managed Agents beta endpoints | `Anthropic(base_url="...")` |
 | **Claude Agent SDK** (`claude_agent_sdk.query`) | Local agent loop ergonomics (Read/Bash/Edit + custom MCP tools) backed by LibraOS's multi-tenant runtime | `ANTHROPIC_BASE_URL` env |
-| **LibraOS native** (`from nova_os import Client`) | The extended surface partners reach for once past hello-world: multi-model `model_config`, `output_type` validation, custom-tool webhook callbacks, portable employee bundles, async jobs | `Client(base_url="...")` |
+| **LibraOS native** (`from libraos import Client`) | The extended surface partners reach for once past hello-world: multi-model `model_config`, `output_type` validation, custom-tool webhook callbacks, portable employee bundles, async jobs | `Client(base_url="...")` |
 
 The first two meet partners where they are. The third is the surface they grow into when their integration deepens.
 

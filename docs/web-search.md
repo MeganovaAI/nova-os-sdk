@@ -78,7 +78,7 @@ web_search_config:
 ### SDK (Python)
 
 ```python
-from nova_os import Client
+from libraos import Client
 
 async with Client(base_url=..., api_key=...) as c:
     await c.agents.create(

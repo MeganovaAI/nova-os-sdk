@@ -15,7 +15,7 @@ pip install anthropic
 ## Usage
 
 ```python
-from nova_os import Client, AnthropicCompatClient, WebhookRouter
+from libraos import Client, AnthropicCompatClient, WebhookRouter
 
 # LibraOS extended client (multi-model, employees, bundles, async jobs, ...)
 async with Client(base_url="https://nova.partner.com", api_key="...") as c:
@@ -88,7 +88,7 @@ Tracking [`libraos/sdk#10`](https://github.com/libraos/sdk/issues/10) for v1.1 â
 ## Error handling
 
 ```python
-from nova_os import (
+from libraos import (
     NovaOSError,
     NotFoundError,
     RateLimitedError,
@@ -174,7 +174,7 @@ async with c.messages.stream(
 `WebhookRouter` receives LibraOS custom-tool dispatches on your HTTP endpoint, verifies the HMAC-SHA256 signature, dedupes by idempotency key, and dispatches to registered handlers:
 
 ```python
-from nova_os import WebhookRouter
+from libraos import WebhookRouter
 
 router = WebhookRouter(secret="your-webhook-secret")
 
