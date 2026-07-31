@@ -2,6 +2,8 @@
 
 Partner integration SDK for **LibraOS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
 
+> **New to LibraOS?** Start with the [Create your first agent](https://libraos.com/docs/creating-an-agent/) tutorial — three SDK calls from zero to a working agent, then come back here for the full surface.
+
 This repo ships:
 
 - **OpenAPI spec** (`openapi/nova-os-partner.v1.yaml`) — source of truth for the partner-facing API surface.
@@ -9,6 +11,8 @@ This repo ships:
 - **Python SDK** (`python/`) — reference client library, published to PyPI as `libraos-sdk`.
 - **Docs** (`docs/`) — getting started, Anthropic compatibility, multi-model, web-search, custom tools.
 - **Examples** (`examples/`) — worked partner integrations (legaltech, healthcare, finance).
+
+Official docs: [libraos.com/docs](https://libraos.com/docs/) — including [Create your first agent](https://libraos.com/docs/creating-an-agent/) and [Model settings & token plans](https://libraos.com/docs/model-settings/).
 
 ## Install
 

@@ -10,6 +10,8 @@ End-to-end examples for the three verticals LibraOS most commonly ships into. Ea
 
 For surface-level "how do I call this one API" examples, see the numbered scripts in [`../python/examples/`](../python/examples/).
 
+If this is your first agent on LibraOS, the [Create your first agent](https://libraos.com/docs/creating-an-agent/) tutorial walks through `00_quickstart.py` step by step.
+
 ## Common prerequisites
 
 ```bash
