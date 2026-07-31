@@ -32,9 +32,15 @@ class Messages(Resource):
         idempotency_key: str | None = None,
     ) -> dict[str, Any]:
         """POST /v1/messages — non-streaming."""
-        body: dict[str, Any] = {"messages": messages, "stream": False}
-        if model is not None:
-            body["model"] = model
+        # /v1/messages requires a `model` field for Anthropic-SDK wire
+        # compatibility even though routing uses metadata.agent_id (the
+        # server treats model as cosmetic and echoes it back). Default it
+        # to the agent id so callers never need to pass it.
+        body: dict[str, Any] = {
+            "messages": messages,
+            "stream": False,
+            "model": model if model is not None else agent_id,
+        }
         if max_tokens is not None:
             body["max_tokens"] = max_tokens
         if temperature is not None:
@@ -80,9 +86,13 @@ class Messages(Resource):
         """
         from libraos.streaming import MessageStream
 
-        body: dict[str, Any] = {"messages": messages, "stream": True}
-        if model is not None:
-            body["model"] = model
+        # See create(): model is required on the wire but cosmetic —
+        # default to the agent id.
+        body: dict[str, Any] = {
+            "messages": messages,
+            "stream": True,
+            "model": model if model is not None else agent_id,
+        }
         if max_tokens is not None:
             body["max_tokens"] = max_tokens
         if temperature is not None:
