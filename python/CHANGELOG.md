@@ -2,11 +2,50 @@
 
 All notable changes to `libraos-sdk` (Python) will be documented in this file.
 
+## [1.0.2] — 2026-07-31
+
+### Fixed
+
+- Documentation module references: swept every stale `from nova_os import ...`
+  in the README, `python/README.md` (the PyPI project page), docs, and release
+  notes to `from libraos import ...`. No code change — the module has always
+  been `libraos` — but the PyPI landing page's first code block was broken.
+
+## [1.0.1] — 2026-07-31
+
+### Fixed
+
+- `messages.create()` / `messages.stream()` now default the wire `model` field
+  to the `agent_id` when the caller omits it. `/v1/messages` requires `model`
+  for Anthropic-SDK compatibility even though routing is by `metadata.agent_id`
+  (the server treats it as cosmetic), so the documented
+  `messages.create(agent_id=..., messages=...)` shape had been returning
+  `400 model is required` against a real server.
+
+### Packaging
+
+- First version actually published to PyPI. The release workflow's PyPI upload
+  had been gated on an unset `PYPI_API_TOKEN` secret and silently skipped every
+  tag (incl. 1.0.0); it now publishes via PyPI Trusted Publishing (OIDC).
+
 ## [Unreleased] — towards 1.1.0
 
 Python SDK changes since `1.0.0`. Targets a `1.1.0` minor cut once the partner-prefix wave settles. The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare new server endpoints the SDK now wraps. For LibraOS **server-side** release notes that pair with this SDK release, see [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases).
 
 ### Added
+
+- **Typed `Message` response** from `messages.create()` (#74). A `dict`
+  subclass, so every existing access pattern is unchanged
+  (`resp["content"][0]["text"]`, `isinstance(resp, dict)`, `json.dumps`) while
+  callers gain typed access — `resp.content[0].text` — and a `resp.text`
+  convenience that joins all text blocks. Exported as `Message`,
+  `ContentBlock`, `Usage`.
+- **Opt-in integration tests** against a real server (#73): `tests/integration`
+  under a `-m integration` marker, skipped unless `LIBRA_OS_URL` /
+  `LIBRA_OS_API_KEY` are set, plus a weekly `integration.yml` CI job that boots
+  a container + Postgres and runs them. This is the layer that catches
+  server-side contract breaks (like the 1.0.1 `model` fix) that mock-transport
+  unit tests cannot.
 
 - **`c.documents`** — partner-prefix CRUD wrapper for `/v1/managed/documents`. OpenAPI alpha.3.
 - **`c.knowledge`** — partner-prefix wrapper for `/v1/managed/knowledge`. OpenAPI alpha.3.

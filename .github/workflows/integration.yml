@@ -1,0 +1,86 @@
+name: Integration (live server)
+
+# Boots a real Libra OS container + Postgres, mints a service key, and runs
+# the opt-in integration tests (tests/integration, -m integration). This is
+# the check that would have caught the `model is required` 400 (#73) that
+# mock-transport unit tests structurally cannot.
+#
+# Runs on a weekly schedule and on demand. The image tag and an
+# OpenAI-compatible LLM endpoint/key are workflow inputs / repo secrets so the
+# job can point at whatever gateway CI has access to.
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: LibraOS image to test
+        default: ghcr.io/libraos/libraos:latest
+        type: string
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 06:00 UTC
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nova
+          POSTGRES_PASSWORD: nova
+          POSTGRES_DB: nova_os
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U nova -d nova_os"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install SDK + pytest
+        run: pip install -e python && pip install pytest pytest-asyncio anthropic
+
+      - name: Boot Libra OS
+        env:
+          IMAGE: ${{ inputs.image || 'ghcr.io/libraos/libraos:latest' }}
+          OPENAI_API_KEY: ${{ secrets.CI_LLM_API_KEY }}
+          OPENAI_API_BASE: ${{ secrets.CI_LLM_API_BASE }}
+          OPENAI_MODEL: ${{ secrets.CI_LLM_MODEL }}
+        run: |
+          docker run -d --name libraos --network host --ulimit memlock=-1 \
+            -e LIBRA_OS_PUBLIC_URL=http://localhost:8900 \
+            -e LIBRA_OS_DATABASE_URL='postgresql://nova:nova@localhost:5432/nova_os?sslmode=disable' \
+            -e LIBRA_OS_JWT_SECRET=ci-integration-jwt-secret-strong-2026 \
+            -e LIBRA_OS_ADMIN_EMAIL=ci@test.local -e LIBRA_OS_ADMIN_PASSWORD='Ci-Test-2026-strong!' \
+            -e OPENAI_API_KEY="$OPENAI_API_KEY" -e OPENAI_API_BASE="$OPENAI_API_BASE" -e OPENAI_MODEL="$OPENAI_MODEL" \
+            "$IMAGE"
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8900/api/version && break || sleep 2
+          done
+
+      - name: Mint a service key
+        id: key
+        run: |
+          JWT=$(curl -s -X POST http://localhost:8900/api/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"ci@test.local","password":"Ci-Test-2026-strong!"}' \
+            | python -c 'import json,sys;print(json.load(sys.stdin)["access_token"])')
+          KEY=$(curl -s -X POST http://localhost:8900/api/service-keys \
+            -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
+            -d '{"name":"ci-integration"}' \
+            | python -c 'import json,sys;print(json.load(sys.stdin)["secret"])')
+          echo "key=$KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Run integration tests
+        env:
+          LIBRA_OS_URL: http://localhost:8900
+          LIBRA_OS_API_KEY: ${{ steps.key.outputs.key }}
+        run: cd python && pytest tests/integration -v -m integration
+
+      - name: Server logs on failure
+        if: failure()
+        run: docker logs libraos 2>&1 | tail -50

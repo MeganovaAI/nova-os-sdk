@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from libraos.models import Message, parse_message
 from libraos.resources._base import Resource
 
 if TYPE_CHECKING:
@@ -30,8 +31,13 @@ class Messages(Resource):
         tools: list[dict[str, Any]] | None = None,
         metadata: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
-    ) -> dict[str, Any]:
-        """POST /v1/messages — non-streaming."""
+    ) -> Message:
+        """POST /v1/messages — non-streaming.
+
+        Returns a dict-compatible :class:`~libraos.models.Message`:
+        ``resp["content"][0]["text"]`` and ``resp.content[0].text`` both work,
+        and ``resp.text`` joins all text blocks.
+        """
         # /v1/messages requires a `model` field for Anthropic-SDK wire
         # compatibility even though routing uses metadata.agent_id (the
         # server treats model as cosmetic and echoes it back). Default it
@@ -52,12 +58,13 @@ class Messages(Resource):
         merged_metadata = dict(metadata or {})
         merged_metadata["agent_id"] = agent_id
         body["metadata"] = merged_metadata
-        return await self._client._request(
+        payload = await self._client._request(
             "POST",
             "/v1/messages",
             json_body=body,
             idempotency_key=idempotency_key,
         )
+        return parse_message(payload)
 
     def stream(
         self,

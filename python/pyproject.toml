@@ -41,3 +41,6 @@ include = ["libraos*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "integration: runs against a real Libra OS server (needs LIBRA_OS_URL + LIBRA_OS_API_KEY)",
+]
