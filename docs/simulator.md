@@ -271,3 +271,61 @@ Full API: `python/nova_os/simulator/`. Public entry points:
 - `nova_os.Client.async_simulate(...) -> SimulationResult` (async variant for partners already in an event loop)
 - `nova_os.Archetype` — Pydantic model + JSON Schema for archetype YAML
 - `nova_os.Archetype.from_yaml_path(path)` / `from_dict(d)` — loaders with validation
+
+## Work-product evaluation (rubric grading)
+
+Where `simulate()` scores a *trajectory* (multi-turn behaviour), `evaluate()`
+scores a *static work product* against a checklist — the Harvey LAB rubric
+shape. A rubric case pairs an instruction + matter with a list of pass/fail
+criteria; grading uses the **Harvey 100% threshold** (`task_passed` is true only
+when every *required* criterion passes).
+
+```python
+from libraos import Client, RubricCase
+
+case = RubricCase.from_yaml_path("examples/rubrics/legal-vendor-msa-review.yaml")
+c = Client(base_url="https://nova-eval.partner.com", api_key="…", timeout=280)
+
+result = c.evaluate(target_agent_id="legal-assistant", case=case)
+print(result.task_passed)   # False — a required criterion missed
+print(result.pass_rate)     # 0.80 — 4/5 criteria (soft signal, includes optional)
+for cr in result.criteria:
+    print(cr.passed, cr.required, cr.criterion)
+```
+
+Under the hood `evaluate()` makes two calls: it asks the **target** agent to
+produce the work product, then asks a **judge** agent for a PASS/FAIL verdict
+on each criterion. Point the judge at a stronger model with `judge_agent_id=` /
+`judge_model=` if you want producer and grader separated.
+
+**Timeout:** work-product generation on a planner agent can take minutes — set
+`Client(..., timeout=280)` (see the multi-agent note above).
+
+**Rubric YAML** (`RubricCase`):
+
+```yaml
+case_id: my-case-v1
+practice_area: commercial-contracts
+instruction: |
+  Review the MSA and identify every issue a senior lawyer would flag.
+matter:
+  context: |            # v1 passes context (and doc paths, as references) inline;
+    Section 8 …         # binary document upload is a follow-up.
+expected_work_product_shape: legal-memo   # or redline | recommendation-letter | intake-form | other
+rubric:
+  - criterion: "flags the uncapped liability in Section 8"
+    required: true
+  - criterion: "notes the auto-renewal window"
+    required: false      # at least one criterion must be required
+```
+
+Load a directory of cases with `load_rubric_pack("examples/rubrics")`.
+
+### Composing trajectory + work-product evals
+
+```python
+sim = c.simulate(target, archetype, max_turns=10)          # how it behaves
+rubrics = [c.evaluate(target, case) for case in load_rubric_pack("immigration")]  # what it produces
+passed = sum(r.task_passed for r in rubrics) / len(rubrics)
+print(f"trajectory={sim.outcome}  rubric pass rate={passed:.0%}")
+```
