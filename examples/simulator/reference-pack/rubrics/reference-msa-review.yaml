@@ -1,0 +1,32 @@
+# Reference rubric case for client.evaluate() (#30). Text-only (signal lives in
+# matter.context) so it runs without document-upload plumbing. Pairs with the
+# legal-assistant reference agent, same vertical as the reference archetype.
+case_id: legal-vendor-msa-review-v1
+practice_area: commercial-contracts
+instruction: |
+  You are reviewing a vendor Master Services Agreement (MSA) for a mid-size
+  buyer. Identify every issue a senior commercial lawyer would flag, and for
+  each, cite the clause and state the risk. Produce a short legal memo.
+matter:
+  context: |
+    Key MSA terms:
+    - Section 8 (Limitation of Liability): the vendor's liability is UNCAPPED
+      for all claims. There is no mutual cap.
+    - Section 9 (Indemnification): the buyer indemnifies the vendor, but the
+      vendor gives NO reciprocal indemnity for IP infringement.
+    - Section 3 (Term): auto-renews for successive 3-year terms unless
+      cancelled 180 days before renewal — an unusually long notice window.
+    - Section 12 (Governing Law): specifies a jurisdiction with no connection
+      to either party.
+expected_work_product_shape: legal-memo
+rubric:
+  - criterion: "flags the uncapped / non-mutual limitation of liability in Section 8"
+    required: true
+  - criterion: "flags the one-sided indemnity and the missing IP-infringement indemnity in Section 9"
+    required: true
+  - criterion: "flags the 180-day auto-renewal notice window in Section 3 as unusually long"
+    required: true
+  - criterion: "questions the unrelated governing-law jurisdiction in Section 12"
+    required: false
+  - criterion: "produces output in the shape of a memo (issue / clause / risk)"
+    required: false

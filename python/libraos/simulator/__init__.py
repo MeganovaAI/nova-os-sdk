@@ -58,6 +58,13 @@ from libraos.simulator.rubric import (
 )
 from libraos.simulator.rubric_types import CriterionResult, RubricResult
 from libraos.simulator.evaluate import evaluate, async_evaluate
+from libraos.simulator.pack import (
+    Pack,
+    PackValidationError,
+    load_pack,
+    list_installed_packs,
+    detect_pack_collisions,
+)
 
 __all__ = [
     "Archetype",
@@ -85,4 +92,9 @@ __all__ = [
     "RubricResult",
     "evaluate",
     "async_evaluate",
+    "Pack",
+    "PackValidationError",
+    "load_pack",
+    "list_installed_packs",
+    "detect_pack_collisions",
 ]
