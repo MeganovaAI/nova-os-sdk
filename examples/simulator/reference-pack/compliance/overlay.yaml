@@ -1,0 +1,12 @@
+# Vertical-specific archetype fields the SDK base schema doesn't know about.
+extension_fields:
+  required:
+    - jurisdiction:
+        type: string
+        enum: ["ON", "QC", "BC", "AB"]
+  optional:
+    - retainer_template_ref:
+        type: string
+        pattern: '^retainer-v\d+$'
+    - disclosure_required:
+        type: boolean

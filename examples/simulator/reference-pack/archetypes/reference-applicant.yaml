@@ -1,0 +1,13 @@
+# Reference archetype demonstrating pack layout + extension fields.
+# Base fields validate against the SDK Archetype schema; the three fields
+# below (jurisdiction / retainer_template_ref / disclosure_required) are
+# declared by this pack's compliance/overlay.yaml and validated against it.
+name: reference-applicant
+description: A reference synthetic applicant for demonstrating pack layout.
+hidden_facts:
+  - "has a prior refused visitor application — reluctant to disclose unless asked directly"
+disclosure_willingness: cautious
+success_signal: "matched with an appropriate specialist without forcing early disclosure"
+jurisdiction: "ON"                 # extension field (validated against overlay)
+retainer_template_ref: retainer-v3
+disclosure_required: true

@@ -329,3 +329,66 @@ rubrics = [c.evaluate(target, case) for case in load_rubric_pack("immigration")]
 passed = sum(r.task_passed for r in rubrics) / len(rubrics)
 print(f"trajectory={sim.outcome}  rubric pass rate={passed:.0%}")
 ```
+
+## Authoring a vertical pack
+
+A **pack** lets a vertical keep its own archetype + rubric catalog in its own
+repo, without forking the SDK or bloating `examples/`. Layout:
+
+```
+my-pack/
+├── pack.yaml          # name, version, requires_sdk
+├── archetypes/*.yaml  # loaded as Archetype
+├── rubrics/*.yaml     # loaded as RubricCase
+└── compliance/
+    └── overlay.yaml   # optional: vertical-specific archetype fields
+```
+
+```python
+from libraos.simulator import load_pack, detect_pack_collisions
+
+pack = load_pack(path="./my-pack")             # local dir
+# pack = load_pack(name="equaldocs-immigration")  # pip-installed (entry point)
+# pack = load_pack(git="https://github.com/EqualDocs/immigration-pack")
+
+pack.archetypes                 # ['reference-applicant', ...]
+archetype = pack.get("reference-applicant")     # validated Archetype
+pack.get_extensions("reference-applicant")      # {'jurisdiction': 'ON', ...}
+rubric = pack.get_rubric("reference-msa-review")
+
+# refuse ambiguous ids when merging multiple verticals
+detect_pack_collisions([pack_a, pack_b])        # {'pgwp-applicant': ['a', 'b']}
+```
+
+### Extension fields (the anti-bloat primitive)
+
+The base `Archetype` schema is strict (`extra="forbid"`) and vertical-agnostic.
+A pack declares its own fields in `compliance/overlay.yaml`; loading validates
+each archetype against **base + overlay**, and the extra values are read via
+`pack.get_extensions(name)` — the base archetype stays clean, so the SDK schema
+never grows a field per vertical.
+
+```yaml
+# compliance/overlay.yaml
+extension_fields:
+  required:
+    - jurisdiction:
+        type: string
+        enum: ["ON", "QC", "BC", "AB"]   # ⚠ quote these — YAML parses ON/OFF/YES/NO as booleans
+  optional:
+    - retainer_template_ref:
+        type: string
+        pattern: '^retainer-v\d+$'
+```
+
+Supported overlay checks: `type` (string / boolean / integer / number),
+`enum`, `pattern`. A `requires_sdk: ">=1.0.0"` in `pack.yaml` is enforced at
+load time against the installed SDK version.
+
+> **YAML boolean gotcha:** unquoted `ON` / `OFF` / `YES` / `NO` parse as
+> booleans under YAML 1.1. Quote string enum values (e.g. Canadian provinces
+> `"ON"`) in both the overlay and the archetypes, or they'll fail the string
+> check. The reference pack under `examples/simulator/reference-pack/` shows the
+> correct quoting.
+
+See `examples/simulator/reference-pack/` for a complete working pack.
