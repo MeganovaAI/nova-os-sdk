@@ -100,7 +100,26 @@ Slice 3 polish (all active):
   • Legacy-alias auto-mapping — --set skills=..., --set id=...,
     --set type=..., --set max_turns=... all auto-map to their canonical
     field names (tools / name / agent_type / maxTurns) with a once-per-
-    run deprecation warning citing the schema's x-deprecation-target.`,
+    run deprecation warning citing the schema's x-deprecation-target.
+
+Manual smoke test (against a local nova-os):
+
+  # 1. Start a local instance (Docker) and mint an nk_ key, then:
+  export NOVA_OS_URL=http://localhost:8900 NOVA_OS_API_KEY=nk_...
+
+  # 2. Dry-run a create — fetches the live schema, validates, prints the
+  #    markdown + JSON body, writes nothing:
+  nova-os-cli agents edit smoke-agent --new \
+      --set model=gemini/gemini-2.5-flash --set agent_type=skill --dry-run
+
+  # 3. Submit it, then confirm it round-trips:
+  nova-os-cli agents edit smoke-agent --new \
+      --set model=gemini/gemini-2.5-flash --set agent_type=skill --confirm
+  nova-os-cli agents list | grep smoke-agent
+
+  # 4. Interactive edit walks every schema field (tools autocompletes
+  #    from /api/skills; system_prompt opens $EDITOR):
+  nova-os-cli agents edit smoke-agent`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAgentsEdit,
 }
