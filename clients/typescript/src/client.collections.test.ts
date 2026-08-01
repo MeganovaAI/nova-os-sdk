@@ -175,14 +175,27 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   // ── listAgentCollections ──────────────────────────────────────────────
 
-  it("listAgentCollections(agentId) returns ids of collections whose agent_bindings includes agentId", async () => {
-    const col1 = { ...sampleRaw, id: "col-1", agent_bindings: ["agent-a", "agent-b"] };
-    const col2 = { ...sampleRaw, id: "col-2", agent_bindings: ["agent-b"] }; // not bound to agent-a
-    const fetchMock = vi.fn(async () => mk([col1, col2]));
+  it("listAgentCollections sources ids from GET /api/agents/:id.bound_collections (#53)", async () => {
+    // agent_bindings in the collections list is unreliable ([] in practice);
+    // the reliable source is the agent detail's bound_collections.
+    const col1 = { ...sampleRaw, id: "col-1", agent_bindings: [] };
+    const col2 = { ...sampleRaw, id: "col-2", agent_bindings: [] };
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/api/agents/agent-a")) return mk({ bound_collections: ["col-1"] });
+      return mk([col1, col2]); // /api/knowledge/collections
+    });
     const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const result = await client.listAgentCollections("agent-a");
-    // Should return only col-1 (bound to agent-a)
     expect(result).toHaveLength(1);
     expect(result[0]!.id).toBe("col-1");
+    expect(String((fetchMock.mock.calls[0] as unknown as [string])[0])).toContain("/api/agents/agent-a");
+  });
+
+  it("listAgentCollections returns [] when the agent has no bound_collections (#53)", async () => {
+    const fetchMock = vi.fn(async () => mk({ bound_collections: [] }));
+    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    expect(await client.listAgentCollections("agent-a")).toEqual([]);
+    // must NOT even fetch the collections list when nothing is bound
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

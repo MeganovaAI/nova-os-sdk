@@ -23,6 +23,8 @@ export type Session = Schemas["Session"];
 export type SessionCreate = Schemas["SessionCreate"];
 export type Deployment = Schemas["Deployment"];
 export type Agent = Schemas["Agent"];
+/** Body accepted by {@link NovaClient.createAgent}. Mirrors the OpenAPI createAgent request. */
+export type CreateAgentRequest = Record<string, unknown>;
 
 /** Result of {@link NovaClient.transcribeAudio}. `json` returns `{text, language?}`; `verbose_json` adds `duration`. */
 export interface Transcription {
@@ -288,6 +290,37 @@ export class NovaClient {
     });
     throwIfError(res);
     return ((res.data as { data?: Agent[] })?.data ?? []) as Agent[];
+  }
+
+  /** Create (or upsert) an agent. The managed-agents beta header is handled
+   *  internally, so callers no longer reach into `rest.api` and hand-set it
+   *  (employee-assistant#83, #61). */
+  async createAgent(body: CreateAgentRequest): Promise<Agent> {
+    const res = await this.rest.api.POST("/v1/agents", {
+      headers: { "anthropic-beta": "managed-agents-2026-04-01" },
+      body: body as never,
+    });
+    throwIfError(res);
+    return res.data as Agent;
+  }
+
+  /** Fetch a single agent by id. */
+  async getAgent(agentId: string): Promise<Agent> {
+    const res = await this.rest.api.GET("/v1/agents/{agent_id}", {
+      headers: { "anthropic-beta": "managed-agents-2026-04-01" },
+      params: { path: { agent_id: agentId } },
+    });
+    throwIfError(res);
+    return res.data as Agent;
+  }
+
+  /** Delete an agent by id. */
+  async deleteAgent(agentId: string): Promise<void> {
+    const res = await this.rest.api.DELETE("/v1/agents/{agent_id}", {
+      headers: { "anthropic-beta": "managed-agents-2026-04-01" },
+      params: { path: { agent_id: agentId } },
+    });
+    throwIfError(res);
   }
 
   // ── Messages (Anthropic-shaped) ────────────────────────────────────────
@@ -778,8 +811,19 @@ export class NovaClient {
    * Calls `listCollections` internally and filters by `agent_bindings` containing `agentId`.
    */
   async listAgentCollections(agentId: string, opts?: { signal?: AbortSignal }): Promise<Collection[]> {
+    // `bound_collections` from GET /api/agents/:id is the PG-backed source of
+    // truth; the collections list's `agent_bindings` is unreliable (always []
+    // in that view), so filtering on it returned nothing for bound agents (#53).
+    const res = await this.rawFetch(`/api/agents/${encodeURIComponent(agentId)}`, {
+      method: "GET",
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const detail = (await res.json()) as { bound_collections?: string[] };
+    const ids = new Set(detail.bound_collections ?? []);
+    if (ids.size === 0) return [];
     const all = await this.listCollections(opts);
-    return all.filter((c) => c.agentBindings.includes(agentId));
+    return all.filter((c) => ids.has(c.id));
   }
 
   async listProjectConversations(id: string, opts?: { signal?: AbortSignal }): Promise<ConversationSummary[]> {

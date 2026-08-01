@@ -31,3 +31,57 @@ describe("listAgents", () => {
     expect(sent.get("authorization")).toBe("Bearer tok");
   });
 });
+
+describe("agent CRUD (#61)", () => {
+  // openapi-fetch calls fetch(request, init): method + body live on the
+  // `Request` input; the beta header is merged onto `init.headers` by the auth
+  // wrapper (same as the listAgents test above).
+  const cap = () => {
+    let c: { input: Request | string; init?: RequestInit } | undefined;
+    const fetchMock = vi.fn(async (input: Request | string, init?: RequestInit) => {
+      c = { input, init };
+      return mk({ id: "new-agent", name: "New", agent_type: "persona", brain: true });
+    });
+    return { fetchMock, get: () => c! };
+  };
+  const req = (c: { input: Request | string }) => c.input as Request;
+  const method = (c: { input: Request | string; init?: RequestInit }) =>
+    c.init?.method ?? (typeof c.input === "string" ? undefined : c.input.method);
+  const url = (c: { input: Request | string }) => (typeof c.input === "string" ? c.input : c.input.url);
+  const beta = (c: { init?: RequestInit }) => new Headers(c.init?.headers).get("anthropic-beta");
+
+  it("createAgent POSTs /v1/agents with the beta header handled internally", async () => {
+    const { fetchMock, get } = cap();
+    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const agent = await client.createAgent({ name: "New", agent_type: "persona" });
+    expect(agent).toMatchObject({ id: "new-agent" });
+    expect(url(get())).toContain("/v1/agents");
+    expect(method(get())).toBe("POST");
+    expect(beta(get())).toBe("managed-agents-2026-04-01");
+    expect(await req(get()).clone().json()).toMatchObject({ name: "New", agent_type: "persona" });
+  });
+
+  it("getAgent GETs /v1/agents/{id} with the beta header", async () => {
+    const { fetchMock, get } = cap();
+    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    await client.getAgent("marketing-assistant");
+    expect(url(get())).toContain("/v1/agents/marketing-assistant");
+    expect(method(get())).toBe("GET");
+    expect(beta(get())).toBe("managed-agents-2026-04-01");
+  });
+
+  it("deleteAgent DELETEs /v1/agents/{id} with the beta header", async () => {
+    let c: { input: Request | string; init?: RequestInit } | undefined;
+    const fetchMock = vi.fn(async (input: Request | string, init?: RequestInit) => {
+      c = { input, init };
+      return new Response(null, { status: 204 });
+    });
+    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    await client.deleteAgent("old-agent");
+    const u = typeof c!.input === "string" ? c!.input : c!.input.url;
+    const m = c!.init?.method ?? (typeof c!.input === "string" ? undefined : c!.input.method);
+    expect(u).toContain("/v1/agents/old-agent");
+    expect(m).toBe("DELETE");
+    expect(new Headers(c!.init?.headers).get("anthropic-beta")).toBe("managed-agents-2026-04-01");
+  });
+});
