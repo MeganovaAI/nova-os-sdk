@@ -74,11 +74,15 @@ jobs:
             -d '{"name":"ci-integration"}' \
             | python -c 'import json,sys;print(json.load(sys.stdin)["secret"])')
           echo "key=$KEY" >> "$GITHUB_OUTPUT"
+          # The lifecycle test needs the admin JWT too: service keys are
+          # inference-scoped (#526) and 403 on /v1/agents + /v1/managed/*.
+          echo "jwt=$JWT" >> "$GITHUB_OUTPUT"
 
       - name: Run integration tests
         env:
           LIBRA_OS_URL: http://localhost:8900
           LIBRA_OS_API_KEY: ${{ steps.key.outputs.key }}
+          LIBRA_OS_ADMIN_TOKEN: ${{ steps.key.outputs.jwt }}
         run: cd python && pytest tests/integration -v -m integration
 
       - name: Server logs on failure
