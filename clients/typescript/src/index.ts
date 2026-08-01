@@ -32,6 +32,7 @@ export {
   type ConversationMessage,
   type CorporateDocument,
   type Collection,
+  type CreateAgentRequest,
   type KnowledgeSignal,
   type User,
   type PendingAction,
