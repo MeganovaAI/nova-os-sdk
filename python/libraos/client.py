@@ -252,6 +252,46 @@ class Client:
 
         return _async_simulate(self, target_agent_id, archetype, **kwargs)
 
+    def evaluate(
+        self,
+        target_agent_id: str,
+        case: Any,
+        *,
+        judge_agent_id: str | None = None,
+        judge_model: str | None = None,
+    ) -> Any:
+        """Grade a target agent's work product against a rubric case (#30).
+
+        Produces a work product from ``case.instruction`` + matter context,
+        grades it criterion-by-criterion with a judge agent, and returns a
+        :class:`~libraos.simulator.RubricResult`. ``task_passed`` uses the
+        Harvey 100%-of-required-criteria threshold.
+
+        See :func:`libraos.simulator.evaluate` for the full contract.
+        """
+        from libraos.simulator.evaluate import evaluate as _evaluate
+
+        return _evaluate(
+            self, target_agent_id, case,
+            judge_agent_id=judge_agent_id, judge_model=judge_model,
+        )
+
+    def async_evaluate(
+        self,
+        target_agent_id: str,
+        case: Any,
+        *,
+        judge_agent_id: str | None = None,
+        judge_model: str | None = None,
+    ) -> Any:
+        """Async variant of :meth:`evaluate` — ``await`` the returned coroutine."""
+        from libraos.simulator.evaluate import async_evaluate as _async_evaluate
+
+        return _async_evaluate(
+            self, target_agent_id, case,
+            judge_agent_id=judge_agent_id, judge_model=judge_model,
+        )
+
     async def _request_bytes(
         self,
         method: str,

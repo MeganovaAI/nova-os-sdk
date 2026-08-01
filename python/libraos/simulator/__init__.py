@@ -49,6 +49,15 @@ from libraos.simulator.simulate import (
     simulate_stream,
 )
 from libraos.simulator.types import SimulationResult, Turn, TurnEvent
+from libraos.simulator.rubric import (
+    RubricCase,
+    RubricCriterion,
+    RubricMatter,
+    RubricValidationError,
+    load_rubric_pack,
+)
+from libraos.simulator.rubric_types import CriterionResult, RubricResult
+from libraos.simulator.evaluate import evaluate, async_evaluate
 
 __all__ = [
     "Archetype",
@@ -67,4 +76,13 @@ __all__ = [
     "SimulationResult",
     "Turn",
     "TurnEvent",
+    "RubricCase",
+    "RubricCriterion",
+    "RubricMatter",
+    "RubricValidationError",
+    "load_rubric_pack",
+    "CriterionResult",
+    "RubricResult",
+    "evaluate",
+    "async_evaluate",
 ]
