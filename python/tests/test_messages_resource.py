@@ -22,7 +22,9 @@ async def test_messages_create_basic() -> None:
         assert req.method == "POST"
         assert req.url.path == "/v1/messages"
         captured["body"] = json.loads(req.content)
-        return httpx.Response(200, json={"id": "msg_123", "role": "assistant", "content": "Hello!"})
+        return httpx.Response(200, json={"id": "msg_123", "role": "assistant",
+                                         "model": "my-agent",
+                                         "content": [{"type": "text", "text": "Hello!"}]})
 
     async with Client("https://t.local", "k", transport=_mock_transport(handler)) as c:
         resp = await c.messages.create(
@@ -36,6 +38,12 @@ async def test_messages_create_basic() -> None:
     assert captured["body"]["stream"] is False
     assert captured["body"]["messages"] == [{"role": "user", "content": "Hello"}]
     assert captured["body"]["metadata"]["agent_id"] == "my-agent"
+    # model must always be sent — server rejects its absence (regression: #73)
+    assert captured["body"]["model"] == "my-agent"
+    # response is dict-compatible AND typed
+    assert resp["content"][0]["text"] == "Hello!"
+    assert resp.content[0].text == "Hello!"
+    assert resp.text == "Hello!"
 
 
 @pytest.mark.asyncio
@@ -44,7 +52,9 @@ async def test_messages_create_with_metadata_brain_flag() -> None:
 
     def handler(req: httpx.Request) -> httpx.Response:
         captured["body"] = json.loads(req.content)
-        return httpx.Response(200, json={"id": "msg_456", "role": "assistant", "content": "Done"})
+        return httpx.Response(200, json={"id": "msg_456", "role": "assistant",
+                                         "model": "gemini/gemini-2.5-flash",
+                                         "content": [{"type": "text", "text": "Done"}]})
 
     async with Client("https://t.local", "k", transport=_mock_transport(handler)) as c:
         resp = await c.messages.create(
