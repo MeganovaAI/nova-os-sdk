@@ -2,7 +2,7 @@
 
 Python reference SDK for **LibraOS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
 
-Published to PyPI as `libraos-sdk`. Status: **v1.0.2** — stable; the public API has been frozen since `v1.0.0`.
+Published to PyPI as `libraos-sdk`. Status: **v1.1.0** — stable; the public API has been frozen since `v1.0.0`.
 
 - [Source](https://github.com/libraos/sdk) · [Issues](https://github.com/libraos/sdk/issues) · [Changelog](https://github.com/libraos/sdk/blob/main/python/CHANGELOG.md) · [Docs](https://libraos.com/docs/)
 
