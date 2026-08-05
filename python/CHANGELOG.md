@@ -2,6 +2,23 @@
 
 All notable changes to `libraos-sdk` (Python) will be documented in this file.
 
+## [1.0.3] — 2026-08-05
+
+Documentation and packaging only — no library code changed. Cut from `v1.0.2` rather
+than from `main` so the fix reaches PyPI without shipping the unreleased simulator
+work alongside it. The client surface is byte-identical to `1.0.2`: all twelve
+resources and `client.simulate()` were already bound there, they were simply never
+documented.
+
+### Fixed
+
+- **Discoverability of the published package** ([`libraos-sdk#82`](https://github.com/libraos/sdk/issues/82)) — reported by a first-time integrator who evaluated the whole SDK without being able to find this repository.
+  - `[project.urls]` added to `pyproject.toml` (Homepage / Documentation / Source / Issues / Changelog), so PyPI finally links back to the repo. The published `1.0.2` metadata carries no `project_urls` at all.
+  - Resources table in `python/README.md` now documents all twelve bound resources — `documents`, `knowledge`, `hooks`, `filesystem`, `users`, `settings`, `sessions` and `personas` were previously absent, with `knowledge` (`search` / `ingest` / `collections`) the one integrators concluded was missing. Notes that the sync mirror covers only `agents`, `employees`, `messages`, `jobs`.
+  - New **Synthetic-customer simulator** section covering `client.simulate()`, `Archetype`, `SimulationResult` / `Turn`, the `stream=True` `TurnEvent` iterator, and `async_simulate()`. Previously reachable only via `dir(libraos)`.
+  - README status line corrected from `v0.9.0-rc1` to the shipped version (also in the repo-root `README.md`).
+  - The `python/examples/` reference now links to GitHub and states that examples are not shipped inside the installed package.
+
 ## [1.0.2] — 2026-07-31
 
 ### Fixed
@@ -28,7 +45,7 @@ All notable changes to `libraos-sdk` (Python) will be documented in this file.
   had been gated on an unset `PYPI_API_TOKEN` secret and silently skipped every
   tag (incl. 1.0.0); it now publishes via PyPI Trusted Publishing (OIDC).
 
-## [1.1.0] — 2026-08-05
+## [Unreleased] — towards 1.1.1
 
 Python SDK changes since `1.0.0`.
 
@@ -37,10 +54,15 @@ Python SDK changes since `1.0.0`.
 > `c.personas` wrappers, and `client.simulate()` — were already present in the
 > published `1.0.1`/`1.0.2` artifacts; they were bound by `Client.__init__` but never
 > documented or claimed by a release. They are recorded here because this is the
-> release that documents them (see the `#82` entry). Nothing about their behaviour
-> changes in `1.1.0`; if you are already calling them on `1.0.2`, they are the same
-> methods. What is genuinely new in this cut is the simulator work — the
-> rubric-grading harness and the vertical pack loader — and the discoverability fix.
+> release that first documents them (the README work shipped separately in `1.0.3`).
+> Nothing about their behaviour changes; if you are already calling them on `1.0.2`
+> or `1.0.3`, they are the same methods. What is genuinely new in this cut is the simulator work — the
+> rubric-grading harness and the vertical pack loader.
+>
+> `1.1.0` was published and then **yanked** — it shipped these simulator features ahead
+> of the partner-prefix gate this section describes. The version number stays reserved
+> on PyPI and cannot be reused, so the next minor cut is `1.1.1`. The discoverability
+> fix it also carried was re-released on its own as `1.0.3`.
 
 The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare new server endpoints the SDK now wraps. For LibraOS **server-side** release notes that pair with this SDK release, see [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases).
 
@@ -70,13 +92,6 @@ The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0
 - Examples 16 (sessions), 17 (personas discovery), and 18 (custom persona + `output_type.persist_fields` slot collection across sync + streaming) under `python/examples/`.
 
 ### Fixed
-
-- **Discoverability of the published package** ([`libraos-sdk#82`](https://github.com/libraos/sdk/issues/82)) — reported by a first-time integrator who evaluated the whole SDK without being able to find this repository.
-  - `[project.urls]` added to `pyproject.toml` (Homepage / Documentation / Source / Issues / Changelog), so PyPI finally links back to the repo. The published `1.0.2` metadata carries no `project_urls` at all.
-  - Resources table in `python/README.md` now documents all twelve bound resources — `documents`, `knowledge`, `hooks`, `filesystem`, `users`, `settings`, `sessions` and `personas` were previously absent, with `knowledge` (`search` / `ingest` / `collections`) the one integrators concluded was missing. Notes that the sync mirror covers only `agents`, `employees`, `messages`, `jobs`.
-  - New **Synthetic-customer simulator** section covering `client.simulate()`, `Archetype`, `SimulationResult` / `Turn`, the `stream=True` `TurnEvent` iterator, and `async_simulate()`. Previously reachable only via `dir(libraos)`.
-  - README status line corrected from `v0.9.0-rc1` to the shipped `v1.0.2` (also in the repo-root `README.md`).
-  - The `python/examples/` reference now links to GitHub and states that examples are not shipped inside the installed package.
 
 - **Codegen-python CI gate unblocked** ([`libraos-sdk#15`](https://github.com/libraos/sdk/issues/15)). `openapi-python-client` 0.28.3 had been crashing on every push since `AgentCreate` landed as `allOf: [Agent]`, leaving `_generated/` permanently stale. Flattened `AgentCreate` to a duplicated property block (wire shape unchanged) and loosened `Agent.route_templates` from `additionalProperties: {type: string}` to `additionalProperties: true`. Codegen now produces full output for all 8 alpha.3-alpha.5 resources (`documents`, `filesystem`, `hooks`, `knowledge`, `personas`, `sessions`, `settings`, `users`) — previously these endpoints were declared in OpenAPI but never auto-generated, so `_generated/` only carried the v0.9.0 surface. Hand-written `nova_os/resources/*.py` public API unaffected; partner code keeps working.
 
