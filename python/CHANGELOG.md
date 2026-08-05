@@ -28,9 +28,21 @@ All notable changes to `libraos-sdk` (Python) will be documented in this file.
   had been gated on an unset `PYPI_API_TOKEN` secret and silently skipped every
   tag (incl. 1.0.0); it now publishes via PyPI Trusted Publishing (OIDC).
 
-## [Unreleased] — towards 1.1.0
+## [1.1.0] — 2026-08-05
 
-Python SDK changes since `1.0.0`. Targets a `1.1.0` minor cut once the partner-prefix wave settles. The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare new server endpoints the SDK now wraps. For LibraOS **server-side** release notes that pair with this SDK release, see [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases).
+Python SDK changes since `1.0.0`.
+
+> **Note on what was already shipped.** Several entries below — the `c.documents`,
+> `c.knowledge`, `c.hooks`, `c.filesystem`, `c.users`, `c.settings`, `c.sessions` and
+> `c.personas` wrappers, and `client.simulate()` — were already present in the
+> published `1.0.1`/`1.0.2` artifacts; they were bound by `Client.__init__` but never
+> documented or claimed by a release. They are recorded here because this is the
+> release that documents them (see the `#82` entry). Nothing about their behaviour
+> changes in `1.1.0`; if you are already calling them on `1.0.2`, they are the same
+> methods. What is genuinely new in this cut is the simulator work — the
+> rubric-grading harness and the vertical pack loader — and the discoverability fix.
+
+The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare new server endpoints the SDK now wraps. For LibraOS **server-side** release notes that pair with this SDK release, see [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases).
 
 ### Added
 
