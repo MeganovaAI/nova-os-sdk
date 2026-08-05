@@ -28,6 +28,13 @@ dev = [
     "flask>=3.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/libraos/sdk"
+Documentation = "https://libraos.com/docs/"
+Source = "https://github.com/libraos/sdk"
+Issues = "https://github.com/libraos/sdk/issues"
+Changelog = "https://github.com/libraos/sdk/blob/main/python/CHANGELOG.md"
+
 [tool.setuptools.dynamic]
 version = { attr = "libraos._version.__version__" }
 

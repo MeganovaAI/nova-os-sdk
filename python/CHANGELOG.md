@@ -2,11 +2,84 @@
 
 All notable changes to `libraos-sdk` (Python) will be documented in this file.
 
-## [Unreleased] — towards 1.1.0
+## [1.0.3] — 2026-08-05
 
-Python SDK changes since `1.0.0`. Targets a `1.1.0` minor cut once the partner-prefix wave settles. The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare new server endpoints the SDK now wraps. For LibraOS **server-side** release notes that pair with this SDK release, see [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases).
+Documentation and packaging only — no library code changed. Cut from `v1.0.2` rather
+than from `main` so the fix reaches PyPI without shipping the unreleased simulator
+work alongside it. The client surface is byte-identical to `1.0.2`: all twelve
+resources and `client.simulate()` were already bound there, they were simply never
+documented.
+
+### Fixed
+
+- **Discoverability of the published package** ([`libraos-sdk#82`](https://github.com/libraos/sdk/issues/82)) — reported by a first-time integrator who evaluated the whole SDK without being able to find this repository.
+  - `[project.urls]` added to `pyproject.toml` (Homepage / Documentation / Source / Issues / Changelog), so PyPI finally links back to the repo. The published `1.0.2` metadata carries no `project_urls` at all.
+  - Resources table in `python/README.md` now documents all twelve bound resources — `documents`, `knowledge`, `hooks`, `filesystem`, `users`, `settings`, `sessions` and `personas` were previously absent, with `knowledge` (`search` / `ingest` / `collections`) the one integrators concluded was missing. Notes that the sync mirror covers only `agents`, `employees`, `messages`, `jobs`.
+  - New **Synthetic-customer simulator** section covering `client.simulate()`, `Archetype`, `SimulationResult` / `Turn`, the `stream=True` `TurnEvent` iterator, and `async_simulate()`. Previously reachable only via `dir(libraos)`.
+  - README status line corrected from `v0.9.0-rc1` to the shipped version (also in the repo-root `README.md`).
+  - The `python/examples/` reference now links to GitHub and states that examples are not shipped inside the installed package.
+
+## [1.0.2] — 2026-07-31
+
+### Fixed
+
+- Documentation module references: swept every stale `from nova_os import ...`
+  in the README, `python/README.md` (the PyPI project page), docs, and release
+  notes to `from libraos import ...`. No code change — the module has always
+  been `libraos` — but the PyPI landing page's first code block was broken.
+
+## [1.0.1] — 2026-07-31
+
+### Fixed
+
+- `messages.create()` / `messages.stream()` now default the wire `model` field
+  to the `agent_id` when the caller omits it. `/v1/messages` requires `model`
+  for Anthropic-SDK compatibility even though routing is by `metadata.agent_id`
+  (the server treats it as cosmetic), so the documented
+  `messages.create(agent_id=..., messages=...)` shape had been returning
+  `400 model is required` against a real server.
+
+### Packaging
+
+- First version actually published to PyPI. The release workflow's PyPI upload
+  had been gated on an unset `PYPI_API_TOKEN` secret and silently skipped every
+  tag (incl. 1.0.0); it now publishes via PyPI Trusted Publishing (OIDC).
+
+## [Unreleased] — towards 1.1.1
+
+Python SDK changes since `1.0.0`.
+
+> **Note on what was already shipped.** Several entries below — the `c.documents`,
+> `c.knowledge`, `c.hooks`, `c.filesystem`, `c.users`, `c.settings`, `c.sessions` and
+> `c.personas` wrappers, and `client.simulate()` — were already present in the
+> published `1.0.1`/`1.0.2` artifacts; they were bound by `Client.__init__` but never
+> documented or claimed by a release. They are recorded here because this is the
+> release that first documents them (the README work shipped separately in `1.0.3`).
+> Nothing about their behaviour changes; if you are already calling them on `1.0.2`
+> or `1.0.3`, they are the same methods. What is genuinely new in this cut is the simulator work — the
+> rubric-grading harness and the vertical pack loader.
+>
+> `1.1.0` was published and then **yanked** — it shipped these simulator features ahead
+> of the partner-prefix gate this section describes. The version number stays reserved
+> on PyPI and cannot be reused, so the next minor cut is `1.1.1`. The discoverability
+> fix it also carried was re-released on its own as `1.0.3`.
+
+The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare new server endpoints the SDK now wraps. For LibraOS **server-side** release notes that pair with this SDK release, see [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases).
 
 ### Added
+
+- **Typed `Message` response** from `messages.create()` (#74). A `dict`
+  subclass, so every existing access pattern is unchanged
+  (`resp["content"][0]["text"]`, `isinstance(resp, dict)`, `json.dumps`) while
+  callers gain typed access — `resp.content[0].text` — and a `resp.text`
+  convenience that joins all text blocks. Exported as `Message`,
+  `ContentBlock`, `Usage`.
+- **Opt-in integration tests** against a real server (#73): `tests/integration`
+  under a `-m integration` marker, skipped unless `LIBRA_OS_URL` /
+  `LIBRA_OS_API_KEY` are set, plus a weekly `integration.yml` CI job that boots
+  a container + Postgres and runs them. This is the layer that catches
+  server-side contract breaks (like the 1.0.1 `model` fix) that mock-transport
+  unit tests cannot.
 
 - **`c.documents`** — partner-prefix CRUD wrapper for `/v1/managed/documents`. OpenAPI alpha.3.
 - **`c.knowledge`** — partner-prefix wrapper for `/v1/managed/knowledge`. OpenAPI alpha.3.

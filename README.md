@@ -84,7 +84,9 @@ The first two are about meeting partners where they are. The third is the surfac
 
 ## Status
 
-**v0.9.0-rc1** — Public API frozen. Downstream consumers can integrate against this tag without chasing a moving target. `v1.0.0` ships when the cross-repo CI gate stays green and at least one partner has signaled "intent to validate" against this RC.
+**Python SDK: v1.0.3** — published to PyPI as [`libraos-sdk`](https://pypi.org/project/libraos-sdk/). The public API has been frozen since `v1.0.0`; downstream consumers can integrate without chasing a moving target. See [`python/CHANGELOG.md`](python/CHANGELOG.md).
+
+**OpenAPI spec: v1.0.0-alpha.5** — still advancing ahead of the SDK to declare new server endpoints as they land.
 
 ## License
 

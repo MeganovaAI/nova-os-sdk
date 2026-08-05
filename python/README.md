@@ -2,7 +2,9 @@
 
 Python reference SDK for **LibraOS** — the agentic operating system that lets you build vertical AI products on a multi-model, multi-tenant runtime.
 
-Published to PyPI as `libraos-sdk`. Status: **v0.9.0-rc1** — public API frozen for `v1.0.0`.
+Published to PyPI as `libraos-sdk`. Status: **v1.0.3** — stable; the public API has been frozen since `v1.0.0`.
+
+- [Source](https://github.com/libraos/sdk) · [Issues](https://github.com/libraos/sdk/issues) · [Changelog](https://github.com/libraos/sdk/blob/main/python/CHANGELOG.md) · [Docs](https://libraos.com/docs/)
 
 ## Install
 
@@ -41,7 +43,100 @@ async def fetch_invoice(input, ctx): ...
 app.include_router(router.fastapi_router(), prefix="/nova/cb")
 ```
 
-See `python/examples/` for 21 worked examples covering every public surface.
+See [`python/examples/`](https://github.com/libraos/sdk/tree/main/python/examples) on GitHub for 20 worked examples covering every public surface, and
+[`examples/simulator/`](https://github.com/libraos/sdk/tree/main/examples/simulator) for end-to-end synthetic-customer evaluation runs. The examples are not
+shipped inside the installed package — they are scripts to read and copy, not importable modules.
+
+## Synthetic-customer simulator
+
+`client.simulate()` runs a **synthetic customer** against one of your agents and
+tells you whether the agent got the job done. An *archetype* describes the
+persona the simulator plays — including facts the customer will **not** volunteer
+— so you can answer questions like "can this agent handle a customer who
+withholds information?"
+
+```python
+from libraos import Client
+
+client = Client(base_url="https://nova-eval.partner.com", api_key="...")
+
+result = client.simulate(
+    target_agent_id="intake-bot",
+    archetype={
+        "name": "cautious-applicant",
+        "description": "Applicant with a prior visa refusal they are reluctant to raise.",
+        "hidden_facts": [
+            "visitor visa refused in 2024 — only admits it when asked directly",
+            "partner holds a Brazilian passport — only mentions it when asked about family",
+        ],
+        "disclosure_willingness": "cautious",
+        "success_signal": "lawyer matched for immigration with common-law representation",
+        "failure_signals": ["lawyer not matched after 10 turns"],
+        "termination_conditions": {"max_turns": 10},
+    },
+)
+
+print(result.outcome)         # "success" | "failure" | "timeout" | "error"
+print(result.outcome_reason)  # e.g. "success_signal_matched", "max_turns_reached: 10"
+for turn in result.transcript:
+    print(f"{turn.role}: {turn.content}")
+```
+
+`archetype=` accepts a plain dict (as above), an `Archetype` instance, or a path
+to a YAML file — `Archetype.from_dict(...)` / `Archetype.from_yaml_path(...)`.
+All three run the full validation chain and raise `ArchetypeValidationError`
+with a field path and a human-readable reason, before any call is made.
+
+### Archetype fields
+
+| Field | Required | Meaning |
+|---|---|---|
+| `name` | yes | Lowercase kebab-case identifier. |
+| `description` | yes | Who the customer is. |
+| `hidden_facts` | yes | Facts the synthetic customer will not volunteer unless drawn out. |
+| `disclosure_willingness` | yes | `open` / `cautious` / `guarded` — how readily hidden facts come out. |
+| `success_signal` | yes | Defines what passing means. Prefix with `re:` for a regex. |
+| `failure_signals` | no | Signals that end the run as a failure. |
+| `termination_conditions` | no | `max_turns` (default 10), `success_signal_in_target_response`, `failure_signal_match` (`any` / `all`). |
+| `language_register`, `demographic` | no | Flavour for the simulator persona. |
+| `model_override` | no | Gateway-prefixed model for the simulator side (default `anthropic/claude-haiku-4-5`). |
+
+### What you get back
+
+`SimulationResult` is a frozen dataclass: `transcript` (a list of `Turn`, each
+with `role` — `"simulator"` or `"target"` — plus `content`, `timestamp`,
+`metadata`), `outcome`, `outcome_reason`, `evaluation_signals`
+(`success_signal_match`, `failure_signal_matches`, `turn_count`), `duration_ms`,
+`tokens_used`, and `error`.
+
+### Streaming and async
+
+Pass `stream=True` to watch a run live — an iterator of `TurnEvent`, one event
+per turn plus a final `outcome` event. The outcome event **always** fires, even
+on error, timeout, or cancellation; failures arrive as events rather than raised
+exceptions:
+
+```python
+from libraos.simulator import TurnEvent
+
+for event in client.simulate("intake-bot", archetype, stream=True):
+    if event.kind in ("simulator_turn", "target_turn"):
+        print(f"{event.role}: {event.content}")
+    elif event.kind == "outcome":
+        print(event.outcome.outcome, event.outcome.outcome_reason)
+```
+
+`client.async_simulate(...)` is the async variant — `await` it for a
+`SimulationResult`, or iterate it with `async for` when `stream=True`.
+
+> **Run evaluations against a separate instance.** `simulate()` generates real
+> traffic; pointing it at production accumulates eval rows in the production
+> `call_log`. The recommended setup is a sibling LibraOS instance with its own
+> database and empty knowledge collections.
+
+A full CI-ready runner — loads every archetype in a directory, streams turns,
+writes JSON transcripts, exits non-zero on error — is at
+[`examples/simulator/run_eval.py`](https://github.com/libraos/sdk/tree/main/examples/simulator).
 
 ## Model names — vendor prefix required for the gateway
 
@@ -124,12 +219,32 @@ agent = await c.agents.create(
 
 ## Resources
 
-| Resource | Endpoints |
-|----------|-----------|
-| `c.agents` | `create`, `get`, `update`, `delete`, `list` |
-| `c.employees` | `create`, `get`, `update`, `delete`, `list` |
-| `c.messages` | `create`, `stream` |
-| `c.jobs` | `create`, `get`, `cancel`, `list` |
+All twelve resources are bound on the client, and their methods are `async`
+(`c.messages.stream()` returns an async context manager rather than a coroutine).
+The [sync mirror](#sync-mirror) currently covers `agents`, `employees`, `messages`
+and `jobs` only — reach the other eight through the async surface.
+
+| Resource | Endpoints | What it's for |
+|----------|-----------|---------------|
+| `c.agents` | `create`, `get`, `update`, `delete`, `list` | Agent definitions — the things you send messages to. |
+| `c.employees` | `create`, `get`, `update`, `delete`, `list` | Model-routing owners; one employee can own many agents. |
+| `c.messages` | `create`, `stream` | Send a turn; `stream` returns an SSE context manager. |
+| `c.jobs` | `create`, `get`, `cancel`, `list` | Long-running async work. |
+| `c.documents` | `upload`, `list`, `delete` | Upload documents; auto-indexed on upload, then referenced by `document_id`. |
+| `c.knowledge` | `search`, `ingest`, `collections` | Hybrid search + ingest over knowledge collections. Collections are scoped by API-key auth — you cannot read another tenant's collection regardless of name; `search` defaults to the caller's own collection. |
+| `c.hooks` | `create`, `get`, `delete`, `list` | Register webhook subscriptions for platform events. |
+| `c.filesystem` | `list`, `read`, `write`, `delete` | Per-tenant/session agent workspace (`tenant_id` + `session_id` scoped). |
+| `c.users` | `create`, `get`, `delete`, `list` | Tenant user administration. |
+| `c.settings` | `all`, `get`, `put` | Read/write platform settings (heterogeneously typed values). |
+| `c.sessions` | `create`, `get` | Explicit sessions bound to an agent, with an optional session-default model. |
+| `c.personas` | `list`, `get` | Persona manifest discovery; `list` accepts `if_none_match` and returns `None` on a 304. |
+
+Knowledge search, the most commonly looked-for surface:
+
+```python
+collections = await c.knowledge.collections()
+hits = await c.knowledge.search(query="refund policy", collection=collections[0])
+```
 
 ## Sync mirror
 
