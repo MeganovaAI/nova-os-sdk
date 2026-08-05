@@ -59,6 +59,13 @@ Python SDK changes since `1.0.0`. Targets a `1.1.0` minor cut once the partner-p
 
 ### Fixed
 
+- **Discoverability of the published package** ([`libraos-sdk#82`](https://github.com/libraos/sdk/issues/82)) — reported by a first-time integrator who evaluated the whole SDK without being able to find this repository.
+  - `[project.urls]` added to `pyproject.toml` (Homepage / Documentation / Source / Issues / Changelog), so PyPI finally links back to the repo. The published `1.0.2` metadata carries no `project_urls` at all.
+  - Resources table in `python/README.md` now documents all twelve bound resources — `documents`, `knowledge`, `hooks`, `filesystem`, `users`, `settings`, `sessions` and `personas` were previously absent, with `knowledge` (`search` / `ingest` / `collections`) the one integrators concluded was missing. Notes that the sync mirror covers only `agents`, `employees`, `messages`, `jobs`.
+  - New **Synthetic-customer simulator** section covering `client.simulate()`, `Archetype`, `SimulationResult` / `Turn`, the `stream=True` `TurnEvent` iterator, and `async_simulate()`. Previously reachable only via `dir(libraos)`.
+  - README status line corrected from `v0.9.0-rc1` to the shipped `v1.0.2` (also in the repo-root `README.md`).
+  - The `python/examples/` reference now links to GitHub and states that examples are not shipped inside the installed package.
+
 - **Codegen-python CI gate unblocked** ([`libraos-sdk#15`](https://github.com/libraos/sdk/issues/15)). `openapi-python-client` 0.28.3 had been crashing on every push since `AgentCreate` landed as `allOf: [Agent]`, leaving `_generated/` permanently stale. Flattened `AgentCreate` to a duplicated property block (wire shape unchanged) and loosened `Agent.route_templates` from `additionalProperties: {type: string}` to `additionalProperties: true`. Codegen now produces full output for all 8 alpha.3-alpha.5 resources (`documents`, `filesystem`, `hooks`, `knowledge`, `personas`, `sessions`, `settings`, `users`) — previously these endpoints were declared in OpenAPI but never auto-generated, so `_generated/` only carried the v0.9.0 surface. Hand-written `nova_os/resources/*.py` public API unaffected; partner code keeps working.
 
 ## [1.0.0] — 2026-05-02
