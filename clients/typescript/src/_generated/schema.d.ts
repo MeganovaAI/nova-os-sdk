@@ -630,6 +630,1629 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agents/v1/{api_key}/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The agent identifier the chat turn is routed to. */
+                api_key: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a chat turn to an agent (native)
+         * @description Native chat endpoint. Accepts either the simple `{message}` shape or the OpenAI-style `messages[]` array, plus Nova extensions (`fast`, `stream`, `brain`, `metadata`). The synchronous response carries the assistant `response`, an aggregated per-turn `usage` block (with a `by_stage[]` split), a `grounding` outcome, and the resolved `conversation_id`.
+         */
+        post: operations["nativeChat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/v1/{api_key}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The agent identifier the job is submitted against. */
+                api_key: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit an asynchronous job
+         * @description Submit a long-running turn (e.g. deep research, multi-section report) as an asynchronous job. Returns 202 immediately; poll or stream for progress and the final result. Requires PostgreSQL persistence — returns 503 when async jobs are disabled.
+         */
+        post: operations["createNativeJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/v1/{api_key}/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                api_key: string;
+                /** @description The job identifier returned at submission. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        /** Get job state */
+        get: operations["getNativeJob"];
+        put?: never;
+        post?: never;
+        /**
+         * Cancel a job
+         * @description Request graceful cancellation of a non-terminal job.
+         */
+        delete: operations["cancelNativeJob"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/v1/{api_key}/jobs/{job_id}/stream": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Resume token. Replays persisted events with a sequence greater than this value, then continues live. Enables reconnect without losing events. */
+                "Last-Event-ID"?: number;
+            };
+            path: {
+                api_key: string;
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Stream job events (SSE)
+         * @description Server-Sent Events stream. Replays stored events first (honoring `Last-Event-ID`), then delivers live events until the job reaches a terminal state. Each frame carries `id` (sequence), `event` (type) and a JSON `data` payload; `: nova-heartbeat` comments are sent every 10s.
+         */
+        get: operations["streamNativeJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/chat/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat completions (OpenAI-compatible)
+         * @description OpenAI-compatible chat completions. Accepts the standard `model`, `messages`, `stream`, and `max_tokens` / `max_completion_tokens` fields. The response reports the provider's real `finish_reason` and a per-response `usage`. Report-style requests are auto-detected and streamed with periodic heartbeat comments. When gateway mode is enabled, a `model` of the form `llm:<provider>/<model>` bypasses the agent pipeline and forwards the call straight to the underlying provider (raw passthrough).
+         */
+        post: operations["chatCompletions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List available models (OpenAI-compatible)
+         * @description Lists the models available to the caller in OpenAI's `{object:"list", data:[...]}` shape. Each entry is an agent id; disabled agents are hidden. When gateway mode is enabled and a passthrough allowlist is configured, raw provider models are additionally advertised with `llm:` ids.
+         */
+        get: operations["listModels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/messages/count_tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Count input tokens (Anthropic-compatible)
+         * @description Anthropic-compatible pre-flight token count. Accepts the Messages request shape and returns an estimated `input_tokens` for the supplied system + messages. Citation/document consistency validators run here too, so misconfigurations surface as 400 before the chat path.
+         */
+        post: operations["countTokens"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audio/transcriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transcribe audio to text (speech-to-text)
+         * @description OpenAI-compatible speech-to-text. Upload an audio file as multipart form data and receive a transcript. When `language` is omitted the model auto-detects, including mixed-language audio. Requires a normal authenticated caller (same auth as chat); not admin-only.
+         */
+        post: operations["transcribeAudio"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audio/speech": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Synthesize speech from text (text-to-speech)
+         * @description OpenAI-compatible text-to-speech. Send text and receive audio bytes in the response body. The `voice` must belong to the same provider as the selected `model` (e.g. Gemini voices for the default Gemini TTS model); a mismatched voice is rejected upstream. Not admin-only.
+         */
+        post: operations["synthesizeSpeech"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/realtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Full-duplex speech-to-speech voice session (WebSocket)
+         * @description Opens a full-duplex voice WebSocket. The client performs a WebSocket upgrade (responds `101 Switching Protocols`) on this authenticated endpoint; audio and event frames are then pumped bidirectionally between the client and the realtime speech-to-speech model. Standard REST error responses are returned only if the upgrade or upstream connection fails before the session starts.
+         */
+        get: operations["realtimeVoice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/images/generations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate images from a text prompt
+         * @description OpenAI-compatible image generation. The request body is forwarded to the configured image model and the response is returned unchanged, so the client owns all parameters. `model` must be provider-prefixed (e.g. `Alibaba/z-image-turbo`). Not admin-only.
+         */
+        post: operations["generateImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/images/edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Edit an image from a prompt and source image(s)
+         * @description OpenAI-compatible image edit. Multipart body carrying the source image (and optional mask) plus edit parameters is forwarded to the configured image model and the response is returned unchanged. `model` must be provider-prefixed. Not admin-only.
+         */
+        post: operations["editImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/images/variations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create variations of a source image
+         * @description OpenAI-compatible image variation. Multipart body carrying the source image plus variation parameters is forwarded to the configured image model and the response is returned unchanged. `model` must be provider-prefixed. Not admin-only.
+         */
+        post: operations["imageVariation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/documents/ocr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** OCR a scanned or image-only PDF into markdown */
+        post: operations["ocrDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/documents/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract text from an office document
+         * @description Native text extraction for office and structured documents (DOCX, XLSX, ODT, text-layer PDF, CSV, JSON, XML, YAML, HTML, Markdown, EML). A filename with a recognised extension is required to route the parser. Scanned or image-only PDFs have no text layer — use /v1/managed/documents/ocr instead.
+         */
+        post: operations["extractDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read your observational memory for one persona
+         * @description Returns the calling identity's own accumulated memory log for a single persona. Responds 200 with empty content when nothing has been remembered yet.
+         */
+        get: operations["getMemory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/knowledge-signals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List queued knowledge signals by status
+         * @description Admin-only curator view of captured knowledge signals awaiting review.
+         */
+        get: operations["listKnowledgeSignals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/knowledge-signals/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List knowledge signals eligible for promotion
+         * @description Admin-only. Returns the fact keys that have cleared the promotion quorum and are candidates for promotion into the knowledge store. Promotion itself is a separate step.
+         */
+        get: operations["listPromotionCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a file
+         * @description Upload a file via multipart form. The file text is extracted and indexed into the caller's knowledge collection so subsequent chat turns can retrieve it. OpenAI Files API compatible.
+         */
+        post: operations["uploadFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/files/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Retrieve a file */
+        get: operations["getFile"];
+        put?: never;
+        post?: never;
+        /** Delete a file */
+        delete: operations["deleteUploadedFile"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List conversations
+         * @description List the caller's conversations, newest first.
+         */
+        get: operations["listConversations"];
+        put?: never;
+        /**
+         * Create a conversation
+         * @description Explicitly create (or idempotently claim) a conversation before the first chat turn. Re-posting the same `id` returns the existing row without overwriting its owner or metadata.
+         */
+        post: operations["createConversation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a conversation
+         * @description Single-conversation detail including the message log. Returns 404 for both "does not exist" and "exists but not owned by the caller".
+         */
+        get: operations["getConversation"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a conversation
+         * @description Hard-delete a conversation and its message log.
+         */
+        delete: operations["deleteConversation"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename a conversation
+         * @description Set the conversation title. The title is trimmed; empty after trim clears it. Limited to 200 characters.
+         */
+        patch: operations["renameConversation"];
+        trace?: never;
+    };
+    "/v1/conversations/{id}/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Replace conversation metadata
+         * @description Replace (not merge) the app-owned metadata map on the conversation. Keys with the reserved `nova_` prefix are rejected; the serialized map is capped at 4 KB.
+         */
+        patch: operations["updateConversationMetadata"];
+        trace?: never;
+    };
+    "/v1/conversations/{cid}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach a file to a conversation
+         * @description Upload a file scoped to a single conversation via multipart form. The caller must own the conversation; on first upload an unclaimed conversation id is claimed by the caller.
+         */
+        post: operations["addAttachment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{cid}/attachments/{aid}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download an attachment
+         * @description Stream the attachment bytes. Depending on operator configuration the response is either the bytes directly or a 302 redirect to a time-limited download URL.
+         */
+        get: operations["downloadAttachment"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove an attachment
+         * @description Soft-delete an attachment. Idempotent.
+         */
+        delete: operations["deleteAttachment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List pending actions in the approval queue
+         * @description Admins see every action; a group member sees only actions carrying a group_id for a group they belong to. Requires the pending-actions feature to be enabled.
+         */
+        get: operations["listActions"];
+        put?: never;
+        /**
+         * Park a connector-sourced action for approval
+         * @description Lets an external connector submit a side-effecting action for human approval. Requires an admin-role credential. The callback webhook is snapshotted onto the row and fired only when the action is approved; `callback.auth.secret_ref` names an environment variable on the server holding the shared HMAC secret — the secret itself is never transmitted.
+         */
+        post: operations["createAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/actions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch one pending action
+         * @description Admins may fetch any action; group members may fetch actions for their groups. An unknown id and a no-access id both return 404 (existence is not leaked).
+         */
+        get: operations["getAction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/actions/{id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Soft-claim a pending action
+         * @description First-wins soft claim so two approvers do not double-handle the same action. Admin or an approver/lead member of the action's group.
+         */
+        post: operations["claimAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/actions/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve and execute a pending action
+         * @description Atomically transitions the action pending→approved, then fires its webhook once. Admin or an approver/lead member of the action's group. The terminal outcome is carried in the returned action's `status` / `result` fields (HTTP 200 is returned whether execution succeeded or failed).
+         */
+        post: operations["approveAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/actions/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a pending action without executing it
+         * @description Atomically transitions the action pending→rejected. The webhook is not fired. Admin or an approver/lead member of the action's group.
+         */
+        post: operations["rejectAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List groups
+         * @description Admin-only. Optionally scoped to one tenant.
+         */
+        get: operations["listGroups"];
+        put?: never;
+        /**
+         * Create a group
+         * @description Admin-only. If `id` is omitted it is derived from `name` as a lowercase kebab-case slug.
+         */
+        post: operations["createGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/groups/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's own group memberships
+         * @description Authenticated but not admin-gated. Returns the calling user's groups and their role in each, so a group-conditional client UI can adapt without the admin registry.
+         */
+        get: operations["listMyGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch a group and its members
+         * @description Admin-only.
+         */
+        get: operations["getGroup"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a group
+         * @description Admin-only. Memberships cascade.
+         */
+        delete: operations["deleteGroup"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/groups/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add or update a group member
+         * @description Admin-only. Upserts the member's role. `role` defaults to `member` when omitted.
+         */
+        post: operations["addGroupMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/groups/{id}/members/{userID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a group member
+         * @description Admin-only.
+         */
+        delete: operations["removeGroupMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/field-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List field policies for the tenant
+         * @description Admin-only. Returns every field policy for the request tenant, keyed by record type. The tenant is resolved server-side from request identity.
+         */
+        get: operations["listFieldPolicies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/field-policies/{type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch the field policy for a record type
+         * @description Admin-only.
+         */
+        get: operations["getFieldPolicy"];
+        /**
+         * Create or replace the field policy for a record type
+         * @description Admin-only. Upserts the policy for `(tenant, type)`.
+         */
+        put: operations["updateFieldPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/field-policies/{type}/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Evaluate field access for a caller against a record
+         * @description Admin-only canonical reference. Computes the caller's visible/writable fields for the record type and returns the enforced view. With `mode` omitted (read) the response strips non-visible fields and audits the access; with `mode:"write"` it filters to writable fields. A missing policy fails closed (nothing visible, nothing writable).
+         */
+        post: operations["evaluateFieldPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/field-access-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query the field-access audit log
+         * @description Admin-only. Append-only record of sensitive-field access, scoped to the request tenant.
+         */
+        get: operations["listFieldAccessEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/connectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List configured connectors (secret values masked) */
+        get: operations["listConnectors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/connectors/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one connector config (secret values masked) */
+        get: operations["getConnector"];
+        /**
+         * Upsert a connector's settings and merge its secrets
+         * @description Creates or updates the connector. Secret merge semantics: a non-empty value overwrites, an empty string deletes that key, and absent keys are preserved — so a single credential can be rotated without resending the rest.
+         */
+        put: operations["putConnector"];
+        post?: never;
+        /** Remove a connector config */
+        delete: operations["deleteConnector"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/connectors/{kind}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a connector's decrypted credentials (for connector services)
+         * @description Returns decrypted secret values for the connector. Intended for connector services authenticating with an admin or service credential; every access is logged with the caller identity.
+         */
+        get: operations["getConnectorCredentials"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/connectors/sharepoint/sync-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SharePoint grounding connector sync status
+         * @description Returns the SharePoint sync worker's status snapshot: last sync time, per-cycle item counts, last error, and whether a delta resume link is persisted.
+         */
+        get: operations["getSharepointSyncStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/employees/{employee_id}/house-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an employee's house profile */
+        get: operations["getHouseProfile"];
+        /**
+         * Replace an employee's house profile
+         * @description Replaces the employee's house-profile markdown. Send an empty markdown string to clear it. Optionally supply an If-Match header carrying the profile's current updated_at to guard against a concurrent overwrite.
+         */
+        put: operations["putHouseProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a tenant's effective entitlement flags
+         * @description Returns the tenant's effective flags (free floor overlaid with any stored overrides). A tenant with no stored row reads the free floor. The tenant is supplied via the tenant query parameter.
+         */
+        get: operations["getEntitlements"];
+        /**
+         * Upsert a tenant's entitlement flags
+         * @description The tenant is supplied via the tenant query parameter.
+         */
+        put: operations["putEntitlements"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/entitlements/{tenant}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a tenant's effective entitlement flags */
+        get: operations["getTenantEntitlements"];
+        /** Upsert a tenant's entitlement flags */
+        put: operations["putTenantEntitlements"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/.well-known/openid-configuration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * OpenID Connect discovery document
+         * @description Public discovery metadata (issuer, authorization/token/userinfo endpoints, supported scopes and grant types). No authentication. The advertised `jwks_uri` is informational — id_tokens are HS256, not JWKS-verifiable.
+         */
+        get: operations["oauthDiscovery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/openid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Legacy authorization alias
+         * @description Compatibility alias that 302-redirects to `/oauth/authorize`, forwarding all query parameters verbatim. Present for clients that hard-code this path as the authorization URL.
+         */
+        get: operations["oauthOpenid"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Authorization endpoint
+         * @description OAuth 2.0 / OIDC authorization endpoint. With no valid session cookie it renders the login page (HTML); with a valid session it issues a single-use authorization code and 302-redirects to the client's registered `redirect_uri` with `code` and `state`. Supports PKCE (S256); some clients require it.
+         */
+        get: operations["oauthAuthorize"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit login credentials
+         * @description Verifies email + password, sets the `nova_oidc_session` cookie, and redirects to the `continue` URL (typically the original `/oauth/authorize` request). On failure re-renders the login page with a generic error (no account enumeration).
+         */
+        post: operations["oauthLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Token endpoint
+         * @description Exchanges an authorization code, rotates a refresh token, or (when service clients are configured) performs the `client_credentials` grant. Accepts both `application/x-www-form-urlencoded` and `application/json` bodies. Issues 1-hour HS256 access/id tokens.
+         */
+        post: operations["oauthToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a refresh token
+         * @description Revokes the presented refresh token. Always returns 200 regardless of whether the token existed (no token-existence disclosure).
+         */
+        post: operations["oauthRevoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/userinfo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * UserInfo endpoint
+         * @description Returns identity claims decoded from the bearer access/id token.
+         */
+        get: operations["oauthUserinfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List registered OIDC clients
+         * @description Returns the registered relying-party clients (id, redirect URI, app id).
+         */
+        get: operations["oauthClients"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/login/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Start upstream IdP sign-in
+         * @description Begins the relying-party dance against a configured upstream provider (Google/Okta/Azure/Authentik/GitHub): sets a signed one-shot state cookie and 302-redirects to the provider's authorization URL.
+         */
+        get: operations["oauthUpstreamLogin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/login/{provider}/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Upstream IdP callback
+         * @description Completes the upstream exchange, JIT-creates or links the local user, establishes the `nova_oidc_session` cookie, and redirects to the original `continue` target. On any failure re-renders the login page.
+         */
+        get: operations["oauthUpstreamCallback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scim/v2/ServiceProviderConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SCIM service provider configuration
+         * @description Advertises supported SCIM capabilities (patch supported, filter supported, bulk/sort/etag/changePassword unsupported) and the OAuth bearer authentication scheme. Authenticated with the SCIM token.
+         */
+        get: operations["scimServiceProviderConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scim/v2/ResourceTypes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SCIM resource types
+         * @description Discovery document listing the supported SCIM resource types (User).
+         */
+        get: operations["scimResourceTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scim/v2/Schemas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SCIM schemas
+         * @description Discovery document describing the supported User attribute schema.
+         */
+        get: operations["scimSchemas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scim/v2/Users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List / query SCIM users
+         * @description Lists provisioned users. Supports the `userName eq "value"` filter IdPs send for correlation, plus `startIndex`/`count` pagination (count capped at 200).
+         */
+        get: operations["scimListUsers"];
+        put?: never;
+        /**
+         * Provision a SCIM user
+         * @description Creates a user from the IdP-supplied resource; `userName` (email) is unique.
+         */
+        post: operations["scimCreateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scim/v2/Users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a SCIM user */
+        get: operations["scimGetUser"];
+        /**
+         * Replace a SCIM user
+         * @description Full replace of the mapped attributes; an omitted `active` defaults to true.
+         */
+        put: operations["scimReplaceUser"];
+        post?: never;
+        /**
+         * Deactivate a SCIM user
+         * @description Soft-deactivates the account (is_active=false); history is preserved and the account can no longer authenticate. Never a hard delete.
+         */
+        delete: operations["scimDeleteUser"];
+        options?: never;
+        head?: never;
+        /**
+         * Patch a SCIM user
+         * @description Applies an RFC 7644 PatchOp list. The `replace` on `active` is the deprovision path (disable → active=false). Accepts the string `"True"`/`"False"` boolean form some IdPs send.
+         */
+        patch: operations["scimPatchUser"];
+        trace?: never;
+    };
+    "/api/service-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List service API keys
+         * @description Lists tenant-wide inference-scoped service keys. Admin only. Secrets are never returned.
+         */
+        get: operations["listServiceKeys"];
+        put?: never;
+        /**
+         * Mint a service API key
+         * @description Creates a tenant-wide, inference-scoped `nk_` key. Admin only. The full secret is returned exactly once in this response and is never recoverable afterward.
+         */
+        post: operations["createServiceKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/service-keys/self": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Self-serve an inference API key
+         * @description Any authenticated user may mint an inference-scoped `nk_` key bound to their own account. The full secret is returned once. Available only when Gateway Mode per-key policy is enabled.
+         */
+        post: operations["createSelfServiceKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/service-keys/{keyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a service API key
+         * @description Soft-revokes (deactivates) the key. Admin only.
+         */
+        delete: operations["deleteServiceKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agents/{id}/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mint a per-agent API key
+         * @description Creates a long-lived `nk_` key scoped to a single agent. Admin only. The full secret is returned exactly once and is never recoverable afterward.
+         */
+        post: operations["createAgentKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List installed apps
+         * @description Returns every installed app with its version, lifecycle status, and live agent count. Admin-only. Returns 503 when persistent storage is not configured.
+         */
+        get: operations["listApps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/apps/{app}/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List an app's agents
+         * @description Lists every agent registered under the given app namespace. Admin-only.
+         */
+        get: operations["listAppAgents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/apps/{app}/agents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one app-scoped agent
+         * @description Returns a single agent (id + capabilities) scoped to the app namespace. Admin-only.
+         */
+        get: operations["getAppAgent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/apps/{app}/agents/{id}/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat with an app-scoped agent
+         * @description Sends a chat turn to an agent resolved within the given app namespace. Accepts the standard chat request body (simple `message` or OpenAI-style `messages`); set `stream: true` for Server-Sent Events.
+         */
+        post: operations["appAgentChat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/apps/{app}/migrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List an app's migration history
+         * @description Returns the schema-migration audit rows for the app, ordered by filename. Failed migrations carry their `error_message`. Admin-only; 503 when persistent storage is not configured.
+         */
+        get: operations["listAppMigrations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/apps/{name}/install": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Install or reactivate an app
+         * @description Installs (or reactivates) the staged app: validates its manifest, applies pending migrations, and registers its agents. Admin-only.
+         */
+        post: operations["installApp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/apps/{name}/reload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reload an installed app
+         * @description Re-runs the install pipeline for an already-registered app. Admin-only.
+         */
+        post: operations["reloadApp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/apps/{name}/uninstall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Uninstall an app
+         * @description Soft-deletes an installed app and unregisters its agents. Admin-only.
+         */
+        post: operations["uninstallApp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mcp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * MCP JSON-RPC endpoint
+         * @description Model Context Protocol endpoint speaking JSON-RPC 2.0. Supported methods: `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`. Requires an authenticated caller with the `mcp:read` scope. Feature-gated: when MCP is disabled the endpoint returns 404. Protocol-level failures (unknown method, invalid params, rate limit) are returned as HTTP 200 with a JSON-RPC error object. The wildcard form `POST /api/mcp/*` behaves identically.
+         */
+        post: operations["mcpRpc"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skills/{skill}/{tool}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run one skill tool directly
+         * @description Invokes a single tool belonging to a skill and returns its raw string output, bypassing the agent loop. The request body is the tool's own argument JSON (e.g. `{ "query": "..." }` or `{ "url": "..." }`); an empty body is treated as `{}`.
+         */
+        post: operations["runSkillTool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Feature-status snapshot
+         * @description Returns an in-memory snapshot of each gated feature's resolved state (on / off / degraded), where it resolved from, its flag name, and a reason. Admin-only. No secret values are exposed. 503 when disabled via the runtime hatch.
+         */
+        get: operations["getFeatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/infra-health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Infrastructure health aggregation
+         * @description On-read aggregation of recent call activity into error clusters, tool errors, latency percentiles, identity errors, and grounding outcomes, over a rolling window. Admin-only. Requires persistent storage.
+         */
+        get: operations["getInfraHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read server or request logs
+         * @description Paginated read of server logs (`source=server`, in-memory ring buffer, lost on restart) or request logs (`source=requests`, persisted call rows). Admin-only. 503 when disabled via the runtime hatch or when `source=requests` and persistent storage is not configured.
+         */
+        get: operations["getLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1443,6 +3066,1246 @@ export interface components {
                 /** @description OIDC issuer / public base URL (discovery root). Empty when OIDC disabled. */
                 issuer?: string;
             };
+        };
+        /** @description A single conversation message. */
+        ChatMessage: {
+            /** @description Message author role, e.g. system, user, assistant. */
+            role: string;
+            /** @description Message text content. */
+            content: string;
+        };
+        /** @description Opaque per-request metadata. Nova OS does not interpret arbitrary keys (they are threaded through tenant isolation and audit), but a few reserved keys control per-call behavior. */
+        NativeChatMetadata: {
+            /** @description When true (and streaming), emit granular orchestration events (tool_use / tool_result / text / thinking) over SSE. */
+            stream_events?: boolean;
+            /** @description When true, include model reasoning as `thinking` SSE events. Independent of stream_events; default off. */
+            stream_thinking?: boolean;
+            /** @description Per-call output-token cap for the answer, overriding the agent's configured limit. Must be > 0; clamped to 32768. */
+            max_tokens?: number;
+            /**
+             * @description Per-call planning override. One of `always` or `never`; controls whether the multi-step planner runs for this turn.
+             * @enum {string}
+             */
+            brain?: "always" | "never";
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Native chat request. Supply either `message` (simple form) or `messages` (OpenAI array form). */
+        NativeChatRequest: {
+            /** @description Simple single-message form (mutually usable with `messages`). */
+            message?: string;
+            /** @description OpenAI-style conversation history. */
+            messages?: components["schemas"]["ChatMessage"][];
+            /** @description Conversation/session identifier for continuity. */
+            conversation_id?: string;
+            /** @description Alternate session identifier. */
+            session_id?: string;
+            /** @description Optional model hint (server-side routing may override). */
+            model?: string;
+            /** @description When true the response is delivered as an SSE stream. */
+            stream?: boolean;
+            /** @description Dispatch directly to the agent's primary skill, skipping planning. Returns 400 if the agent has no skills. No-op on single-skill agents. */
+            fast?: boolean;
+            /** @description When true, include additional diagnostic fields (e.g. tools_used, per-stage details) in the response. */
+            include_metadata?: boolean;
+            metadata?: components["schemas"]["NativeChatMetadata"];
+        };
+        /** @description Token usage for one stage/sub-call of a turn. */
+        UsageStage: {
+            /** @description The stage/agent that made the sub-call. */
+            stage?: string;
+            /** @description The model used for the sub-call. */
+            model?: string;
+            prompt_tokens?: number;
+            completion_tokens?: number;
+        };
+        /** @description Aggregated token usage across all of the turn's model sub-calls, with a per-stage breakdown. Omitted on non-model/zero-usage turns. Excludes embedding calls. */
+        UsageBlock: {
+            prompt_tokens?: number;
+            completion_tokens?: number;
+            total_tokens?: number;
+            by_stage?: components["schemas"]["UsageStage"][];
+        };
+        /** @description Synchronous native chat response. */
+        NativeChatResult: {
+            /** @description The assistant's answer text. */
+            response?: string;
+            conversation_id?: string;
+            agent_id?: string;
+            /** @description Assistant turn identifier for per-message correlation. */
+            message_id?: string;
+            images?: string[];
+            files?: string[];
+            /**
+             * @description Per-turn grounded-vs-refusal outcome. Omitted on non-retrieval turns.
+             * @enum {string}
+             */
+            grounding?: "grounded" | "ungrounded_refusal" | "ungrounded_no_chunks" | "degraded";
+            /** @description Source ids of knowledge chunks surfaced by this turn. */
+            retrieved_chunks?: string[];
+            /** @description Unique tool names dispatched this turn (include_metadata only). */
+            tools_used?: string[];
+            usage?: components["schemas"]["UsageBlock"];
+        };
+        /** @description Response to an accepted async job submission (202). */
+        NativeJobAccepted: {
+            job_id?: string;
+            /** @description Initial status, always `queued`. */
+            status?: string;
+            agent_id?: string;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        /** @description Async job state. */
+        NativeJob: {
+            job_id?: string;
+            agent_id?: string;
+            /**
+             * @description Job lifecycle status.
+             * @enum {string}
+             */
+            status?: "queued" | "running" | "done" | "failed" | "cancelled";
+            /** Format: date-time */
+            created_at?: string;
+            /**
+             * Format: date-time
+             * @description Present once the job begins running.
+             */
+            started_at?: string;
+            /**
+             * Format: date-time
+             * @description Present once the job reaches a terminal state.
+             */
+            finished_at?: string;
+            /** @description Number of events emitted so far. */
+            event_count?: number;
+            /** @description Final output text (present when done). */
+            result?: string;
+            /** @description Failure message (present when failed). */
+            error?: string;
+            tokens_used?: number;
+        };
+        NativeJobCancelled: {
+            job_id?: string;
+            /** @description Always `cancelled`. */
+            status?: string;
+        };
+        /** @description OpenAI-compatible chat completion request. */
+        ChatCompletionRequest: {
+            /** @description Target model/agent id. When gateway mode is enabled, a value of the form `llm:<provider>/<model>` selects raw provider passthrough. */
+            model?: string;
+            messages: components["schemas"]["ChatMessage"][];
+            /** @description When true the response is an SSE stream terminated by `[DONE]`. */
+            stream?: boolean;
+            /** @description Output-token cap (folded into the per-call answer limit). */
+            max_tokens?: number;
+            /** @description Newer OpenAI field for the output-token cap; preferred over max_tokens when both are set. */
+            max_completion_tokens?: number;
+            /** @description Sampling temperature. Accepted for OpenAI-client compatibility; server-side routing controls the effective value on the agent path. */
+            temperature?: number;
+            /** @description Nova OS extension channel for per-call fields (e.g. a per-call model override). */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        ChatCompletionChoice: {
+            index?: number;
+            message?: components["schemas"]["ChatMessage"];
+            /**
+             * @description The provider's real stop reason.
+             * @enum {string}
+             */
+            finish_reason?: "stop" | "length" | "tool_calls";
+        };
+        /** @description Per-response token usage. */
+        ChatCompletionUsage: {
+            prompt_tokens?: number;
+            completion_tokens?: number;
+            total_tokens?: number;
+        };
+        /** @description OpenAI-compatible chat completion response. */
+        ChatCompletionResponse: {
+            id?: string;
+            /** @description Always `chat.completion`. */
+            object?: string;
+            /** @description Unix timestamp (seconds). */
+            created?: number;
+            model?: string;
+            choices?: components["schemas"]["ChatCompletionChoice"][];
+            usage?: components["schemas"]["ChatCompletionUsage"];
+            /**
+             * @description Nova OS extension — per-turn grounded-vs-refusal outcome. Omitted on non-retrieval turns.
+             * @enum {string}
+             */
+            nova_grounding?: "grounded" | "ungrounded_refusal" | "ungrounded_no_chunks" | "degraded";
+            /** @description Merged persisted field state, present only for agents that declare a persist-fields schema. */
+            persisted_state?: {
+                [key: string]: unknown;
+            };
+        };
+        ModelListEntry: {
+            /** @description Model/agent id. Passthrough models carry an `llm:` prefix. */
+            id?: string;
+            /** @description Always `model`. */
+            object?: string;
+            created?: number;
+            owned_by?: string;
+        };
+        /** @description OpenAI-compatible model list. */
+        ModelList: {
+            /** @description Always `list`. */
+            object?: string;
+            data?: components["schemas"]["ModelListEntry"][];
+        };
+        /** @description One message in an Anthropic-shaped request. */
+        CountTokensMessage: {
+            /** @enum {string} */
+            role: "user" | "assistant";
+            /** @description Message content — a plain string or the Anthropic content-block array. */
+            content: string | {
+                [key: string]: unknown;
+            }[];
+        };
+        /** @description Anthropic-compatible Messages request used for token counting. */
+        CountTokensRequest: {
+            model?: string;
+            messages: components["schemas"]["CountTokensMessage"][];
+            /** @description System prompt — a string or an array of text blocks. */
+            system?: string | {
+                [key: string]: unknown;
+            }[];
+            /** @description Optional metadata; `agent_id` selects the agent for validation. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        CountTokensResult: {
+            /** @description Estimated number of input tokens for the supplied prompt. */
+            input_tokens?: number;
+        };
+        TranscriptionRequest: {
+            /**
+             * Format: binary
+             * @description Audio file to transcribe (e.g. mp3, wav, m4a, webm).
+             */
+            file: string;
+            /**
+             * @description Transcription model (provider-prefixed, e.g. `Systran/faster-whisper-large-v3`). Overrides the server default for this call. A bare model name is rejected by the gateway.
+             * @example Systran/faster-whisper-large-v3
+             */
+            model?: string;
+            /**
+             * @description ISO-639-1 language hint. Omit to let the model auto-detect (supports mixed-language audio).
+             * @example en
+             */
+            language?: string;
+            /**
+             * @description Output format. Defaults to `json`.
+             * @default json
+             * @enum {string}
+             */
+            response_format: "json" | "text" | "srt" | "verbose_json" | "vtt";
+        };
+        /** @description JSON transcript. Shape follows the underlying model; `segments` and timestamp detail are present for verbose formats. */
+        TranscriptionResponse: {
+            /** @description The full transcript. */
+            text?: string;
+            /** @description Detected or supplied language. */
+            language?: string;
+            /** @description Audio duration in seconds, when reported. */
+            duration?: number;
+            /** @description Per-segment breakdown with timestamps, when available. */
+            segments?: components["schemas"]["TranscriptionSegment"][];
+        };
+        /** @description A timestamped transcript segment. */
+        TranscriptionSegment: {
+            id?: number;
+            /** @description Segment start time in seconds. */
+            start?: number;
+            /** @description Segment end time in seconds. */
+            end?: number;
+            text?: string;
+        };
+        SpeechRequest: {
+            /** @description Text to synthesize into speech. */
+            input: string;
+            /**
+             * @description TTS model (provider-prefixed, e.g. `gemini/gemini-2.5-flash-tts`). Overrides the server default for this call.
+             * @example gemini/gemini-2.5-flash-tts
+             */
+            model?: string;
+            /**
+             * @description Voice name. Must belong to the same provider as `model` (e.g. Gemini voices such as `Kore` for the default Gemini TTS model). Defaults to the server-configured voice when omitted.
+             * @example Kore
+             */
+            voice?: string;
+            /**
+             * @description Audio container/codec. Defaults to `mp3` (`audio/mpeg` body).
+             * @default mp3
+             * @example mp3
+             */
+            response_format: string;
+        };
+        /** @description Forwarded verbatim to the image model; additional provider-specific fields are accepted and passed through. */
+        ImageGenerationRequest: {
+            /**
+             * @description Image model, provider-prefixed.
+             * @example Alibaba/z-image-turbo
+             */
+            model: string;
+            /** @description Text description of the desired image(s). */
+            prompt: string;
+            /**
+             * @description Number of images to generate.
+             * @default 1
+             */
+            n: number;
+            /**
+             * @description Requested image dimensions.
+             * @example 1024x1024
+             */
+            size?: string;
+            /**
+             * @description How images are returned.
+             * @enum {string}
+             */
+            response_format?: "url" | "b64_json";
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Multipart body forwarded verbatim to the image model; additional provider-specific fields are accepted. */
+        ImageEditRequest: {
+            /**
+             * @description Image model, provider-prefixed.
+             * @example Alibaba/z-image-turbo
+             */
+            model: string;
+            /**
+             * Format: binary
+             * @description Source image to edit.
+             */
+            image: string;
+            /**
+             * Format: binary
+             * @description Optional mask; transparent areas indicate where the image should be edited.
+             */
+            mask?: string;
+            /** @description Text description of the desired edit. */
+            prompt: string;
+            /** @default 1 */
+            n: number;
+            /** @example 1024x1024 */
+            size?: string;
+            /** @enum {string} */
+            response_format?: "url" | "b64_json";
+        };
+        /** @description Multipart body forwarded verbatim to the image model; additional provider-specific fields are accepted. */
+        ImageVariationRequest: {
+            /**
+             * @description Image model, provider-prefixed.
+             * @example Alibaba/z-image-turbo
+             */
+            model: string;
+            /**
+             * Format: binary
+             * @description Source image to create variations of.
+             */
+            image: string;
+            /** @default 1 */
+            n: number;
+            /** @example 1024x1024 */
+            size?: string;
+            /** @enum {string} */
+            response_format?: "url" | "b64_json";
+        };
+        /** @description OpenAI-compatible image response, returned unchanged from the model. */
+        ImageResponse: {
+            /** @description Unix timestamp of generation. */
+            created?: number;
+            data?: components["schemas"]["ImageData"][];
+        };
+        /** @description A single generated image, per the requested `response_format`. */
+        ImageData: {
+            /** @description Image URL (when `response_format=url`). */
+            url?: string;
+            /** @description Base64-encoded image (when `response_format=b64_json`). */
+            b64_json?: string;
+            /** @description Prompt as revised by the model, when provided. */
+            revised_prompt?: string;
+        };
+        /** @description JSON alternative to the multipart upload for OCR. */
+        OcrRequest: {
+            /** @description Base64-encoded PDF bytes. */
+            file_base64: string;
+            /** @description Optional caller-supplied SHA-256 of the file, used as the result-cache key. */
+            file_sha256?: string;
+            options?: {
+                /** @description Optional cap on pages to process (0 or omitted = all pages). */
+                max_pages?: number;
+            };
+        };
+        OcrResponse: {
+            /** @description The extracted document text as markdown. */
+            markdown?: string;
+            /** @description Number of pages processed. */
+            page_count?: number;
+            /** @description Vision model that produced the result. */
+            model_used?: string;
+            /** @description True if a fallback vision model was used for one or more pages. */
+            fallback_chain_triggered?: boolean;
+            /** @description Billed cost of this OCR call in USD. */
+            cost_usd?: number;
+            /** @description True when the result was served from cache (no new billing). */
+            cache_hit?: boolean;
+            /** @description Server-side processing time in milliseconds. */
+            elapsed_ms?: number;
+        };
+        /** @description JSON alternative to the multipart upload for text extraction. */
+        ExtractRequest: {
+            /** @description Base64-encoded document bytes. */
+            file_base64: string;
+            /** @description Filename with a supported extension, used to route the parser. */
+            filename: string;
+        };
+        ExtractResponse: {
+            /** @description The extracted plain text. */
+            text?: string;
+            /** @description Document title when the parser can detect one. */
+            title?: string;
+            /** @description Detected document type (e.g. docx, xlsx, pdf, odt, csv, eml). */
+            doc_type?: string;
+            /** @description Length of the extracted text in characters. */
+            char_count?: number;
+            /** @description Server-side processing time in milliseconds. */
+            elapsed_ms?: number;
+        };
+        MemoryLog: {
+            /** @description The persona this memory belongs to. */
+            agent_id?: string;
+            /**
+             * @description The memory scope that was read.
+             * @enum {string}
+             */
+            scope?: "corporate" | "personal";
+            /** @description The accumulated memory as text. Empty when nothing has been remembered yet. */
+            content?: string;
+            /**
+             * Format: date-time
+             * @description When the memory log was last written.
+             */
+            updated_at?: string;
+            /** @description False when observational memory is not active on this deployment. */
+            enabled?: boolean;
+            /**
+             * Format: date-time
+             * @description When new activity was last folded into memory. Omitted when never observed.
+             */
+            last_observed_at?: string;
+        };
+        KnowledgeSignalList: {
+            signals?: components["schemas"]["KnowledgeSignal"][];
+            /** @description Number of signals returned. */
+            total?: number;
+        };
+        KnowledgeSignal: {
+            id?: string;
+            tenant?: string;
+            /** @description Source application that captured the signal. */
+            app?: string;
+            /** @description Persona associated with the signal. */
+            employee_id?: string;
+            /** @description Signal type. */
+            type?: string;
+            /** @description Normalised dedupe key identifying the same fact across signals. */
+            fact_key?: string;
+            /** @description The captured fact text. */
+            content?: string;
+            /** @description Identifier of the source chunk the signal was derived from. */
+            source_chunk_id?: string;
+            /** @enum {string} */
+            status?: "pending" | "quarantined" | "eligible" | "promoted" | "rejected" | "superseded";
+            /** Format: date-time */
+            created_at?: string;
+            /** @description Integrity signature over the signal contents. */
+            signature?: string;
+        };
+        PromotionCandidates: {
+            /** @description Fact keys that have cleared the promotion quorum. */
+            fact_keys?: string[];
+        };
+        /** @description An uploaded file, OpenAI Files API compatible. */
+        FileObject: {
+            /** @description File identifier, prefixed with `file-`. */
+            id: string;
+            /** @constant */
+            object: "file";
+            /** @description Size of the file in bytes. */
+            bytes: number;
+            /** @description Unix timestamp (seconds) of creation. */
+            created_at: number;
+            filename: string;
+            /** @description Intended use of the file. */
+            purpose?: string;
+            /** @description Processing status, e.g. `processed`. */
+            status?: string;
+            status_details?: string | null;
+        };
+        FileDeleted: {
+            id: string;
+            /** @constant */
+            object: "file";
+            deleted: boolean;
+        };
+        /** @description Per-user conversation summary. */
+        Conversation: {
+            id: string;
+            agent_id: string;
+            /** @description Null until set via rename. */
+            title?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_active_at: string;
+            message_count: number;
+            /** @description App-owned metadata map. Omitted when empty. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Conversation summary plus its message log. */
+        ConversationDetail: {
+            id: string;
+            agent_id: string;
+            title?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_active_at: string;
+            message_count: number;
+            messages: components["schemas"]["ConversationMessage"][];
+            /** @description Omitted when empty. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        ConversationMessage: {
+            /** @description e.g. `user`, `assistant`. */
+            role: string;
+            content: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ConversationList: {
+            conversations: components["schemas"]["Conversation"][];
+        };
+        ConversationCreate: {
+            /** @description Client-chosen id. Server generates one when omitted. */
+            id?: string;
+            agent_id?: string;
+            /** @description App-owned metadata. Reserved `nova_` key prefix rejected; capped at 4 KB serialized. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        ConversationDeleted: {
+            id: string;
+            deleted: boolean;
+        };
+        /** @description A file attached to a conversation. */
+        Attachment: {
+            id: string;
+            /** @description Original filename. */
+            name: string;
+            mime_type: string;
+            /** Format: int64 */
+            size_bytes: number;
+            /** @description Relative URL for downloading the attachment bytes. */
+            download_url: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            deleted_at?: string | null;
+            /** @description Malware-scan status, e.g. `not_scanned`. */
+            scan_status: string;
+        };
+        /** @description A side-effecting action parked for human approval. */
+        PendingAction: {
+            id: string;
+            agent_id?: string;
+            user_id?: string;
+            tenant_id?: string;
+            session_id?: string;
+            tool_name: string;
+            /**
+             * @description Effective risk tier; an unknown/absent value fails safe to `high`.
+             * @enum {string}
+             */
+            risk: "low" | "medium" | "high";
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "executed" | "failed";
+            /** @description Terminal outcome detail (e.g. execution error); omitted when empty. */
+            result?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            decided_at?: string;
+            /** @description The tool arguments, forwarded as structured JSON. */
+            input?: {
+                [key: string]: unknown;
+            };
+            /** @description Dry-run preview of the action's effect, if computed. */
+            preview?: {
+                [key: string]: unknown;
+            };
+            /** @description Connector queue label (connector-sourced actions). */
+            source?: string;
+            /** @description Connector correlation key. */
+            external_ref?: string;
+            /** @description Owning group; empty means admin-only. */
+            group_id?: string;
+            /** @description User id that soft-claimed the action. */
+            claimed_by?: string;
+            /** @description User id that approved or rejected the action. */
+            decided_by?: string;
+            /** @description Why the action was approved or rejected. */
+            reason?: string;
+        };
+        ActionEnvelope: {
+            action: components["schemas"]["PendingAction"];
+        };
+        ActionList: {
+            actions: components["schemas"]["PendingAction"][];
+        };
+        /** @description Webhook fired when the action is approved. It is snapshotted onto the row and never surfaced back to clients. */
+        ActionCallback: {
+            /**
+             * Format: uri
+             * @description The webhook endpoint the approved action is dispatched to.
+             */
+            url: string;
+            auth: {
+                type?: string;
+                /** @description Name of an environment variable on the Nova OS server holding the shared HMAC secret. The secret itself never travels in the request or the stored row. */
+                secret_ref: string;
+            };
+            timeout_sec?: number;
+            retry?: number;
+        };
+        /** @description Body for a connector parking an action for approval. */
+        CreateActionRequest: {
+            agent_id?: string;
+            user_id?: string;
+            tenant_id?: string;
+            session_id?: string;
+            /** @description Route the action to a departmental group queue. */
+            group_id?: string;
+            tool_name: string;
+            /** @description The tool arguments. */
+            input: {
+                [key: string]: unknown;
+            };
+            /** @description Optional dry-run preview of the effect. */
+            preview?: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Effective risk tier; absent/unknown fails safe to `high`.
+             * @enum {string}
+             */
+            risk?: "low" | "medium" | "high";
+            source: string;
+            external_ref?: string;
+            callback: components["schemas"]["ActionCallback"];
+        };
+        /** @description Optional body carrying an approve/reject reason for the audit trail. */
+        ActionDecisionRequest: {
+            reason?: string;
+        };
+        /** @description A role-carrying group that gates departmental action queues. */
+        Group: {
+            id: string;
+            tenant_id?: string;
+            name: string;
+            description?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            members?: components["schemas"]["GroupMember"][];
+        };
+        GroupEnvelope: {
+            group: components["schemas"]["Group"];
+        };
+        GroupList: {
+            groups: components["schemas"]["Group"][];
+        };
+        /**
+         * @description A member's role in a group.
+         * @enum {string}
+         */
+        GroupRole: "member" | "approver" | "lead";
+        GroupMember: {
+            user_id: string;
+            role: components["schemas"]["GroupRole"];
+            /** Format: date-time */
+            created_at?: string;
+        };
+        CreateGroupRequest: {
+            /** @description Optional; derived from `name` as a kebab-case slug when omitted. */
+            id?: string;
+            tenant_id?: string;
+            name: string;
+            description?: string;
+        };
+        AddGroupMemberRequest: {
+            user_id: string;
+            role?: components["schemas"]["GroupRole"];
+        };
+        /** @description One of the caller's own group memberships. */
+        MyGroupMembership: {
+            id: string;
+            name: string;
+            description?: string;
+            role: components["schemas"]["GroupRole"];
+        };
+        MyGroupList: {
+            groups: components["schemas"]["MyGroupMembership"][];
+        };
+        /**
+         * @description A read or write access level over a record's fields.
+         * @enum {string}
+         */
+        FieldTier: "all" | "non-sensitive" | "none";
+        /** @description Maps a role to its read/write tiers. */
+        FieldRule: {
+            role: string;
+            read: components["schemas"]["FieldTier"];
+            write: components["schemas"]["FieldTier"];
+        };
+        /** @description Raises (never lowers) the caller's tiers when the caller owns the record. An empty tier leaves the corresponding tier unchanged. */
+        FieldOwnerOverride: {
+            read?: components["schemas"]["FieldTier"];
+            write?: components["schemas"]["FieldTier"];
+        };
+        /** @description Declarative per-(tenant, record type) field-access policy. */
+        FieldPolicy: {
+            sensitiveFields?: string[];
+            rules?: components["schemas"]["FieldRule"][];
+            ownerOverride?: components["schemas"]["FieldOwnerOverride"];
+            /** @description Tier for a role not in `rules`; empty defaults to `non-sensitive`. */
+            defaultRead?: components["schemas"]["FieldTier"];
+            /** @description Tier for a role not in `rules`; empty defaults to `none`. */
+            defaultWrite?: components["schemas"]["FieldTier"];
+        };
+        /** @description The tenant's policies keyed by record type. */
+        FieldPolicyList: {
+            policies: {
+                [key: string]: components["schemas"]["FieldPolicy"];
+            };
+        };
+        /** @description The identity evaluated against a policy. */
+        FieldCaller: {
+            role: string;
+            id?: string;
+        };
+        /** @description The computed access contract. An omitted field list means "all fields"; a present list (including empty) is the explicit permitted set. */
+        FieldAccess: {
+            visibleFields?: string[];
+            writableFields?: string[];
+        };
+        FieldEvaluateRequest: {
+            caller: components["schemas"]["FieldCaller"];
+            record: {
+                owner?: string;
+                id?: string;
+                fields: {
+                    [key: string]: unknown;
+                };
+            };
+            /**
+             * @description Empty for a read evaluation, `write` for a write evaluation.
+             * @enum {string}
+             */
+            mode?: "" | "write";
+        };
+        /** @description The access decision plus the enforced record view. Read mode returns `stripped`; write mode returns `filtered`. */
+        FieldEvaluateResponse: {
+            _access: components["schemas"]["FieldAccess"];
+            stripped?: {
+                [key: string]: unknown;
+            };
+            filtered?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description An append-only audit record of sensitive-field access. */
+        FieldAccessEvent: {
+            tenant?: string;
+            record_type?: string;
+            record_id?: string;
+            field?: string;
+            /** @description The audited action (e.g. `read_strip`). */
+            action?: string;
+            actor?: string;
+            /** Format: date-time */
+            at?: string;
+        };
+        FieldAccessEventList: {
+            events: components["schemas"]["FieldAccessEvent"][];
+        };
+        /** @description A connector configuration with secret values masked; secret_keys lists which secrets are set. */
+        Connector: {
+            /** @description Connector kind identifier. */
+            kind: string;
+            /** @description Owning tenant; omitted when unscoped. */
+            tenant_id?: string;
+            enabled: boolean;
+            /** @description Optional group scoping the connector. */
+            group_id?: string;
+            /** @description Connector-specific non-secret settings. */
+            config: {
+                [key: string]: unknown;
+            };
+            /** @description Names of the secrets that are set; values are never returned here. */
+            secret_keys: string[];
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ConnectorList: {
+            connectors: components["schemas"]["Connector"][];
+        };
+        /** @description Upsert payload for a connector's settings and secrets. */
+        ConnectorUpsert: {
+            tenant_id?: string;
+            enabled?: boolean;
+            group_id?: string;
+            /** @description Connector-specific non-secret settings (must be a JSON object). */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** @description Secret values to merge. A non-empty value overwrites, an empty string deletes that key, and omitted keys are preserved. */
+            secrets?: {
+                [key: string]: string;
+            };
+        };
+        /** @description A connector config together with its decrypted secret values. */
+        ConnectorCredentials: {
+            connector: components["schemas"]["Connector"];
+            /** @description Decrypted secret values keyed by secret name. */
+            secrets: {
+                [key: string]: string;
+            };
+        };
+        /** @description SharePoint sync worker status snapshot. */
+        SyncStatus: {
+            configured: boolean;
+            enabled: boolean;
+            collection_id?: string;
+            /** Format: date-time */
+            last_sync_at: string;
+            last_error?: string;
+            items_synced: number;
+            items_deleted: number;
+            items_failed: number;
+            items_skipped: number;
+            cycles_run: number;
+            /** @description Whether a delta resume link is persisted. */
+            has_delta_link: boolean;
+            /** @description True when the last cycle stopped at the item cap and the next cycle resumes the same delta round. */
+            resume_pending: boolean;
+        };
+        /** @description An employee's house-profile markdown and its last-updated timestamp. */
+        HouseProfile: {
+            /** @description The house-profile content, in markdown. */
+            markdown: string;
+            /**
+             * Format: date-time
+             * @description Last-updated timestamp; empty when no profile is set.
+             */
+            updated_at: string;
+        };
+        /** @description Replacement house-profile content. An empty markdown string clears the profile. */
+        HouseProfileUpdate: {
+            markdown: string;
+        };
+        /** @description A tenant's effective entitlement flag map. */
+        Entitlements: {
+            tenant_id: string;
+            /** @description Effective flag values (free floor overlaid with stored overrides). */
+            flags: {
+                [key: string]: unknown;
+            };
+        };
+        EntitlementsEnvelope: {
+            entitlements: components["schemas"]["Entitlements"];
+        };
+        /** @description Upsert payload for a tenant's entitlement flags. */
+        EntitlementsUpdate: {
+            flags: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description OpenID Connect discovery metadata. */
+        OidcDiscovery: {
+            /** Format: uri */
+            issuer?: string;
+            /** Format: uri */
+            authorization_endpoint?: string;
+            /** Format: uri */
+            token_endpoint?: string;
+            /** Format: uri */
+            userinfo_endpoint?: string;
+            /** Format: uri */
+            jwks_uri?: string;
+            response_types_supported?: string[];
+            subject_types_supported?: string[];
+            id_token_signing_alg_values_supported?: string[];
+            scopes_supported?: string[];
+            grant_types_supported?: string[];
+            token_endpoint_auth_methods_supported?: string[];
+        };
+        /** @description OAuth 2.0 error response. */
+        OauthError: {
+            /** @description Error code, e.g. `invalid_client`, `invalid_grant`, `redirect_uri_mismatch`, `pkce_required`, `pkce_mismatch`, `invalid_scope`, `unsupported_grant_type`, `unknown_provider`. */
+            error: string;
+        };
+        /** @description Token request. Required fields depend on `grant_type`: `authorization_code` uses code/redirect_uri/(code_verifier); `refresh_token` uses refresh_token/(scope); `client_credentials` uses client_id/client_secret. */
+        TokenRequest: {
+            /** @enum {string} */
+            grant_type: "authorization_code" | "refresh_token" | "client_credentials";
+            client_id?: string;
+            client_secret?: string;
+            code?: string;
+            /** Format: uri */
+            redirect_uri?: string;
+            /** @description PKCE verifier. */
+            code_verifier?: string;
+            refresh_token?: string;
+            /** @description Space-delimited. */
+            scope?: string;
+        };
+        TokenResponse: {
+            access_token: string;
+            /** @example Bearer */
+            token_type: string;
+            /** @description HS256 id token (present for the authorization_code / refresh_token grants). */
+            id_token?: string;
+            /** @example 3600 */
+            expires_in: number;
+            /** @description Present when the `offline_access` scope was granted, and always on a refresh_token rotation. */
+            refresh_token?: string;
+        };
+        UserInfo: {
+            sub?: string;
+            /** Format: email */
+            email?: string;
+            name?: string;
+            /** @description Deprecated singular mirror of the highest role in `roles`. */
+            role?: string;
+            tenant_id?: string;
+            roles?: string[];
+        };
+        OidcClient: {
+            client_id?: string;
+            /** Format: uri */
+            redirect_uri?: string;
+            app_id?: string;
+        };
+        ScimName: {
+            formatted?: string;
+            givenName?: string;
+            familyName?: string;
+        };
+        ScimEmail: {
+            /** Format: email */
+            value: string;
+            /** @example work */
+            type?: string;
+            primary?: boolean;
+        };
+        ScimMeta: {
+            /** @example User */
+            resourceType?: string;
+            /** Format: date-time */
+            created?: string;
+            /** Format: date-time */
+            lastModified?: string;
+            location?: string;
+        };
+        /** @description SCIM 2.0 core User resource (RFC 7643), restricted to the supported attributes. */
+        ScimUser: {
+            /**
+             * @example [
+             *       "urn:ietf:params:scim:schemas:core:2.0:User"
+             *     ]
+             */
+            schemas?: string[];
+            id?: string;
+            externalId?: string;
+            /**
+             * Format: email
+             * @description The user's email; unique.
+             */
+            userName: string;
+            name?: components["schemas"]["ScimName"];
+            displayName?: string;
+            active?: boolean;
+            emails?: components["schemas"]["ScimEmail"][];
+            meta?: components["schemas"]["ScimMeta"];
+        };
+        /** @description SCIM ListResponse envelope. */
+        ScimListResponse: {
+            /**
+             * @example [
+             *       "urn:ietf:params:scim:api:messages:2.0:ListResponse"
+             *     ]
+             */
+            schemas?: string[];
+            totalResults?: number;
+            startIndex?: number;
+            itemsPerPage?: number;
+            Resources?: components["schemas"]["ScimUser"][];
+        };
+        /** @description SCIM PatchOp request (RFC 7644 §3.5.2). */
+        ScimPatchOp: {
+            /**
+             * @example [
+             *       "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+             *     ]
+             */
+            schemas?: string[];
+            Operations: {
+                /** @enum {string} */
+                op: "add" | "replace" | "remove";
+                path?: string;
+                /** @description Attribute value; a bare value, an object, or (for `emails`) an array. Boolean `active` also accepts the string `"True"`/`"False"`. */
+                value?: unknown;
+            }[];
+        };
+        /** @description SCIM error response (RFC 7644 §3.12). `status` is a string. */
+        ScimError: {
+            /**
+             * @example [
+             *       "urn:ietf:params:scim:api:messages:2.0:Error"
+             *     ]
+             */
+            schemas?: string[];
+            /** @example 404 */
+            status?: string;
+            /** @description e.g. `invalidFilter`, `invalidValue`, `invalidSyntax`, `uniqueness`. */
+            scimType?: string;
+            detail?: string;
+        };
+        CreateServiceKeyRequest: {
+            name?: string;
+            /** @description Optional expiry in days; omit for a non-expiring key. */
+            expires_in_days?: number;
+        };
+        /** @description Service API key metadata (no secret). */
+        ServiceKey: {
+            id?: string;
+            /** @example nk_Ng9IdeX4S */
+            key_prefix?: string;
+            name?: string;
+            is_active?: boolean;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            last_used_at?: string;
+            /** Format: date-time */
+            expires_at?: string;
+        };
+        ServiceKeyList: {
+            keys?: components["schemas"]["ServiceKey"][];
+        };
+        /** @description One-time mint response carrying the full secret. Store it immediately; it is never recoverable. */
+        ServiceKeySecret: {
+            id?: string;
+            /** @example nk_Ng9IdeX4S */
+            key_prefix?: string;
+            /** @description The full `nk_` key. Returned only once. */
+            secret?: string;
+            name?: string;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            expires_at?: string;
+        };
+        /** @description One-time mint response for a per-agent key carrying the full secret. */
+        AgentKey: {
+            id?: string;
+            /** @example nk_Ng9IdeX4S */
+            key_prefix?: string;
+            /** @description The full `nk_` key. Returned only once. */
+            secret?: string;
+            name?: string;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        /** @description One installed app. */
+        App: {
+            name: string;
+            version: string;
+            schema_prefix: string;
+            manifest_path: string;
+            status: string;
+            /** Format: date-time */
+            installed_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+            /** Format: date-time */
+            archived_at?: string | null;
+            archived_by?: string | null;
+            last_error?: string | null;
+            agents_count: number;
+        };
+        AppList: {
+            apps: components["schemas"]["App"][];
+        };
+        /** @description Minimal app-scoped agent summary. */
+        AppAgent: {
+            id: string;
+            capabilities: string[];
+        };
+        AppAgentList: {
+            agents: components["schemas"]["AppAgent"][];
+        };
+        /** @description One schema-migration audit row for an app. */
+        AppMigration: {
+            filename: string;
+            checksum: string;
+            /** @enum {string} */
+            status: "applied" | "failed";
+            /** Format: date-time */
+            applied_at: string;
+            /** @description Null when status is applied. */
+            error_message: string | null;
+        };
+        AppMigrationList: {
+            app: string;
+            migrations: components["schemas"]["AppMigration"][];
+        };
+        /** @description Result of an install, reload, or uninstall operation. */
+        AppInstallResult: {
+            name: string;
+            version: string;
+            registered: boolean;
+            agents_registered: number;
+            agents_unregistered: number;
+            migrations_applied: number;
+            status?: string;
+            /** @description Present only when the operation failed. */
+            errors?: string[];
+        };
+        /** @description JSON-RPC 2.0 request envelope. */
+        McpRequest: {
+            /** @enum {string} */
+            jsonrpc: "2.0";
+            /** @description JSON-RPC request id (string, number, or null), echoed on the response. */
+            id?: unknown;
+            /** @description One of initialize, tools/list, tools/call, resources/list, resources/read. */
+            method: string;
+            /** @description Method-specific parameters. */
+            params?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description JSON-RPC 2.0 response envelope. Exactly one of result or error is present. */
+        McpResponse: {
+            /** @enum {string} */
+            jsonrpc: "2.0";
+            /** @description JSON-RPC request id (string, number, or null), echoed on the response. */
+            id: unknown;
+            result?: {
+                [key: string]: unknown;
+            };
+            error?: {
+                code: number;
+                message: string;
+            };
+        };
+        SkillRunResponse: {
+            /** @description Raw string returned by the tool handler. */
+            output: string;
+        };
+        /** @description Resolved state of one gated feature. */
+        FeatureStatus: {
+            name: string;
+            /** @enum {string} */
+            state: "on" | "off" | "degraded";
+            /** @enum {string} */
+            resolved_from: "env" | "setting" | "default";
+            flag?: string;
+            reason?: string;
+            runtime_mutable?: boolean;
+        };
+        FeatureList: {
+            /** Format: date-time */
+            generated_at: string;
+            features: components["schemas"]["FeatureStatus"][];
+        };
+        /** @description Aggregated infrastructure-health signals over the requested window. */
+        InfraHealth: {
+            /** Format: date-time */
+            window_since: string;
+            error_clusters: components["schemas"]["InfraErrorCluster"][];
+            tool_errors: components["schemas"]["InfraToolError"][];
+            latency: components["schemas"]["InfraLatencyStat"][];
+            identity_errors: components["schemas"]["InfraErrorCluster"][];
+            grounding_outcomes: components["schemas"]["InfraGroundingCounts"];
+        };
+        InfraErrorCluster: {
+            pattern: string;
+            count: number;
+            sample: string;
+            top_agents?: string[];
+            top_models?: string[];
+            top_providers?: string[];
+            /** Format: date-time */
+            first_seen: string;
+            /** Format: date-time */
+            last_seen: string;
+        };
+        InfraToolError: {
+            tool: string;
+            invocations: number;
+            errored_turns: number;
+            errored_turn_rate: number;
+            sample_errors?: string[];
+        };
+        InfraLatencyStat: {
+            model: string;
+            provider: string;
+            p50_ms: number;
+            p95_ms: number;
+            p99_ms: number;
+            n: number;
+        };
+        InfraGroundingCounts: {
+            grounded: number;
+            ungrounded_refusal: number;
+            ungrounded_no_chunks: number;
+            degraded: number;
+            unknown: number;
+        };
+        /** @description One log row. Stable across both sources. */
+        LogEntry: {
+            /** Format: date-time */
+            ts: string;
+            level: string;
+            msg: string;
+            fields?: {
+                [key: string]: unknown;
+            };
+            /** @description Set only on source=requests rows. */
+            request_id?: string;
+        };
+        LogList: {
+            logs: components["schemas"]["LogEntry"][];
+            next_cursor?: string;
+            /** @enum {string} */
+            source: "server" | "requests";
+            total_in_buffer: number;
         };
     };
     responses: {
@@ -2706,6 +5569,3709 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    nativeChat: {
+        parameters: {
+            query?: {
+                /** @description Alias for the body `fast` flag. When true the request is dispatched directly to the agent's primary skill, skipping planning. */
+                fast?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description The agent identifier the chat turn is routed to. */
+                api_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Chat turn completed (synchronous). SSE stream when `stream:true`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeChatResult"];
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Bad request — invalid body, no messages, or `fast:true` requested for an agent that has no skills. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    createNativeJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The agent identifier the job is submitted against. */
+                api_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Job accepted and queued. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeJobAccepted"];
+                };
+            };
+            /** @description Invalid body, no messages, or the target agent does not support asynchronous streaming. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Async jobs disabled (no persistence backend configured). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getNativeJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                api_key: string;
+                /** @description The job identifier returned at submission. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current job state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeJob"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Async jobs disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    cancelNativeJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                api_key: string;
+                /** @description The job identifier returned at submission. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancellation accepted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeJobCancelled"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Job already in a terminal state (done/failed/cancelled). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Async jobs disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    streamNativeJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Resume token. Replays persisted events with a sequence greater than this value, then continues live. Enables reconnect without losing events. */
+                "Last-Event-ID"?: number;
+            };
+            path: {
+                api_key: string;
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event stream. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Async jobs disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    chatCompletions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatCompletionRequest"];
+            };
+        };
+        responses: {
+            /** @description Completion (synchronous) or an SSE stream of `chat.completion.chunk` frames terminated by `[DONE]` when `stream:true`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatCompletionResponse"];
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Invalid request body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["RateLimited"];
+            /** @description Upstream provider error (raw passthrough path). */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No provider configured for passthrough. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listModels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Model list. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    countTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CountTokensRequest"];
+            };
+        };
+        responses: {
+            /** @description Estimated input token count. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountTokensResult"];
+                };
+            };
+            /** @description Invalid request or validation failure. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    transcribeAudio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["TranscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Transcript. With `response_format=json` (default) a JSON object is returned; verbose/segment formats and `text`/`srt`/`vtt` are proxied from the model verbatim. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionResponse"];
+                    "text/plain": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Audio file exceeds the configured upload ceiling (default 25 MB). */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Transcription is unconfigured or disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    synthesizeSpeech: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpeechRequest"];
+            };
+        };
+        responses: {
+            /** @description Synthesized audio. Content-Type reflects the requested `response_format` (default `audio/mpeg`). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/mpeg": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Request body exceeds the configured ceiling (default 1 MB). */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Speech synthesis is unconfigured or disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    realtimeVoice: {
+        parameters: {
+            query?: {
+                /** @description Realtime model to use (provider-prefixed). Falls back to the server-configured default when omitted. */
+                model?: string;
+            };
+            header: {
+                /** @description Must be `Upgrade` for the WebSocket handshake. */
+                Connection: string;
+                /** @description Must be `websocket` for the WebSocket handshake. */
+                Upgrade: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description WebSocket handshake accepted; the connection is upgraded and voice frames flow in both directions until either side closes. */
+            101: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description The upstream realtime endpoint could not be reached. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Realtime voice is unconfigured or disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    generateImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageGenerationRequest"];
+            };
+        };
+        responses: {
+            /** @description Generated images (URLs or base64) per `response_format`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Request body exceeds the configured ceiling (default 25 MB). */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Image generation is unconfigured or disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    editImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ImageEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Edited images (URLs or base64) per `response_format`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Request body exceeds the configured ceiling (default 25 MB). */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Image generation is unconfigured or disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    imageVariation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ImageVariationRequest"];
+            };
+        };
+        responses: {
+            /** @description Image variations (URLs or base64) per `response_format`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Request body exceeds the configured ceiling (default 25 MB). */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Image generation is unconfigured or disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    ocrDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description The PDF to OCR.
+                     */
+                    file: string;
+                    /** @description Optional caller-supplied SHA-256 of the file, used as the result-cache key. */
+                    file_sha256?: string;
+                    /** @description Optional cap on pages to process (0 or omitted = all pages). */
+                    max_pages?: number;
+                };
+                "application/json": components["schemas"]["OcrRequest"];
+            };
+        };
+        responses: {
+            /** @description OCR result. Repeat calls on the same file are served from cache. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OcrResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Decoded PDF exceeds the size limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Body is not a PDF. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description OCR is disabled on this deployment. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    extractDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description The document to extract. The part's filename supplies the extension.
+                     */
+                    file: string;
+                    /** @description Optional filename override (wins over the uploaded part's name). */
+                    filename?: string;
+                };
+                "application/json": components["schemas"]["ExtractRequest"];
+            };
+        };
+        responses: {
+            /** @description Extracted text and detected document metadata. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Decoded document exceeds the size limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description File extension is not a supported document type. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Extraction is disabled on this deployment. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getMemory: {
+        parameters: {
+            query: {
+                /** @description The persona whose memory to read. */
+                agent_id: string;
+                /** @description Which memory scope to read. Defaults to corporate. */
+                scope?: "corporate" | "personal";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Memory log (empty content when nothing remembered yet). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryLog"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    listKnowledgeSignals: {
+        parameters: {
+            query?: {
+                /** @description Filter by signal status. Defaults to pending. */
+                status?: "pending" | "quarantined" | "eligible" | "promoted" | "rejected" | "superseded";
+                /** @description Maximum signals to return. Defaults to 100. */
+                limit?: number;
+                /** @description Admin override to read another tenant's signals. Defaults to the caller's tenant. */
+                tenant?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The matching signals and their count. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeSignalList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Knowledge signals are unavailable on this deployment. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listPromotionCandidates: {
+        parameters: {
+            query?: {
+                /** @description Admin override to read another tenant's candidates. Defaults to the caller's tenant. */
+                tenant?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The promotion-eligible fact keys. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionCandidates"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Knowledge signals are unavailable on this deployment. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    uploadFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description The file to upload.
+                     */
+                    file: string;
+                    /** @description Intended use of the file. Defaults to `assistants`. */
+                    purpose?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The uploaded file object. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileObject"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Document engine unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file object. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileObject"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Document engine unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteUploadedFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deletion confirmation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileDeleted"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Document engine unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listConversations: {
+        parameters: {
+            query?: {
+                /** @description Filter to conversations for a single agent. */
+                agent?: string;
+                /** @description Maximum conversations to return (1-200, default 50). */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's conversations. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationCreate"];
+            };
+        };
+        responses: {
+            /** @description The created (or existing) conversation. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Metadata exceeds the 4 KB cap. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conversation metadata and message log. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deletion confirmation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationDeleted"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    renameConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The updated conversation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateConversationMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    metadata?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The updated metadata map. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id?: string;
+                        metadata?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Metadata exceeds the 4 KB cap. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    addAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description The file to attach.
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The stored attachment reference. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Attachment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Per-conversation attachment cap reached. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description File exceeds the maximum allowed size. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description MIME type not in the allowlist. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    downloadAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cid: string;
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The attachment bytes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Redirect to a time-limited download URL. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description The attachment was deleted. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cid: string;
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The attachment was deleted (or was already deleted). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listActions: {
+        parameters: {
+            query?: {
+                /** @description Filter by status; unrecognized values fall back to `pending`. */
+                status?: "pending" | "approved" | "rejected" | "executed" | "failed";
+                /** @description Filter by connector source label. */
+                source?: string;
+                /** @description Filter by connector correlation key. */
+                external_ref?: string;
+                /** @description Max rows (default 50, capped at 200). */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The matching actions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateActionRequest"];
+            };
+        };
+        responses: {
+            /** @description The parked action. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionEnvelope"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The action. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionEnvelope"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    claimAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The claimed action. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionEnvelope"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Already claimed by another user. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example already_claimed */
+                        error?: string;
+                        claimed_by?: string;
+                    };
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    approveAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ActionDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The action after execution (check `status`). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionEnvelope"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Action was already decided by another caller. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example already_decided */
+                        error?: string;
+                        status?: string;
+                    };
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description The executor could not be resolved; the action is marked failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Feature disabled, executor not configured, or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    rejectAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ActionDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The rejected action. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionEnvelope"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Action was already decided by another caller. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example already_decided */
+                        error?: string;
+                        status?: string;
+                    };
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listGroups: {
+        parameters: {
+            query?: {
+                /** @description Restrict to groups in this tenant. */
+                tenant_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The groups. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description The created group. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupEnvelope"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description A group with this id or (tenant, name) already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listMyGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's memberships. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyGroupList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The group with its members. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupEnvelope"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example deleted */
+                        status?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    addGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddGroupMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Membership set. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example ok */
+                        status?: string;
+                        group_id?: string;
+                        user_id?: string;
+                        role?: components["schemas"]["GroupRole"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    removeGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example removed */
+                        status?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled or PostgreSQL unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listFieldPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant's field policies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldPolicyList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getFieldPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The record type the policy governs. */
+                type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The field policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldPolicy"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateFieldPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FieldPolicy"];
+            };
+        };
+        responses: {
+            /** @description The stored policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldPolicy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    evaluateFieldPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FieldEvaluateRequest"];
+            };
+        };
+        responses: {
+            /** @description The access decision plus the enforced record view. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldEvaluateResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listFieldAccessEvents: {
+        parameters: {
+            query?: {
+                /** @description Filter by record type. */
+                record_type?: string;
+                /** @description Filter by record id. */
+                record_id?: string;
+                /** @description Only events at or after this RFC 3339 timestamp. */
+                since?: string;
+                /** @description Max rows (default 200, capped at 1000). */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The matching audit events. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldAccessEventList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Feature disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listConnectors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Connector configs with secret keys listed but values masked. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Connector configuration store unavailable (requires PostgreSQL and an integration key). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getConnector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Connector kind identifier (e.g. sharepoint). */
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The connector config with secret keys listed but values masked. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connector: components["schemas"]["Connector"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Connector configuration store unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    putConnector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectorUpsert"];
+            };
+        };
+        responses: {
+            /** @description The stored connector config (masked view). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connector: components["schemas"]["Connector"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Connector configuration store unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteConnector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The connector was deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example deleted */
+                        status: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Connector configuration store unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getConnectorCredentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The connector config plus its decrypted secret values. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorCredentials"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description Connector configuration store unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getSharepointSyncStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The current SharePoint sync status snapshot. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example sharepoint */
+                        kind: string;
+                        status: components["schemas"]["SyncStatus"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description SharePoint sync worker is not running (requires PostgreSQL). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getHouseProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Employee (persona) identifier. */
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The employee's house-profile markdown and its last-updated timestamp. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            /** @description House-profile store unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    putHouseProfile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The profile's current updated_at (RFC 3339). When present and it does not match the stored value, the write is rejected with 409. */
+                "If-Match"?: string;
+            };
+            path: {
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HouseProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description The stored house-profile markdown and its authoritative updated_at. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseProfile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description If-Match precondition failed; the profile was modified concurrently. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example stale */
+                        error?: string;
+                        current_updated_at?: string;
+                    };
+                };
+            };
+            /** @description The markdown exceeds the maximum allowed size. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example too_large */
+                        error?: string;
+                        max_bytes?: number;
+                    };
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description House-profile store unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEntitlements: {
+        parameters: {
+            query: {
+                /** @description Tenant identifier. */
+                tenant: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant's effective entitlement flags. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitlementsEnvelope"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Entitlements store unavailable (requires PostgreSQL). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    putEntitlements: {
+        parameters: {
+            query: {
+                tenant: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntitlementsUpdate"];
+            };
+        };
+        responses: {
+            /** @description The tenant's stored effective flags after the update. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitlementsEnvelope"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Entitlements store unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getTenantEntitlements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tenant identifier. */
+                tenant: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant's effective entitlement flags. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitlementsEnvelope"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Entitlements store unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    putTenantEntitlements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntitlementsUpdate"];
+            };
+        };
+        responses: {
+            /** @description The tenant's stored effective flags after the update. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitlementsEnvelope"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Entitlements store unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    oauthDiscovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discovery metadata. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OidcDiscovery"];
+                };
+            };
+        };
+    };
+    oauthOpenid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to `/oauth/authorize` preserving the query string. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    oauthAuthorize: {
+        parameters: {
+            query: {
+                client_id: string;
+                /** @description Must exactly match the registered value; defaults to it when omitted. */
+                redirect_uri?: string;
+                response_type?: "code";
+                /** @description Space-delimited; e.g. `openid profile email offline_access`. */
+                scope?: string;
+                state?: string;
+                /** @description PKCE challenge; required for public/PKCE-only clients. */
+                code_challenge?: string;
+                /** @description Accepted for compatibility; challenges are always treated as S256. */
+                code_challenge_method?: "S256";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Login page (no valid session). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Redirect to `redirect_uri` with `code` and `state`. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `invalid_client`, `redirect_uri_mismatch`, or `pkce_required`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OauthError"];
+                };
+            };
+        };
+    };
+    oauthLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": {
+                    /** Format: email */
+                    email: string;
+                    /** Format: password */
+                    password: string;
+                    /** @description Post-login redirect target (same-origin relative path). */
+                    continue?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Login page re-rendered with an error, or `{ "status": "logged_in" }` when no `continue` was supplied. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redirect to the `continue` URL. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    oauthToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["TokenRequest"];
+                "application/json": components["schemas"]["TokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Issued token set. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description `invalid_grant`, `redirect_uri_mismatch`, `pkce_required`, `pkce_mismatch`, `invalid_scope`, or `unsupported_grant_type`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OauthError"];
+                };
+            };
+            /** @description `invalid_client` (bad client_credentials). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OauthError"];
+                };
+            };
+        };
+    };
+    oauthRevoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": {
+                    token?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Revocation acknowledged (empty body). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    oauthUserinfo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Identity claims. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserInfo"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    oauthClients: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Registered clients. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OidcClient"][];
+                };
+            };
+        };
+    };
+    oauthUpstreamLogin: {
+        parameters: {
+            query?: {
+                /** @description Same-origin relative path to return to after sign-in. */
+                continue?: string;
+            };
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the upstream provider. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unknown_provider`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OauthError"];
+                };
+            };
+        };
+    };
+    oauthUpstreamCallback: {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                error?: string;
+            };
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Login page re-rendered with an error. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Redirect to the `continue` target on success. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unknown_provider`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OauthError"];
+                };
+            };
+        };
+    };
+    scimServiceProviderConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service provider configuration document. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": Record<string, never>;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    scimResourceTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ResourceType list response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    scimSchemas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Schema list response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    scimListUsers: {
+        parameters: {
+            query?: {
+                /** @description Only `userName eq "value"` is supported. */
+                filter?: string;
+                startIndex?: number;
+                count?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List response of users. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimListResponse"];
+                };
+            };
+            /** @description Unsupported filter (`invalidFilter`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    scimCreateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/scim+json": components["schemas"]["ScimUser"];
+            };
+        };
+        responses: {
+            /** @description Created user (with `Location` header). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimUser"];
+                };
+            };
+            /** @description `invalidSyntax` / `invalidValue`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description `uniqueness` — userName already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+        };
+    };
+    scimGetUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user resource. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description User not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+        };
+    };
+    scimReplaceUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/scim+json": components["schemas"]["ScimUser"];
+            };
+        };
+        responses: {
+            /** @description The updated user resource. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimUser"];
+                };
+            };
+            /** @description `invalidSyntax` / `invalidValue`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description User not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+            /** @description `uniqueness` — userName already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+        };
+    };
+    scimDeleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deactivated (empty body). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description User not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+        };
+    };
+    scimPatchUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/scim+json": components["schemas"]["ScimPatchOp"];
+            };
+        };
+        responses: {
+            /** @description The updated user resource. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimUser"];
+                };
+            };
+            /** @description `invalidSyntax` / `invalidValue` / unsupported op. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description User not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+            /** @description `uniqueness` — userName already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/scim+json": components["schemas"]["ScimError"];
+                };
+            };
+        };
+    };
+    listServiceKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The service keys. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceKeyList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createServiceKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceKeyRequest"];
+            };
+        };
+        responses: {
+            /** @description The minted key including its one-time secret. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceKeySecret"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createSelfServiceKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceKeyRequest"];
+            };
+        };
+        responses: {
+            /** @description The minted key including its one-time secret. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceKeySecret"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    deleteServiceKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                keyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example ok */
+                        status?: string;
+                        id?: string;
+                        /** @example false */
+                        is_active?: boolean;
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createAgentKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Agent id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The minted key including its one-time secret. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentKey"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listApps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installed apps. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Apps registry not configured (persistent storage required). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listAppAgents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agents registered under the app. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppAgentList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getAppAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The app-scoped agent. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppAgent"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    appAgentChat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Chat response (JSON), or an SSE stream when `stream` is true. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeChatResult"];
+                    "text/event-stream": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAppMigrations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Migration history for the app. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppMigrationList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Apps registry not configured (persistent storage required). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    installApp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Install result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppInstallResult"];
+                };
+            };
+            /** @description Malformed app name (e.g. path-traversal or empty). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Staged directory has no app manifest. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation, lint, or migration-apply errors. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppInstallResult"];
+                };
+            };
+        };
+    };
+    reloadApp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reload result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppInstallResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation, lint, or migration-apply errors. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppInstallResult"];
+                };
+            };
+        };
+    };
+    uninstallApp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Uninstall result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppInstallResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Errors while unwinding the app. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppInstallResult"];
+                };
+            };
+        };
+    };
+    mcpRpc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["McpRequest"];
+            };
+        };
+        responses: {
+            /** @description JSON-RPC response envelope (result or error). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["McpResponse"];
+                };
+            };
+            /** @description Request body was not valid JSON. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Missing `mcp:read` scope or caller identity. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description MCP is disabled on this deployment. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    runSkillTool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill: string;
+                tool: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description The tool's raw output. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillRunResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Skill or tool not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The tool handler returned an error. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Skills catalog not initialized. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getFeatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Feature-status snapshot. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Feature-status endpoint disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getInfraHealth: {
+        parameters: {
+            query?: {
+                /** @description Rolling window as a duration (e.g. `24h`, `90m`). Default 24h, capped at 7d. */
+                window?: string;
+                /** @description Max rows per aggregated list. Default 20, capped at 200. */
+                limit?: number;
+                agent?: string;
+                model?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated infra-health report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InfraHealth"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Endpoint disabled, or persistent storage not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getLogs: {
+        parameters: {
+            query?: {
+                /** @description Log source. */
+                source?: "server" | "requests";
+                /** @description Max rows. Default 200, capped at 1000. */
+                limit?: number;
+                /** @description RFC 3339 lower bound. Default 1h ago. */
+                since?: string;
+                level?: "debug" | "info" | "warn" | "error";
+                /** @description Case-insensitive substring filter. */
+                q?: string;
+                /** @description Opaque pagination cursor from a prior response's `next_cursor`. */
+                cursor?: string;
+                /** @description Filter to a single request/call id (source=requests). */
+                request_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of log entries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogList"];
+                };
+            };
+            /** @description Invalid `source` value. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Endpoint disabled, or source=requests requires persistent storage. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
 }
