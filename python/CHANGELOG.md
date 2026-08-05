@@ -2,6 +2,61 @@
 
 All notable changes to `libraos-sdk` (Python) will be documented in this file.
 
+## [1.1.1] — 2026-08-05
+
+Python SDK changes since `1.0.0`.
+
+> **Note on what was already shipped.** Several entries below — the `c.documents`,
+> `c.knowledge`, `c.hooks`, `c.filesystem`, `c.users`, `c.settings`, `c.sessions` and
+> `c.personas` wrappers, and `client.simulate()` — were already present in the
+> published `1.0.1`/`1.0.2` artifacts; they were bound by `Client.__init__` but never
+> documented or claimed by a release. They are recorded here because this is the
+> release that first documents them (the README work shipped separately in `1.0.3`).
+> Nothing about their behaviour changes; if you are already calling them on `1.0.2`
+> or `1.0.3`, they are the same methods. What is genuinely new in this cut is the simulator work — the
+> rubric-grading harness and the vertical pack loader.
+>
+> `1.1.0` was published and then **yanked** — it shipped these simulator features ahead
+> of the partner-prefix gate this section describes. The version number stays reserved
+> on PyPI and cannot be reused, so the next minor cut is `1.1.1`. The discoverability
+> fix it also carried was re-released on its own as `1.0.3`.
+
+The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare new server endpoints the SDK now wraps. For LibraOS **server-side** release notes that pair with this SDK release, see [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases).
+
+### Added
+- **Partner OpenAPI expanded to the full current surface** — 31 → 109 paths, with the
+  Go, TypeScript and Python clients regenerated from it ([`libraos-sdk#62`](https://github.com/libraos/sdk/pull/62)). Purely additive: none of
+  the 31 existing paths were removed. The regenerated code lands in
+  `libraos._generated`; the hand-written public API is untouched, so partner code
+  keeps working unchanged. This was the partner-prefix gate the 1.1.x line waited on.
+
+- **Typed `Message` response** from `messages.create()` (#74). A `dict`
+  subclass, so every existing access pattern is unchanged
+  (`resp["content"][0]["text"]`, `isinstance(resp, dict)`, `json.dumps`) while
+  callers gain typed access — `resp.content[0].text` — and a `resp.text`
+  convenience that joins all text blocks. Exported as `Message`,
+  `ContentBlock`, `Usage`.
+- **Opt-in integration tests** against a real server (#73): `tests/integration`
+  under a `-m integration` marker, skipped unless `LIBRA_OS_URL` /
+  `LIBRA_OS_API_KEY` are set, plus a weekly `integration.yml` CI job that boots
+  a container + Postgres and runs them. This is the layer that catches
+  server-side contract breaks (like the 1.0.1 `model` fix) that mock-transport
+  unit tests cannot.
+
+- **`c.documents`** — partner-prefix CRUD wrapper for `/v1/managed/documents`. OpenAPI alpha.3.
+- **`c.knowledge`** — partner-prefix wrapper for `/v1/managed/knowledge`. OpenAPI alpha.3.
+- **`c.hooks`** — partner-prefix CRUD for lifecycle-hook subscriptions under `/v1/managed/hooks`. OpenAPI alpha.3. First slice is in-memory on the server; persistence + bus bridge tracked for a follow-up.
+- **`c.filesystem`** — partner-prefix wrapper for `/v1/managed/filesystem`. OpenAPI alpha.3. `POST /provision` endpoint deferred to a follow-up.
+- **`c.users`** + **`c.settings`** — partner-prefix wrappers for `/v1/managed/users` and `/v1/managed/settings`. OpenAPI alpha.3.
+- **`c.sessions`** — partner-prefix wrapper for `/v1/managed/sessions`. OpenAPI alpha.4. Currently `create` + `get`; `list` / `delete` / `fork` tracked for a follow-up.
+- **`c.personas`** — boot-time persona-contract surface (`GET /agents/v1/personas` + `:id`) with `If-None-Match` ETag round-trip and `PersonaNotFound` typed error. OpenAPI alpha.5. Closes [`libraos-sdk#14`](https://github.com/libraos/sdk/issues/14).
+- **`PersonaNotFound`** typed error — subclass of `NotFoundError`, raised by `c.personas.get(persona_id)` on a 404 with the persona-envelope shape `{"error": "persona not found", "id": ...}`. `parse_error_response` detects the envelope.
+- Examples 16 (sessions), 17 (personas discovery), and 18 (custom persona + `output_type.persist_fields` slot collection across sync + streaming) under `python/examples/`.
+
+### Fixed
+
+- **Codegen-python CI gate unblocked** ([`libraos-sdk#15`](https://github.com/libraos/sdk/issues/15)). `openapi-python-client` 0.28.3 had been crashing on every push since `AgentCreate` landed as `allOf: [Agent]`, leaving `_generated/` permanently stale. Flattened `AgentCreate` to a duplicated property block (wire shape unchanged) and loosened `Agent.route_templates` from `additionalProperties: {type: string}` to `additionalProperties: true`. Codegen now produces full output for all 8 alpha.3-alpha.5 resources (`documents`, `filesystem`, `hooks`, `knowledge`, `personas`, `sessions`, `settings`, `users`) — previously these endpoints were declared in OpenAPI but never auto-generated, so `_generated/` only carried the v0.9.0 surface. Hand-written `nova_os/resources/*.py` public API unaffected; partner code keeps working.
+
 ## [1.0.3] — 2026-08-05
 
 Documentation and packaging only — no library code changed. Cut from `v1.0.2` rather
@@ -44,56 +99,6 @@ documented.
 - First version actually published to PyPI. The release workflow's PyPI upload
   had been gated on an unset `PYPI_API_TOKEN` secret and silently skipped every
   tag (incl. 1.0.0); it now publishes via PyPI Trusted Publishing (OIDC).
-
-## [Unreleased] — towards 1.1.1
-
-Python SDK changes since `1.0.0`.
-
-> **Note on what was already shipped.** Several entries below — the `c.documents`,
-> `c.knowledge`, `c.hooks`, `c.filesystem`, `c.users`, `c.settings`, `c.sessions` and
-> `c.personas` wrappers, and `client.simulate()` — were already present in the
-> published `1.0.1`/`1.0.2` artifacts; they were bound by `Client.__init__` but never
-> documented or claimed by a release. They are recorded here because this is the
-> release that first documents them (the README work shipped separately in `1.0.3`).
-> Nothing about their behaviour changes; if you are already calling them on `1.0.2`
-> or `1.0.3`, they are the same methods. What is genuinely new in this cut is the simulator work — the
-> rubric-grading harness and the vertical pack loader.
->
-> `1.1.0` was published and then **yanked** — it shipped these simulator features ahead
-> of the partner-prefix gate this section describes. The version number stays reserved
-> on PyPI and cannot be reused, so the next minor cut is `1.1.1`. The discoverability
-> fix it also carried was re-released on its own as `1.0.3`.
-
-The OpenAPI spec advanced through `1.0.0-alpha.3` → `1.0.0-alpha.4` → `1.0.0-alpha.5` to declare new server endpoints the SDK now wraps. For LibraOS **server-side** release notes that pair with this SDK release, see [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases).
-
-### Added
-
-- **Typed `Message` response** from `messages.create()` (#74). A `dict`
-  subclass, so every existing access pattern is unchanged
-  (`resp["content"][0]["text"]`, `isinstance(resp, dict)`, `json.dumps`) while
-  callers gain typed access — `resp.content[0].text` — and a `resp.text`
-  convenience that joins all text blocks. Exported as `Message`,
-  `ContentBlock`, `Usage`.
-- **Opt-in integration tests** against a real server (#73): `tests/integration`
-  under a `-m integration` marker, skipped unless `LIBRA_OS_URL` /
-  `LIBRA_OS_API_KEY` are set, plus a weekly `integration.yml` CI job that boots
-  a container + Postgres and runs them. This is the layer that catches
-  server-side contract breaks (like the 1.0.1 `model` fix) that mock-transport
-  unit tests cannot.
-
-- **`c.documents`** — partner-prefix CRUD wrapper for `/v1/managed/documents`. OpenAPI alpha.3.
-- **`c.knowledge`** — partner-prefix wrapper for `/v1/managed/knowledge`. OpenAPI alpha.3.
-- **`c.hooks`** — partner-prefix CRUD for lifecycle-hook subscriptions under `/v1/managed/hooks`. OpenAPI alpha.3. First slice is in-memory on the server; persistence + bus bridge tracked for a follow-up.
-- **`c.filesystem`** — partner-prefix wrapper for `/v1/managed/filesystem`. OpenAPI alpha.3. `POST /provision` endpoint deferred to a follow-up.
-- **`c.users`** + **`c.settings`** — partner-prefix wrappers for `/v1/managed/users` and `/v1/managed/settings`. OpenAPI alpha.3.
-- **`c.sessions`** — partner-prefix wrapper for `/v1/managed/sessions`. OpenAPI alpha.4. Currently `create` + `get`; `list` / `delete` / `fork` tracked for a follow-up.
-- **`c.personas`** — boot-time persona-contract surface (`GET /agents/v1/personas` + `:id`) with `If-None-Match` ETag round-trip and `PersonaNotFound` typed error. OpenAPI alpha.5. Closes [`libraos-sdk#14`](https://github.com/libraos/sdk/issues/14).
-- **`PersonaNotFound`** typed error — subclass of `NotFoundError`, raised by `c.personas.get(persona_id)` on a 404 with the persona-envelope shape `{"error": "persona not found", "id": ...}`. `parse_error_response` detects the envelope.
-- Examples 16 (sessions), 17 (personas discovery), and 18 (custom persona + `output_type.persist_fields` slot collection across sync + streaming) under `python/examples/`.
-
-### Fixed
-
-- **Codegen-python CI gate unblocked** ([`libraos-sdk#15`](https://github.com/libraos/sdk/issues/15)). `openapi-python-client` 0.28.3 had been crashing on every push since `AgentCreate` landed as `allOf: [Agent]`, leaving `_generated/` permanently stale. Flattened `AgentCreate` to a duplicated property block (wire shape unchanged) and loosened `Agent.route_templates` from `additionalProperties: {type: string}` to `additionalProperties: true`. Codegen now produces full output for all 8 alpha.3-alpha.5 resources (`documents`, `filesystem`, `hooks`, `knowledge`, `personas`, `sessions`, `settings`, `users`) — previously these endpoints were declared in OpenAPI but never auto-generated, so `_generated/` only carried the v0.9.0 surface. Hand-written `nova_os/resources/*.py` public API unaffected; partner code keeps working.
 
 ## [1.0.0] — 2026-05-02
 
