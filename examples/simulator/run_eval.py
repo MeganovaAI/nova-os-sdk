@@ -79,6 +79,35 @@ from libraos import Archetype, Client
 from libraos.simulator import SimulationResult, TurnEvent
 
 
+def _drift_json(result: SimulationResult) -> dict[str, Any] | None:
+    """Serialise the persona-drift metric for the CI artefact (#29).
+
+    ``score`` is deliberately ``None`` rather than ``0.0`` when the run was too
+    short to measure: a downstream regression suite averaging this column must
+    not mistake "not measured" for "no drift".
+    """
+    drift = result.drift
+    if drift is None:
+        return None
+    return {
+        "score": drift.score if drift.measured else None,
+        "threshold": drift.threshold,
+        "alert_triggered": drift.alert_triggered,
+        "method": drift.method,
+        "measured": drift.measured,
+        "first_drift_turn_index": drift.first_drift_turn_index,
+        "per_turn": [
+            {
+                "turn_index": t.turn_index,
+                "score": t.score,
+                "components": t.components,
+                "evidence": t.evidence,
+            }
+            for t in drift.per_turn
+        ],
+    }
+
+
 def main() -> int:
     # 1. Read configuration. We construct ONLY the eval client — see the
     #    module docstring for the two-client rationale.
@@ -151,6 +180,20 @@ def main() -> int:
                 turn_count += 1
                 preview = (event.content or "").replace("\n", " ")[:160]
                 print(f"  [{turn_count:2d}] TARGET:    {preview}")
+            elif event.kind == "drift_alert":
+                # #29: the persona decayed mid-run. The trajectory below may
+                # still terminate on the success_signal — but it was scored
+                # against a simulator that had stopped playing this archetype,
+                # so treat the run's verdict as suspect rather than as a pass.
+                assert event.drift is not None
+                print(
+                    f"  !! DRIFT ALERT at turn {event.turn_index}: "
+                    f"score={event.drift.score:.2f} "
+                    f"(threshold {event.drift.threshold:.2f})"
+                )
+                for probe in event.drift.per_turn:
+                    if probe.evidence:
+                        print(f"       turn {probe.turn_index}: {probe.evidence[0]}")
             elif event.kind == "outcome":
                 final_outcome = event.outcome
 
@@ -164,6 +207,13 @@ def main() -> int:
         print(f"  reason:   {final_outcome.outcome_reason or '-'}")
         print(f"  turns:    {len(final_outcome.transcript)}")
         print(f"  duration: {final_outcome.duration_ms}ms")
+        if final_outcome.drift is not None and final_outcome.drift.measured:
+            drift = final_outcome.drift
+            flag = " ** PERSONA DRIFTED **" if drift.alert_triggered else ""
+            print(
+                f"  drift:    {drift.score:.2f} "
+                f"(threshold {drift.threshold:.2f}){flag}"
+            )
         if final_outcome.error:
             print(f"  error:    {final_outcome.error}")
 
@@ -185,6 +235,7 @@ def main() -> int:
                     "duration_ms": final_outcome.duration_ms,
                     "tokens_used": final_outcome.tokens_used,
                     "error": final_outcome.error,
+                    "drift": _drift_json(final_outcome),
                     "started": started.isoformat(),
                     "transcript": [
                         {
@@ -210,6 +261,14 @@ def main() -> int:
                 "duration_ms": final_outcome.duration_ms,
                 "success_signal_matched": bool(
                     final_outcome.evaluation_signals.get("success_signal_match")
+                ),
+                "drift_score": (
+                    final_outcome.drift.score
+                    if final_outcome.drift and final_outcome.drift.measured
+                    else None
+                ),
+                "drift_alert": bool(
+                    final_outcome.drift and final_outcome.drift.alert_triggered
                 ),
             }
         )

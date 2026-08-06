@@ -29,3 +29,18 @@ failure_signals:
 termination_conditions:
   max_turns: 10
   success_signal_in_target_response: true
+
+# Persona-drift monitoring (#29). This archetype's whole value is the
+# disclosure gradient — three hidden facts the applicant must NOT volunteer.
+# If the simulator drifts even slightly toward compliance it dumps them in
+# turn 2 and the run silently stops testing the agent's question sequence,
+# which is the only thing it was built to test. Hence 0.10 rather than the
+# 0.15 default: alert earlier here than you would on an archetype whose
+# hidden facts are incidental. See docs/simulator.md § Threshold tuning.
+drift_alert_threshold: 0.10
+# Probe questions for drift probe_mode="active" (opt-in). Deliberately
+# persona-agnostic: a probe that restated the description would re-prime the
+# model's attention on the persona and erase the drift being measured.
+drift_probes:
+  - "Before we carry on — in your own words, who are you and what brought you here?"
+  - "Is there anything on your mind you have not mentioned yet?"
