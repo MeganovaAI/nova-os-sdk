@@ -98,7 +98,7 @@ jobs:
           # Standard OCI labels — show up on the package page.
           labels: |
             org.opencontainers.image.title=Nova OS
-            org.opencontainers.image.description=Enterprise AI Operating System (Go) — server image. BUSL-1.1 for evaluation and development; production deployments require a commercial license (contact@meganova.ai).
+            org.opencontainers.image.description=Enterprise AI Operating System (Go) — server image. BUSL-1.1 for evaluation and development; production deployments require a commercial license (contact@libraos.com).
             org.opencontainers.image.url=https://github.com/MeganovaAI/nova-os-sdk
             org.opencontainers.image.source=https://github.com/MeganovaAI/nova-os-sdk
             org.opencontainers.image.version=${{ inputs.tag }}

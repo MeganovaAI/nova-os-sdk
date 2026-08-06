@@ -8,7 +8,7 @@ Partner integration docs for [LibraOS](https://github.com/libraos/sdk) — the a
 
 > ⚠️ **License Notice**
 >
-> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
+> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@libraos.com for pricing.
 >
 > The **SDK** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially.
 
@@ -65,4 +65,4 @@ Issues and PRs welcome on the SDK side at [`libraos/sdk`](https://github.com/lib
 
 - General SDK questions: open an issue on [`libraos/sdk/issues`](https://github.com/libraos/sdk/issues)
 - Server-side issues: [`MeganovaAI/nova-os/issues`](https://github.com/MeganovaAI/nova-os/issues) (private repo — file at the SDK level if you don't have access)
-- Commercial licensing: contact@meganova.ai
+- Commercial licensing: contact@libraos.com

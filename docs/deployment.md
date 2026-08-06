@@ -4,7 +4,7 @@ How to run LibraOS in production. For first-time install / evaluation, start wit
 
 > ⚠️ **License Notice**
 >
-> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. **Production deployments require a commercial license** — contact contact@meganova.ai for pricing before pinning to production.
+> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. **Production deployments require a commercial license** — contact contact@libraos.com for pricing before pinning to production.
 >
 > The **SDK** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially regardless of the server's license tier.
 

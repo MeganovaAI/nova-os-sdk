@@ -30,10 +30,10 @@ The SDK targets a running LibraOS server. To stand one up yourself:
 
 | Resource | What it is |
 |---|---|
-| [`ghcr.io/meganovaai/nova-os`](https://github.com/orgs/MeganovaAI/packages/container/package/nova-os) | Public, multi-arch Docker image of the server. `docker pull ghcr.io/meganovaai/nova-os:v0.1.7`. |
-| [`MeganovaAI/nova-os-stack`](https://github.com/MeganovaAI/nova-os-stack) | Reference docker-compose manifests — core (LibraOS + Postgres + SurrealDB) plus 8 optional companion apps (LibreChat chat UI, SearXNG, crawl4ai, Firecrawl, Docling, FlashRank, Phoenix, Hermes). |
-| [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install) | Step-by-step install guide: prerequisites, env vars, smoke tests, reverse-proxy templates. |
-| [docs.meganova.ai/nova-os/releases](https://docs.meganova.ai/nova-os/releases) | Release notes + migration notes for each server version. |
+| [`ghcr.io/libraos/libraos`](https://github.com/orgs/libraos/packages/container/package/libraos) | Public, multi-arch Docker image of the server. `docker pull ghcr.io/libraos/libraos:v0.1.14-week-2026-07-20`. |
+| [[`libraos/stack`](https://github.com/libraos/stack)](https://github.com/libraos/stack) | Reference docker-compose manifests — core (LibraOS + Postgres + SurrealDB) plus 8 optional companion apps (LibreChat chat UI, SearXNG, crawl4ai, Firecrawl, Docling, FlashRank, Phoenix, Hermes). |
+| [docs.libraos.com/install](https://docs.libraos.com/install) | Step-by-step install guide: prerequisites, env vars, smoke tests, reverse-proxy templates. |
+| [docs.libraos.com/releases](https://docs.libraos.com/releases) | Release notes + migration notes for each server version. |
 
 ### Minimal local evaluation
 
@@ -51,8 +51,17 @@ docker run --rm --network nova-os-eval -p 8900:8900 \
   -e NOVA_OS_ADMIN_EMAIL=admin@example.com \
   -e NOVA_OS_ADMIN_PASSWORD=$(openssl rand -hex 16) \
   -e NOVA_OS_DATABASE_URL='postgres://nova:nova@nova-os-pg:5432/nova_os?sslmode=disable' \
-  -e ANTHROPIC_API_KEY=sk-ant-... \
-  ghcr.io/meganovaai/nova-os:v0.1.7
+  -e OPENAI_API_BASE=http://your-vllm-host:8000/v1 \
+  -e OPENAI_API_KEY=local \
+  ghcr.io/libraos/libraos:v0.1.14-week-2026-07-20
+```
+
+The server runs against **any OpenAI-compatible endpoint** — a local vLLM/Ollama
+for a fully self-hosted, air-gapped deployment (shown above), or a hosted
+provider. To use hosted Claude instead, drop the `OPENAI_*` vars and set
+`ANTHROPIC_API_KEY` — it is optional, not required.
+
+```
 ```
 
 Then point the SDK at it:
@@ -62,13 +71,13 @@ from libraos import AnthropicCompatClient
 
 client = AnthropicCompatClient(base_url="http://localhost:8900", api_key="msk_eval_...")
 msg = client.messages.create(
-    model="gemini/gemini-3.1-pro-preview",
+    model="Qwen/Qwen3.6-35B-A3B",
     max_tokens=256,
     messages=[{"role": "user", "content": "Hello, LibraOS!"}],
 )
 ```
 
-For anything beyond evaluation (real Postgres, SurrealDB knowledge store, companion apps, TLS, OIDC) use the `MeganovaAI/nova-os-stack` manifests linked above and follow [docs.meganova.ai/nova-os/install](https://docs.meganova.ai/nova-os/install).
+For anything beyond evaluation (real Postgres, SurrealDB knowledge store, companion apps, TLS, OIDC) use the [`libraos/stack`](https://github.com/libraos/stack) manifests linked above and follow [docs.libraos.com/install](https://docs.libraos.com/install).
 
 If you only need to call a hosted LibraOS that someone else operates, skip this section — the SDK works against any reachable LibraOS endpoint.
 
@@ -92,6 +101,6 @@ The first two are about meeting partners where they are. The third is the surfac
 
 > ⚠️ **License Notice**
 >
-> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@meganova.ai for pricing.
+> The **LibraOS server** is provided for **evaluation and development use** under the Business Source License. Production deployments require a commercial license — contact contact@libraos.com for pricing.
 >
 > The **SDK in this repository** (Python, CLI, OpenAPI) is **MIT-licensed** and free to use commercially.
