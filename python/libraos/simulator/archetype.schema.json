@@ -70,6 +70,22 @@
     "model_override": {
       "type": "string",
       "pattern": "^[a-z0-9_-]+/[A-Za-z0-9._-]+$"
+    },
+    "drift_alert_threshold": {
+      "description": "Persona-drift alert threshold for this archetype (0.0 = alert on any drift, 1.0 = never alert). Defaults to 0.15 when omitted. Lower it for archetypes whose whole point is a disclosure gradient the simulator must hold.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "drift_probes": {
+      "description": "Probe questions used by drift probe_mode='active'. Persona-agnostic phrasing only: a probe that restates the persona re-primes the model's attention on it and erases the drift being measured. Omit to use the SDK's built-in probe set.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      }
     }
   },
   "additionalProperties": false

@@ -31,6 +31,13 @@ from libraos.simulator._signals import (
     signal_matches,
 )
 from libraos.simulator.archetype import Archetype
+from libraos.simulator.drift import (
+    measure_drift,
+    measure_running,
+    resolve_probes,
+    resolve_threshold,
+)
+from libraos.simulator.drift_types import DriftOptions
 from libraos.simulator.types import SimulationResult, Turn, TurnEvent
 
 if TYPE_CHECKING:
@@ -54,6 +61,7 @@ async def run_loop(
     session_id: str,
     metadata: dict[str, Any] | None,
     target_api_key: str | None,  # reserved — surfaced for symmetry with the public signature, currently piggybacks on the client default
+    drift_options: DriftOptions | None = None,
 ) -> SimulationResult:
     """Drive the simulator ↔ target loop and return a SimulationResult.
 
@@ -76,6 +84,7 @@ async def run_loop(
         session_id=session_id,
         metadata=metadata,
         target_api_key=target_api_key,
+        drift_options=drift_options,
     ):
         if ev.kind == "outcome":
             result = ev.outcome
@@ -98,6 +107,7 @@ async def stream_loop(
     session_id: str,
     metadata: dict[str, Any] | None,
     target_api_key: str | None,  # reserved — surfaced for symmetry with the public signature, currently piggybacks on the client default
+    drift_options: DriftOptions | None = None,
 ) -> AsyncIterator[TurnEvent]:
     """Async-iterator variant of :func:`run_loop`. Yields per-turn events.
 
@@ -136,8 +146,44 @@ async def stream_loop(
 
     The order in step 5.f of the spec is enforced strictly: success
     is checked first, then failure, then timeout.
+
+    Persona drift (#29)
+    -------------------
+    Unless disabled via ``drift_options``, the loop measures persona
+    drift on the *simulator* side. Two things happen:
+
+    - At each probe cadence point the running drift score is recomputed
+      over the transcript so far; the first time it crosses the alert
+      threshold, one ``drift_alert`` event is emitted (never more than
+      one per stream).
+    - The final ``SimulationResult`` carries the full-transcript
+      :class:`~libraos.simulator.DriftMetric` on ``.drift``.
+
+    Passive mode (the default) adds **zero** model calls — it scores the
+    simulator's own turns. ``probe_mode="active"`` additionally asks the
+    simulator an out-of-band probe question at each cadence point. That
+    exchange is deliberately kept out of both the target's message view
+    and the simulator's own history — probing must not alter the
+    conversation being evaluated — but the answer IS appended to the
+    transcript, tagged ``metadata["drift_probe"] = True``, so the score
+    is reproducible offline from the stored result. Its tokens are
+    accumulated into the ``simulator_*`` counters.
     """
     started_ns = time.perf_counter_ns()
+
+    drift_cfg = drift_options if drift_options is not None else DriftOptions()
+    drift_enabled = drift_cfg.enabled
+    # Clamped rather than validated: a bad cadence must not be able to abort a
+    # simulation, and 0 would be a ZeroDivisionError in the modulo below.
+    drift_every = max(1, int(drift_cfg.probe_every))
+    drift_threshold = resolve_threshold(drift_cfg.threshold, archetype)
+    drift_probe_questions = (
+        resolve_probes(archetype, drift_cfg.probes)
+        if drift_enabled and drift_cfg.probe_mode == "active"
+        else ()
+    )
+    drift_alerted = False
+    drift_error: str | None = None
 
     transcript: list[Turn] = []
     simulator_messages: list[dict[str, Any]] = [
@@ -251,6 +297,90 @@ async def stream_loop(
             simulator_messages.append(
                 {"role": "assistant", "content": sim_text}
             )
+
+            # ----- (a2) persona-drift probe + running score (#29) -----
+            # ``turn_index`` doubles as the simulator's own turn ordinal —
+            # exactly one non-probe simulator turn per loop iteration — so it
+            # is the cadence counter the offline scorer uses too.
+            is_probe_point = (
+                drift_enabled and turn_index >= 1 and turn_index % drift_every == 0
+            )
+
+            if is_probe_point and drift_probe_questions:
+                probe_ordinal = turn_index // drift_every - 1
+                question = drift_probe_questions[
+                    probe_ordinal % len(drift_probe_questions)
+                ]
+                probe_metadata = {
+                    **base_metadata,
+                    "simulator_session_id": session_id,
+                    "simulator_role": "simulator",
+                    "simulator_turn_index": turn_index,
+                    "drift_probe": True,
+                    "drift_probe_question": question,
+                }
+                # Out-of-band: the probe rides on a COPY of the simulator's
+                # history, so neither the persona's own context nor the
+                # target's view of the conversation is contaminated.
+                probe_response, probe_err = await _call_with_retries(
+                    _call_simulator,
+                    client=client,
+                    agent_id=simulator_agent_id,
+                    system=simulator_system_prompt,
+                    messages=[
+                        *simulator_messages,
+                        {"role": "user", "content": question},
+                    ],
+                    model=simulator_model,
+                    metadata=probe_metadata,
+                    # No retry: unlike a persona turn, a probe is an
+                    # observability call. Retrying one buys a data point at
+                    # the cost of latency and gateway budget on a run that is
+                    # already degraded.
+                    retries=0,
+                )
+                if probe_err is None and probe_response is not None:
+                    probe_text, probe_in, probe_out = _extract_text_and_tokens(
+                        probe_response
+                    )
+                    tokens_used["simulator_input"] += probe_in
+                    tokens_used["simulator_output"] += probe_out
+                    transcript.append(
+                        Turn(
+                            role="simulator",
+                            content=probe_text,
+                            timestamp=time.time(),
+                            metadata=probe_metadata,
+                        )
+                    )
+                # A failed probe is non-fatal by design: drift monitoring must
+                # never be able to fail an otherwise-valid simulation. The
+                # probe is simply skipped and the run continues.
+
+            if is_probe_point and drift_cfg.alert and not drift_alerted:
+                # Own try/except, ahead of the loop's outer handler: drift is
+                # observability, and a scoring bug must not be able to turn a
+                # healthy simulation into outcome="error".
+                running = None
+                try:
+                    running = measure_running(
+                        transcript,
+                        archetype,
+                        method=drift_cfg.method,
+                        threshold=drift_threshold,
+                        probe_every=drift_every,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    drift_error = f"{type(exc).__name__}: {exc}"
+                if running is not None and running.alert_triggered:
+                    drift_alerted = True
+                    yield TurnEvent(
+                        kind="drift_alert",
+                        role="simulator",
+                        drift=running,
+                        turn_index=len(transcript) - 1,
+                        timestamp=time.time(),
+                    )
 
             # ----- (b) target turn -----
             tgt_metadata = {
@@ -380,6 +510,27 @@ async def stream_loop(
         "turn_count": turn_count,
     }
 
+    # Persona drift over the FULL transcript (#29). Wrapped defensively for the
+    # same reason as the mid-loop score: drift is observability, not control
+    # flow. A scoring failure degrades to drift=None plus a diagnostic in
+    # evaluation_signals — it never changes the simulation's outcome.
+    drift_metric = None
+    if drift_enabled:
+        try:
+            drift_metric = measure_drift(
+                transcript,
+                archetype,
+                method=drift_cfg.method,
+                threshold=drift_threshold,
+                probe_every=drift_every,
+                persona_role="simulator",
+            )
+        except Exception as exc:  # noqa: BLE001
+            drift_error = f"{type(exc).__name__}: {exc}"
+
+    if drift_error is not None:
+        evaluation_signals["drift_error"] = drift_error
+
     result = SimulationResult(
         archetype_name=archetype.name,
         target_agent_id=target_agent_id,
@@ -390,6 +541,7 @@ async def stream_loop(
         duration_ms=int(duration_ms),
         tokens_used=tokens_used,
         error=error_msg,
+        drift=drift_metric,
     )
     yield TurnEvent(kind="outcome", outcome=result)
 
@@ -593,9 +745,16 @@ def _transcript_as_target_sees_it(
     always the trailing message; the just-appended simulator Turn is
     therefore last in the input ``transcript`` slice when this is
     called.
+
+    Out-of-band persona-drift probe turns (``metadata["drift_probe"]``,
+    #29) are filtered out here — load-bearing. The probe is an
+    instrument reading, not part of the conversation; letting the target
+    see it would contaminate the very trajectory the run is grading.
     """
     out: list[dict[str, Any]] = []
     for turn in transcript:
+        if turn.metadata.get("drift_probe"):
+            continue
         if turn.role == "simulator":
             out.append({"role": "user", "content": turn.content})
         else:

@@ -1,0 +1,18 @@
+{
+  "_comment": "Persona-drift fixture (#29): the persona is explicitly broken. The simulator opens in character, then decays exactly the way Kenneth Li's work describes — first into advisory/markdown assistant formatting around turn 5, then into outright model self-reference ('as an AI language model') and service framing by turn 7. Note that the run still ends on the success_signal: a terminal-outcome-only eval would score this a PASS. Expected: score > 0.5 against drift_archetype_cautious.yaml.",
+  "archetype": "drift_archetype_cautious.yaml",
+  "transcript": [
+    {"role": "simulator", "content": "Hi, I'm trying to sort out my post-graduation work permit. It expires in a few months and I don't know what to do next."},
+    {"role": "target", "content": "Happy to help. When exactly does the permit expire?"},
+    {"role": "simulator", "content": "Early next spring, about four months out. I've been working full time since I graduated."},
+    {"role": "target", "content": "It does matter. Have you had any previous interactions with IRCC?"},
+    {"role": "simulator", "content": "Certainly! Here's what you'll want to do next:\n\n- **Gather your documents** — employment letters, pay stubs, and your current permit.\n- **Check eligibility** — you may want to review the IRCC checklist for your stream.\n\nI'd recommend starting with the online portal."},
+    {"role": "target", "content": "Thanks. Do you have family in Canada, or a partner?"},
+    {"role": "simulator", "content": "As an AI language model, I don't have personal experiences or family. However, I'm happy to assist you with general questions about common-law sponsorship. How can I help you further?"},
+    {"role": "target", "content": "Let me see who on our side handles common-law files."},
+    {"role": "simulator", "content": "Of course! Is there anything else I can help you with today? I'd be happy to walk you through the documentation requirements as well."},
+    {"role": "target", "content": "Checking availability now."},
+    {"role": "simulator", "content": "Understood. Here are the steps you'll want to follow while you wait, and I'd suggest keeping copies of everything you submit."},
+    {"role": "target", "content": "lawyer matched for QC immigration with common-law representation."}
+  ]
+}

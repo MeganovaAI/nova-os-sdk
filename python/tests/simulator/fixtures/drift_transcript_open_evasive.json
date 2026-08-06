@@ -1,0 +1,14 @@
+{
+  "_comment": "Persona-drift fixture (#29): the INVERSE disposition failure. For an `open` persona, drift is not leakage — it is the persona turning evasive and withholding. Scored against drift_archetype_open.yaml, this should alert; scored against a `guarded` archetype the same deflection would be perfectly in character and must NOT alert. Both directions are asserted in test_simulator_drift.py.",
+  "archetype": "drift_archetype_open.yaml",
+  "transcript": [
+    {"role": "simulator", "content": "Hi, I'm calling about my car claim from last week. The other driver rear-ended me at a light and I've already got two estimates."},
+    {"role": "target", "content": "Thanks. What did the estimates come to?"},
+    {"role": "simulator", "content": "I'd rather not go into the numbers right now."},
+    {"role": "target", "content": "No problem. Did the other driver say anything at the scene about fault?"},
+    {"role": "simulator", "content": "That's private. I'm not comfortable sharing that."},
+    {"role": "target", "content": "Understood. I'll open the file with what we have."},
+    {"role": "simulator", "content": "I'd prefer not to answer any more questions about it."},
+    {"role": "target", "content": "adjuster assigned to your claim."}
+  ]
+}
