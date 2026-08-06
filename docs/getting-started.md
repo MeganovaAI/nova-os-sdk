@@ -145,5 +145,5 @@ A partner running multiple environments (dev / staging / prod) keeps one profile
 ## Next steps
 
 - **Working in production?** [`deployment.md`](deployment.md) covers reverse-proxy templates, TLS, Postgres sizing, multi-replica deploys, and the SSE flag that's load-bearing for Cloudflare-fronted streaming.
-- **Building a vertical product?** [`examples/legaltech/`](../examples/legaltech) is the canonical reference integration — EqualDocs's `legal-assistant` shape, validated end-to-end at 7/7 against the latest server build.
-- **Running into an issue?** Open one at [`libraos/sdk/issues`](https://github.com/libraos/sdk/issues). Server-side issues live at [`MeganovaAI/nova-os/issues`](https://github.com/MeganovaAI/nova-os/issues).
+- **Building a vertical product?** The [`nova-os-cookbook`](https://github.com/libraos/cookbook) holds end-to-end recipes — its `legaltech/` recipe is the canonical reference integration (EqualDocs's `legal-assistant` shape, validated end-to-end at 7/7 against the latest server build).
+- **Running into an issue?** Open one at [`MeganovaAI/libraos-sdk/issues`](https://github.com/MeganovaAI/libraos-sdk/issues). Server-side issues live at [`MeganovaAI/nova-os/issues`](https://github.com/MeganovaAI/nova-os/issues).
