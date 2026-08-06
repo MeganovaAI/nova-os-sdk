@@ -20,7 +20,7 @@ Official docs: [libraos.com/docs](https://libraos.com/docs/) — including [Crea
 |---|---|
 | Python SDK | `pip install libraos-sdk` |
 | CLI binary | `curl -L $(release_url)/nova-os-cli_linux_amd64.tar.gz \| tar -xz` |
-| CLI Docker | `docker pull ghcr.io/meganovaai/nova-os-cli:latest` |
+| CLI Docker | `docker pull ghcr.io/libraos/libraos-cli:latest` |
 
 See `python/README.md` and `cli/README.md` for usage details.
 
@@ -30,8 +30,8 @@ The SDK targets a running LibraOS server. To stand one up yourself:
 
 | Resource | What it is |
 |---|---|
-| [`ghcr.io/libraos/libraos`](https://github.com/orgs/libraos/packages/container/package/libraos) | Public, multi-arch Docker image of the server. `docker pull ghcr.io/libraos/libraos:v0.1.14-week-2026-07-20`. |
-| [[`libraos/stack`](https://github.com/libraos/stack)](https://github.com/libraos/stack) | Reference docker-compose manifests — core (LibraOS + Postgres + SurrealDB) plus 8 optional companion apps (LibreChat chat UI, SearXNG, crawl4ai, Firecrawl, Docling, FlashRank, Phoenix, Hermes). |
+| [`ghcr.io/libraos/libraos`](https://github.com/orgs/libraos/packages/container/package/libraos) | Public, multi-arch Docker image of the server. `docker pull ghcr.io/libraos/libraos:v0.1.16-week-2026-08-04`. |
+| [`libraos/stack`](https://github.com/libraos/stack) | Reference docker-compose manifests — core (LibraOS + Postgres + SurrealDB) plus 8 optional companion apps (LibreChat chat UI, SearXNG, crawl4ai, Firecrawl, Docling, FlashRank, Phoenix, Hermes). |
 | [docs.libraos.com/install](https://docs.libraos.com/install) | Step-by-step install guide: prerequisites, env vars, smoke tests, reverse-proxy templates. |
 | [docs.libraos.com/releases](https://docs.libraos.com/releases) | Release notes + migration notes for each server version. |
 
@@ -53,7 +53,7 @@ docker run --rm --network nova-os-eval -p 8900:8900 \
   -e NOVA_OS_DATABASE_URL='postgres://nova:nova@nova-os-pg:5432/nova_os?sslmode=disable' \
   -e OPENAI_API_BASE=http://your-vllm-host:8000/v1 \
   -e OPENAI_API_KEY=local \
-  ghcr.io/libraos/libraos:v0.1.14-week-2026-07-20
+  ghcr.io/libraos/libraos:v0.1.16-week-2026-08-04
 ```
 
 The server runs against **any OpenAI-compatible endpoint** — a local vLLM/Ollama
