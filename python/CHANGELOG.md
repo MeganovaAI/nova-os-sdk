@@ -2,6 +2,44 @@
 
 All notable changes to `libraos-sdk` (Python) will be documented in this file.
 
+## [Unreleased] — towards 1.2.0
+
+### Added
+
+- **Persona-drift metric for the simulator** ([`libraos-sdk#29`](https://github.com/libraos/sdk/issues/29)),
+  productizing Kenneth Li's methodology ([ArXiv 2402.10962](https://arxiv.org/html/2402.10962v1)).
+  `SimulationResult.drift` is populated on every `simulate()` call, `client.measure_drift(transcript,
+  archetype)` scores any transcript shape, and a `drift_alert` stream event fires when the score
+  crosses the threshold mid-loop. New exports: `DriftMetric`, `DriftTurn`, `DriftOptions`,
+  `measure_drift`. Archetypes gain an optional `drift_alert_threshold` (default `0.15`).
+
+  **What it measures.** The archetype constrains the SIMULATOR, not the target agent, so drift
+  scores the synthetic customer's turns. It answers "was this run still testing the persona you
+  authored?" — it is a validity check on the evaluation, **not** a quality score for the agent under
+  test. Reading it as the latter would be a confident misuse.
+
+  **What it does not measure**, because using it without knowing this will mislead you: semantic
+  drift that preserves register — a persona still sounding like a customer while contradicting its
+  own biography — is undetected and needs a model-based judge. Also paraphrased leakage, tone and
+  emotional-stance drift, non-English transcripts (marker sets are English-only, so a
+  Punjabi-register archetype under-scores on its Punjabi turns), and persona turns the probe cadence
+  did not sample (at the default `probe_every=2`, half of them). A model-graded method can register
+  under a new `method=` identifier without changing a signature.
+
+  A run too short to measure reports `measured == False` with a reason rather than `0.0` — "perfect
+  retention" and "not measured" are different claims, and conflating them would drag any corpus
+  average toward zero.
+
+### Upgrade note
+
+- **`drift_alert` is a new `TurnEvent.kind`, emitted by default.** A clean run's stream is unchanged
+  — it fires only when a run actually drifts — and consumers that ignore unknown kinds need no
+  change. Code that asserts an exhaustive set of kinds will see a new one. Default-on is deliberate:
+  the premise of #29 is that partners are running multi-turn evals blind, and a warning you have to
+  know to enable does not fix that. Opt out with `DriftOptions(alert=False)`.
+- `SimulationResult.drift` and `TurnEvent.drift` both default to `None`, so the v1.0.0-frozen public
+  API is unaffected for existing callers and stored results.
+
 ## [1.1.1] — 2026-08-05
 
 Python SDK changes since `1.0.0`.
