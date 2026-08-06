@@ -1,32 +1,41 @@
-# Publishes the Nova OS server as a public Docker image to GitHub Container
-# Registry. Source code lives in the private MeganovaAI/nova-os repo; this
+# Publishes the LibraOS server as a public Docker image to GitHub Container
+# Registry. Source code lives in the private libraos/libraos repo; this
 # workflow checks it out via SSH deploy key, builds, and pushes from the
-# public nova-os-sdk repo so that:
+# public libraos/sdk repo so that:
 #
 #   1. The package's "linked repository" on GitHub points at this public
-#      repo — no leak of the private nova-os repo's existence to logged-in
+#      repo — no leak of the private server repo's existence to logged-in
 #      org members visiting the package page.
 #   2. The OCI org.opencontainers.image.source label resolves to a public
 #      repo for partners clicking through from the package page.
 #
 # Trigger: workflow_dispatch with a `tag` input naming the source-side tag
 # (e.g. `v0.1.4` or `v0.2.0-rc1`). The workflow checks out that tag from
-# the private nova-os repo and builds the image labelled with the same tag.
+# the private server repo and builds the image labelled with the same tag.
 #
 # Output:
-#   ghcr.io/meganovaai/nova-os:<tag>            (always)
-#   ghcr.io/meganovaai/nova-os:latest            (only for stable vX.Y.Z tags;
-#                                                 skipped for rc/beta/alpha)
+#   ghcr.io/libraos/libraos:<tag>               (always)
+#   ghcr.io/libraos/libraos:latest              (only for stable vX.Y.Z tags;
+#                                                skipped for rc/beta/alpha)
+#
+# Legacy mirror (deprecated, best-effort): the same manifest is copied to
+#   ghcr.io/meganovaai/nova-os:<tag>
+# so anything still pulling the pre-rename path keeps working. That step is
+# non-blocking: it pushes ACROSS orgs, which needs a package-level Actions
+# grant that may lapse, and a stale mirror must never fail a real release.
 #
 # Architectures: linux/amd64 + linux/arm64.
 #
 # One-time setup required (see docs/release-image-setup.md):
 #   1. Generate an SSH key pair.
-#   2. Add the public key as a read-only Deploy Key on MeganovaAI/nova-os.
+#   2. Add the public key as a read-only Deploy Key on libraos/libraos.
 #   3. Store the private key as the `NOVA_OS_DEPLOY_KEY` repository secret on
-#      this repo (MeganovaAI/nova-os-sdk).
-#   4. On the package settings page (Manage Actions access), grant
-#      MeganovaAI/nova-os-sdk write permission so this workflow can push.
+#      this repo (libraos/sdk). The secret NAME is historical — renaming it
+#      would break every existing deployment, so it stays as-is.
+#   4. ghcr.io/libraos/libraos is same-org, so GITHUB_TOKEN can push it with
+#      no extra grant. The legacy meganovaai mirror is cross-org and needs
+#      that org's package to grant libraos/sdk write access; without it the
+#      mirror step simply skips.
 
 name: Release Docker image
 
@@ -34,7 +43,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Source tag in MeganovaAI/nova-os to build and publish (e.g. v0.1.4)'
+        description: 'Source tag in libraos/libraos to build and publish (e.g. v0.1.4)'
         required: true
         type: string
 
@@ -52,10 +61,10 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout private nova-os source via deploy key
+      - name: Checkout private server source via deploy key
         uses: actions/checkout@v4
         with:
-          repository: MeganovaAI/nova-os
+          repository: libraos/libraos
           ref: ${{ inputs.tag }}
           ssh-key: ${{ secrets.NOVA_OS_DEPLOY_KEY }}
           # Need full history so any `git describe` style stamping in the
@@ -91,19 +100,19 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/meganovaai/nova-os
+          images: ghcr.io/libraos/libraos
           tags: |
             type=raw,value=${{ inputs.tag }}
             type=raw,value=latest,enable=${{ steps.latest.outputs.update == 'true' }}
           # Standard OCI labels — show up on the package page.
           labels: |
-            org.opencontainers.image.title=Nova OS
+            org.opencontainers.image.title=LibraOS
             org.opencontainers.image.description=Enterprise AI Operating System (Go) — server image. BUSL-1.1 for evaluation and development; production deployments require a commercial license (contact@libraos.com).
-            org.opencontainers.image.url=https://github.com/MeganovaAI/nova-os-sdk
-            org.opencontainers.image.source=https://github.com/MeganovaAI/nova-os-sdk
+            org.opencontainers.image.url=https://github.com/libraos/sdk
+            org.opencontainers.image.source=https://github.com/libraos/sdk
             org.opencontainers.image.version=${{ inputs.tag }}
             org.opencontainers.image.licenses=BUSL-1.1
-            org.opencontainers.image.vendor=MeganovaAI
+            org.opencontainers.image.vendor=LibraOS
 
       - name: Resolve source commit SHA
         id: src
@@ -122,25 +131,50 @@ jobs:
             VERSION=${{ inputs.tag }}
             BUILD_SHA=${{ steps.src.outputs.sha }}
             BUILD_DATE=${{ github.run_started_at }}
-          cache-from: type=registry,ref=ghcr.io/meganovaai/nova-os:buildcache
-          cache-to: type=registry,ref=ghcr.io/meganovaai/nova-os:buildcache,mode=max
+          cache-from: type=registry,ref=ghcr.io/libraos/libraos:buildcache
+          cache-to: type=registry,ref=ghcr.io/libraos/libraos:buildcache,mode=max
+
+      # Deprecated pre-rename path. Copies the manifest rather than rebuilding,
+      # so the mirror is bit-identical and costs seconds. continue-on-error
+      # because this pushes ACROSS orgs: it depends on the meganovaai package
+      # granting libraos/sdk write access, which can lapse without warning, and
+      # a dead mirror must never fail a release that already succeeded.
+      - name: Mirror to the legacy image path (deprecated, best-effort)
+        id: mirror
+        continue-on-error: true
+        run: |
+          tag="${{ inputs.tag }}"
+          docker buildx imagetools create \
+            --tag "ghcr.io/meganovaai/nova-os:${tag}" \
+            "ghcr.io/libraos/libraos:${tag}"
+          if [ "${{ steps.latest.outputs.update }}" = "true" ]; then
+            docker buildx imagetools create \
+              --tag "ghcr.io/meganovaai/nova-os:latest" \
+              "ghcr.io/libraos/libraos:${tag}"
+          fi
 
       - name: Summary
         run: |
           tag="${{ inputs.tag }}"
           echo "## Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/meganovaai/nova-os:${tag}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/libraos/libraos:${tag}\`" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.latest.outputs.update }}" = "true" ]; then
-            echo "- \`ghcr.io/meganovaai/nova-os:latest\` (updated — stable release)" >> $GITHUB_STEP_SUMMARY
+            echo "- \`ghcr.io/libraos/libraos:latest\` (updated — stable release)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- \`ghcr.io/meganovaai/nova-os:latest\` not updated (pre-release tag)" >> $GITHUB_STEP_SUMMARY
+            echo "- \`ghcr.io/libraos/libraos:latest\` not updated (pre-release tag)" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Source: \`MeganovaAI/nova-os@${{ steps.src.outputs.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.mirror.outcome }}" = "success" ]; then
+            echo "Legacy mirror \`ghcr.io/meganovaai/nova-os:${tag}\` updated (deprecated)." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Legacy mirror \`ghcr.io/meganovaai/nova-os\` NOT updated — cross-org push failed or was skipped. Anything still pulling that path is now frozen at its last successful mirror." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Source: \`libraos/libraos@${{ steps.src.outputs.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Partner pull" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/meganovaai/nova-os:${tag}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/libraos/libraos:${tag}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
