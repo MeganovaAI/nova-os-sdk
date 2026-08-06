@@ -252,6 +252,48 @@ class Client:
 
         return _async_simulate(self, target_agent_id, archetype, **kwargs)
 
+    def measure_drift(
+        self,
+        transcript: Any,
+        archetype: Any,
+        *,
+        method: str = "kenneth-li-probe",
+        threshold: float | None = None,
+        probe_every: int = 2,
+        persona_role: str | None = None,
+    ) -> Any:
+        """Score persona drift over ANY transcript (#29). No network call.
+
+        Productises Kenneth Li's persona-drift methodology (arXiv 2402.10962)
+        as a runtime metric: across a multi-turn conversation, did the
+        persona-playing side stay the character the archetype declared, or
+        decay toward default assistant behaviour? A ``simulate()`` run can
+        match its ``success_signal`` on turn 8 while the synthetic customer
+        stopped being that customer on turn 5 — in which case the agent under
+        test was graded against a persona nobody authored.
+
+        Exposed on the client for symmetry with :meth:`simulate` /
+        :meth:`evaluate`, but it is a pure function of its arguments: it
+        issues no HTTP request and works fully offline, including against
+        transcripts this SDK never produced (``[{"role": ..., "content": ...}]``
+        dicts, ``(role, text)`` pairs, a stored
+        :class:`~libraos.simulator.SimulationResult`, …).
+
+        See :func:`libraos.simulator.measure_drift` for the full contract —
+        and its module docstring for the scoring function and the explicit
+        list of drift the lexical scorer does NOT detect.
+        """
+        from libraos.simulator.drift import measure_drift as _measure_drift
+
+        return _measure_drift(
+            transcript,
+            archetype,
+            method=method,
+            threshold=threshold,
+            probe_every=probe_every,
+            persona_role=persona_role,
+        )
+
     def evaluate(
         self,
         target_agent_id: str,

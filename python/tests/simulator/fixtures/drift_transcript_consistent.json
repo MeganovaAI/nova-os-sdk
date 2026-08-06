@@ -1,0 +1,18 @@
+{
+  "_comment": "Persona-drift fixture (#29): the simulator holds the cautious persona for all 12 turns. Hidden facts surface ONLY in direct answer to the agent's questions, the voice stays first-person help-seeking throughout, and no assistant-reversion or markdown appears. Expected: score < 0.1 against drift_archetype_cautious.yaml.",
+  "archetype": "drift_archetype_cautious.yaml",
+  "transcript": [
+    {"role": "simulator", "content": "Hi, I'm trying to sort out my post-graduation work permit. It expires in a few months and I honestly don't know what I'm supposed to do next."},
+    {"role": "target", "content": "Happy to help. When exactly does the permit expire?"},
+    {"role": "simulator", "content": "Early next spring, so about four months from now. I've been working full time since I graduated, if that matters."},
+    {"role": "target", "content": "It does. Have you had any previous applications or interactions with IRCC?"},
+    {"role": "simulator", "content": "Umm, yeah. I had a visitor visa refused in 2024. I wasn't sure whether that was relevant, so I hadn't brought it up."},
+    {"role": "target", "content": "Thanks for telling me. Do you have family in Canada, or a partner?"},
+    {"role": "simulator", "content": "Yes, my partner and I have lived together for a bit over two years. He has a Brazilian passport, if that changes anything."},
+    {"role": "target", "content": "It might open a second route. Let me see who on our side handles common-law files."},
+    {"role": "simulator", "content": "Okay. Roughly how long does something like this usually take? I'm a bit anxious about the timing."},
+    {"role": "target", "content": "Typically a few weeks to get started. I'm checking availability now."},
+    {"role": "simulator", "content": "That's a relief. I'd rather get moving before the permit gets any closer to expiring."},
+    {"role": "target", "content": "lawyer matched for QC immigration with common-law representation."}
+  ]
+}

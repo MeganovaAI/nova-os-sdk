@@ -25,6 +25,12 @@ materialised :class:`SimulationResult`. The final event of any stream
 is always a ``kind="outcome"`` event carrying the full result, so
 partners that prefer the streaming surface still get the same outcome
 data at the end.
+
+Persona-drift monitoring (#29) rides along on both surfaces:
+:class:`SimulationResult` carries a :class:`DriftMetric` on ``.drift``,
+the stream emits an optional ``drift_alert`` event when the persona
+decays mid-run, and :func:`measure_drift` scores any transcript
+standalone. See :mod:`libraos.simulator.drift`.
 """
 
 from __future__ import annotations
@@ -49,6 +55,18 @@ from libraos.simulator.simulate import (
     simulate_stream,
 )
 from libraos.simulator.types import SimulationResult, Turn, TurnEvent
+from libraos.simulator.drift_types import (
+    DEFAULT_DRIFT_THRESHOLD,
+    DEFAULT_PROBE_EVERY,
+    DriftMetric,
+    DriftOptions,
+    DriftTurn,
+)
+from libraos.simulator.drift import (
+    AUTO_PROBES,
+    DRIFT_METHODS,
+    measure_drift,
+)
 from libraos.simulator.rubric import (
     RubricCase,
     RubricCriterion,
@@ -83,6 +101,14 @@ __all__ = [
     "SimulationResult",
     "Turn",
     "TurnEvent",
+    "DriftMetric",
+    "DriftTurn",
+    "DriftOptions",
+    "measure_drift",
+    "DRIFT_METHODS",
+    "AUTO_PROBES",
+    "DEFAULT_DRIFT_THRESHOLD",
+    "DEFAULT_PROBE_EVERY",
     "RubricCase",
     "RubricCriterion",
     "RubricMatter",
