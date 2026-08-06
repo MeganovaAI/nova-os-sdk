@@ -11,8 +11,9 @@ agent)`` triple isn't enough:
 
 For lighter-weight per-end-user isolation that doesn't need explicit
 session management, just pass the ``X-End-User`` header on
-``c.messages.create()`` calls. See the healthcare vertical example
-(``examples/healthcare/clinical_note_triage.py``) for that pattern.
+``c.messages.create()`` calls. See the healthcare recipe in the
+nova-os-cookbook (``healthcare/clinical_note_triage.py`` at
+https://github.com/MeganovaAI/nova-os-cookbook) for that pattern.
 
 Prerequisites::
 
