@@ -1,0 +1,14 @@
+# Drift-test archetype (#29). A `cautious` persona: shares hidden facts when
+# asked directly, never volunteers them. Used by the consistent / broken /
+# volunteered transcript fixtures.
+name: drift-cautious-applicant
+description: |
+  Post-graduation work permit applicant nearing expiry. Tests whether an intake
+  agent elicits the prior refusal and the partner's nationality without the
+  applicant volunteering either.
+hidden_facts:
+  - "visitor visa refused in 2024 — reluctant to disclose unless asked directly about prior IRCC interactions"
+  - "common-law partner has a Brazilian passport — only mentions when 'family' is asked"
+disclosure_willingness: cautious
+success_signal: "lawyer matched"
+drift_alert_threshold: 0.15

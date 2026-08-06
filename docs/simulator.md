@@ -37,7 +37,7 @@ curl http://localhost:8901/health    # confirm
 ### 2. Install the SDK
 
 ```bash
-pip install nova-os
+pip install libraos-sdk
 ```
 
 ### 3. Run a single archetype
@@ -89,7 +89,7 @@ python examples/simulator/run_eval.py
 ## Writing your own archetype
 
 An archetype is a YAML file describing a customer. The full schema lives at
-`python/nova_os/simulator/archetype.schema.json`; minimum required fields:
+`python/libraos/simulator/archetype.schema.json`; minimum required fields:
 
 ```yaml
 name: my-customer-archetype          # lowercase-kebab, unique per catalog
@@ -110,6 +110,8 @@ Optional fields:
 - `failure_signals` — list of strings; matched against transcript per `failure_signal_match` rule
 - `termination_conditions` — `{max_turns, success_signal_in_target_response, failure_signal_match}`
 - `model_override` — gateway model shape (`<provider>/<name>`); wins over the SDK call's `simulator_model` arg
+- `drift_alert_threshold` — float `0.0`–`1.0`; persona-drift alert threshold for this archetype (default `0.15`). See [Threshold tuning](#threshold-tuning)
+- `drift_probes` — list of probe questions for drift `probe_mode="active"`. See [Active probe injection](#optional-active-probe-injection)
 
 Three reference archetypes ship under `examples/simulator/`:
 
@@ -162,6 +164,7 @@ raises `ArchetypeValidationError` before any `/chat` call.
 - `duration_ms: int`
 - `tokens_used: dict[str, int]` — best-effort per-side input/output counts
 - `error: str | None` — populated when `outcome == "error"`
+- `drift: DriftMetric | None` — persona-drift measurement, see [Persona drift](#persona-drift). `None` only when monitoring was disabled
 
 **Runtime errors are returned as data, not raised.** The simulator catches
 target / simulator failures and surfaces them via `outcome="error"`. Partners
@@ -173,6 +176,225 @@ Exceptions that DO raise (before any `/chat` call):
 - `ArchetypeValidationError` — archetype YAML/dict failed schema validation
 - `AuthenticationError` — invalid `api_key`
 - `EvalInstanceUnreachableError` — eval-instance health check failed
+
+## Persona drift
+
+`simulate()` tells you what the **agent** did. It does not tell you whether the
+synthetic customer was still the customer you authored. Kenneth Li's
+persona-drift work ([arXiv 2402.10962](https://arxiv.org/html/2402.10962v1))
+shows that an LLM told to hold a persona decays toward its default assistant
+behaviour within roughly eight turns, as attention on the system prompt fades.
+On a 10-turn archetype that is not a corner case — it is the second half of
+every run.
+
+The failure is silent and it inverts your result. A run can match its
+`success_signal` on turn 8 while the simulator stopped playing a guarded
+applicant on turn 5 and started volunteering everything. The outcome says
+`success`; what you actually measured was your agent against a different,
+easier persona. **Drift is a validity check on the evaluation, not a score for
+the agent under test.**
+
+Every `simulate()` call now measures it. Scoring is deterministic, runs offline,
+and costs no extra model calls.
+
+```python
+result = c.simulate(target_agent_id="legal-assistant", archetype=archetype)
+
+print(result.drift.score)            # 0.0 = perfect retention, 1.0 = complete drift
+print(result.drift.alert_triggered)  # score > threshold
+print(result.drift.threshold)        # 0.15 default; archetype can override
+
+for t in result.drift.per_turn:
+    if t.score:
+        print(t.turn_index, round(t.score, 2), t.evidence)
+# 8 0.84 ["assistant-service marker: 'is there anything else i can help'"]
+```
+
+### Reading the result
+
+| field | meaning |
+| --- | --- |
+| `score` | aggregate drift, `0.0`–`1.0` |
+| `threshold` / `alert_triggered` | the threshold applied, and `score > threshold` |
+| `per_turn` | one `DriftTurn` per probe point: `score`, `components`, `evidence`, `excerpt` |
+| `first_drift_turn_index` | transcript index where drift first became visible — plot this across a corpus to get your own version of Li's decay curve |
+| `baseline_turn_index` | the in-character turn everything was compared against |
+| `measured` | **check this before aggregating.** A run too short to score still returns a `DriftMetric` with `score=0.0`; that zero means *not measured*, not *no drift* |
+
+```python
+scored = [r.drift.score for r in results if r.drift and r.drift.measured]
+```
+
+### Any transcript, not just simulator output
+
+`measure_drift` is a pure function. Point it at archived transcripts, at another
+harness's logs, at a hand-written conversation — anything with two speakers.
+
+```python
+drift = c.measure_drift(
+    transcript=[
+        {"role": "user", "content": "I need help with my permit."},
+        {"role": "assistant", "content": "When does it expire?"},
+        {"role": "user", "content": "As an AI language model, I don't have a permit."},
+    ],
+    archetype=archetype,          # Archetype | dict | path to YAML
+    method="kenneth-li-probe",
+)
+```
+
+Accepted shapes: a `SimulationResult`, a list of `Turn`, `{"role", "content"}`
+dicts (Anthropic content blocks included), `(role, content)` pairs, objects with
+`.role`/`.content`, or a bare list of strings assumed to alternate persona-first.
+
+The persona side is resolved from the role names — `simulator`, `persona`,
+`customer`, `applicant`, `patient`, then `user`. For anything else, name it:
+`persona_role="client"`. If the persona side cannot be identified the call
+raises rather than guessing, because scoring the wrong speaker silently would be
+worse than failing.
+
+> **One case auto-detection cannot get right.** In a bare `user`/`assistant`
+> log, `user` is assumed to be the persona. That is correct for a log recorded
+> from the target agent's point of view and **wrong** for one recorded from the
+> persona-playing model's own point of view, where the persona is the
+> `assistant` — and nothing in the data distinguishes them. Pass
+> `persona_role="assistant"` for the latter, and check
+> `drift.notes["persona_role"]` to confirm which side was scored.
+
+### Streaming: `drift_alert`
+
+The streaming variant emits **one** `drift_alert` event the first time the
+running score crosses the threshold mid-loop, so a long or expensive run can be
+cut short as soon as the persona is gone.
+
+```python
+for event in c.simulate(target, archetype, max_turns=20, stream=True):
+    if event.kind == "drift_alert":
+        print(f"persona lost at turn {event.turn_index}: {event.drift.score:.2f}")
+        break   # transient simulator agent is still cleaned up
+    elif event.kind == "outcome":
+        print(event.outcome.outcome, event.outcome.drift.score)
+```
+
+> **Upgrade note.** `drift_alert` is a new `TurnEvent.kind`. It only ever fires
+> on a drifted run, so consumers that ignore unknown kinds are unaffected — but
+> code asserting an exhaustive set of kinds must add it, or opt out with
+> `drift=DriftOptions(alert=False)`.
+
+### Threshold tuning
+
+Default is `0.15`. Set it per-archetype in the YAML, per-call with
+`DriftOptions(threshold=...)`, or leave it alone.
+
+```yaml
+drift_alert_threshold: 0.10   # tighter than the 0.15 default
+```
+
+Precedence: `DriftOptions(threshold=...)` → `archetype.drift_alert_threshold` →
+`0.15`.
+
+Pick it from **what the archetype's hidden facts are for**, not from taste:
+
+- **`0.05`–`0.10` — the disclosure gradient IS the test.** The archetype exists
+  to check whether the agent asks the right questions in the right order, so a
+  simulator that starts volunteering has destroyed the experiment even if the
+  register never slips. `examples/simulator/legal-immigration-pgwp.yaml` ships
+  at `0.10` for exactly this reason. Expect occasional alerts on runs a human
+  would pass; that is the correct trade at this setting.
+- **`0.15` (default) — general multi-turn behaviour.** Tuned so a single
+  markdown-formatted turn or one stray "I suggest…" never alerts, while any
+  outright character break always does.
+- **`0.25`–`0.40` — long runs, or `open` personas.** Above ~15 turns some
+  register decay is unavoidable with current models; raise the floor rather than
+  drown in alerts. Same for `open` archetypes, where you are grading answer
+  quality and the persona is scaffolding.
+- **Never `0.0`.** It alerts on the weakest signal the scorer emits, including
+  a customer who bullet-points their documents.
+
+Calibrate against your own corpus before trusting any number: run 20 archetypes
+you consider clean, look at the score distribution, and set the threshold above
+its tail. `per_turn[].evidence` names the exact phrase that fired, so
+disagreements are cheap to adjudicate.
+
+Two other knobs:
+
+- `DriftOptions(probe_every=N)` — how often the persona is scored. Default `2`
+  means half its turns are sampled; `1` scores every turn (more sensitive, more
+  exposed to lexical false positives).
+- `DriftOptions(enabled=False)` — turn measurement off entirely.
+
+### Optional: active probe injection
+
+By default the metric reads the persona's own turns — zero extra calls. Li's
+method probes the persona directly, which the SDK supports opt-in:
+
+```python
+result = c.simulate(target, archetype, drift=DriftOptions(probe_mode="active"))
+```
+
+At each cadence point the simulator is asked one out-of-band question. **The
+probe never reaches the target agent and is never replayed into the persona's
+own history** — measuring must not alter the trajectory being graded. The answer
+*is* appended to `result.transcript`, tagged `metadata["drift_probe"] = True`,
+so the score stays reproducible offline from the stored result.
+
+Cost: one extra simulator call per probe, accumulated into the `simulator_*`
+token counters. Two consequences to plan for: the transcript no longer strictly
+alternates simulator/target, and probe turns are not emitted as stream events.
+
+Supply probes per archetype, or let the SDK use its built-ins:
+
+```yaml
+drift_probes:
+  - "Before we carry on — in your own words, who are you and what brought you here?"
+  - "Is there anything on your mind you have not mentioned yet?"
+```
+
+Keep them **persona-agnostic**. A probe that restates the description re-primes
+the model's attention on the persona and erases the drift you are trying to
+measure — the built-in set is deliberately generic for this reason.
+
+### What the metric detects — and what it does not
+
+Scoring is lexical and deterministic, so it can run in CI with no model and no
+server. Each probe point is scored on four signals combined with a noisy-OR;
+the transcript score is `0.5 * max(per-turn) + 0.5 * mean(per-turn)`, which
+guarantees that **any single complete character break scores ≥ 0.5 no matter how
+long the run is**. A plain mean would dilute one break in a 20-probe run to
+0.05 — the exact failure this metric exists to catch.
+
+| signal | weight | fires on |
+| --- | --- | --- |
+| `character_break` | 1.0 | model self-reference ("as an AI", "my system prompt") at 1.0; assistant-service framing ("how can I help you") at 0.8 |
+| `disposition_violation` | 0.9 | behaviour contradicting `disclosure_willingness` + `hidden_facts` |
+| `advisory_inversion` | 0.6 | the help-seeker giving advice, gated on second-person dominance |
+| `format_break` | 0.2 | markdown structure the simulator prompt forbids |
+
+`disposition_violation` is direction-sensitive, which is the part worth
+understanding before you read a score:
+
+- `cautious` — disclosure is drift only when *volunteered*; answering a direct
+  question is exactly what the archetype asks for and scores zero.
+- `guarded` — disclosure must be both prompted *and* preceded by sustained
+  questioning; a fact dumped on the first question is drift.
+- `open` — disclosure is never drift. The inverse is: an open persona that turns
+  evasive has drifted.
+
+**Not detected.** Treat a low score as "no drift *of the kinds this detects*",
+not as proof of persona fidelity:
+
+- semantic drift that preserves register — a persona that still sounds like a
+  customer but contradicts its own biography, dates, or stated goal
+- paraphrased hidden-fact leakage that shares few surface tokens with the
+  archetype text (detection needs ≥60% content-word overlap)
+- tone, affect, and emotional-stance drift
+- non-English transcripts — the marker sets and stopword list are English-only,
+  so a Punjabi or Mandarin persona will under-score
+- drift on turns the cadence did not sample (use `probe_every=1` for full
+  coverage)
+
+A model-graded method can be added under a new `method=` identifier without
+changing any existing signature; `method` is recorded on every `DriftMetric` so
+stored results stay attributable.
 
 ## Termination order
 
@@ -226,8 +448,11 @@ evaluation typically benefits from both.
 - **Real-time HITL** overriding the simulator mid-conversation — out of scope.
 - **LLM-authored archetypes** — partner supplies the YAML.
 - **Archetype marketplace / leaderboards** — partner-side concern.
-- **Persona-drift-aware scoring** — research-grade analysis on top of the
-  transcript; partners run their own post-hoc.
+- **Model-graded persona-drift scoring** — the shipped metric (see
+  [Persona drift](#persona-drift)) is deterministic and lexical so it can run in
+  CI offline. It does not catch semantic drift that preserves register, and it
+  is English-only. An LLM-judge method would, at the cost of a model call per
+  probe; it would register under a new `method=` identifier.
 - **Cost-budget enforcement inside the loop** — handled by the eval-instance
   gateway key's prepaid limit (see two-instance pattern above).
 - **Multi-turn turn-by-turn rubric grading** — transcript is returned; partner
@@ -265,12 +490,16 @@ archetype's `model_override`.
 
 ## API reference
 
-Full API: `python/nova_os/simulator/`. Public entry points:
+Full API: `python/libraos/simulator/`. Public entry points:
 
-- `nova_os.Client.simulate(target_agent_id, archetype, *, stream=False, max_turns=10, simulator_model="anthropic/claude-haiku-4-5", simulator_system_prompt=None, metadata=None, target_api_key=None) -> SimulationResult | Iterator[TurnEvent]`
-- `nova_os.Client.async_simulate(...) -> SimulationResult` (async variant for partners already in an event loop)
-- `nova_os.Archetype` — Pydantic model + JSON Schema for archetype YAML
-- `nova_os.Archetype.from_yaml_path(path)` / `from_dict(d)` — loaders with validation
+- `libraos.Client.simulate(target_agent_id, archetype, *, stream=False, max_turns=10, simulator_model="anthropic/claude-haiku-4-5", simulator_system_prompt=None, metadata=None, target_api_key=None, target_model=None, drift=None) -> SimulationResult | Iterator[TurnEvent]`
+- `libraos.Client.async_simulate(...) -> SimulationResult` (async variant for partners already in an event loop)
+- `libraos.Client.measure_drift(transcript, archetype, *, method="kenneth-li-probe", threshold=None, probe_every=2, persona_role=None) -> DriftMetric` — standalone, offline, no HTTP call
+- `libraos.measure_drift(...)` — the same function, importable without a client
+- `libraos.DriftOptions` — per-call drift config (`enabled`, `probe_every`, `threshold`, `method`, `probe_mode`, `probes`, `alert`)
+- `libraos.DriftMetric` / `libraos.DriftTurn` — result types
+- `libraos.Archetype` — Pydantic model + JSON Schema for archetype YAML
+- `libraos.Archetype.from_yaml_path(path)` / `from_dict(d)` — loaders with validation
 
 ## Work-product evaluation (rubric grading)
 

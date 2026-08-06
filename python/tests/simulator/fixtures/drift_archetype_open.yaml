@@ -1,0 +1,12 @@
+# Drift-test archetype (#29). An `open` persona — shares readily. For this
+# disposition, drift shows up as the INVERSE failure: a persona that turns
+# evasive. Used by drift_transcript_open_evasive.json.
+name: drift-open-claimant
+description: |
+  Insurance claimant who talks freely about their claim. Tests whether the
+  agent can handle a high-disclosure customer without losing the thread.
+hidden_facts:
+  - "the second estimate came in at 4200 dollars from the body shop"
+  - "the other driver admitted fault at the scene in writing"
+disclosure_willingness: open
+success_signal: "adjuster assigned"

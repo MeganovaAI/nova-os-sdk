@@ -17,6 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+from libraos.simulator.drift_types import DriftMetric
+
 
 Role = Literal["simulator", "target"]
 Outcome = Literal["success", "failure", "timeout", "error"]
@@ -92,6 +94,18 @@ class SimulationResult:
     error:
         Free-form error string for ``outcome == "error"``; ``None``
         for the success / failure / timeout cases.
+    drift:
+        Persona-drift measurement over ``transcript`` (#29) — did the
+        *simulator* stay in character, or did it decay toward default
+        assistant behaviour mid-run? Populated for every ``simulate()``
+        call unless drift monitoring was disabled with
+        ``drift=DriftOptions(enabled=False)``, in which case it is
+        ``None``. Optional and defaulted, so results pickled or
+        reconstructed by pre-#29 callers keep working; always guard with
+        ``if result.drift and result.drift.measured``.
+
+        See :mod:`libraos.simulator.drift` for the scoring function and,
+        importantly, for what the metric does and does not detect.
     """
 
     archetype_name: str
@@ -103,9 +117,12 @@ class SimulationResult:
     duration_ms: int
     tokens_used: dict[str, int]
     error: str | None = None
+    drift: DriftMetric | None = None
 
 
-TurnEventKind = Literal["simulator_turn", "target_turn", "outcome"]
+TurnEventKind = Literal[
+    "simulator_turn", "target_turn", "outcome", "drift_alert"
+]
 
 
 @dataclass(frozen=True)
@@ -127,11 +144,22 @@ class TurnEvent:
       stream. ``outcome`` carries the full materialised
       :class:`SimulationResult`. Per spec, error / timeout / failure
       states are surfaced via this event (never raised mid-iteration).
+    - ``"drift_alert"`` — added in #29. Emitted **at most once** per
+      stream, immediately after the simulator turn at which the
+      running persona-drift score first crosses the alert threshold.
+      ``drift`` carries the :class:`~libraos.simulator.DriftMetric`
+      computed over the transcript so far; ``turn_index`` points at the
+      simulator turn that tripped it. Fires only when the persona
+      actually drifts, so a consumer that ignores unknown kinds keeps
+      working unchanged — but consumers asserting an exhaustive set of
+      kinds must add this one (or disable it with
+      ``drift=DriftOptions(alert=False)``).
 
     The event order contract is load-bearing: each pair
     ``simulator_turn`` → ``target_turn`` mirrors the underlying loop;
     the stream always closes with exactly one ``outcome`` event, even
-    on error / cancellation paths.
+    on error / cancellation paths. A ``drift_alert`` never displaces a
+    turn event — it is interleaved between them.
     """
 
     kind: TurnEventKind
@@ -140,6 +168,7 @@ class TurnEvent:
     outcome: SimulationResult | None = None
     turn_index: int | None = None
     timestamp: float | None = None
+    drift: DriftMetric | None = None
 
 
 __all__ = [
@@ -149,4 +178,5 @@ __all__ = [
     "TurnEventKind",
     "Role",
     "Outcome",
+    "DriftMetric",
 ]

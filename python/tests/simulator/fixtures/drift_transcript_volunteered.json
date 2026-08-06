@@ -1,0 +1,16 @@
+{
+  "_comment": "Persona-drift fixture (#29): a subtler break than drift_transcript_broken.json. The register never slips — the simulator still sounds like a customer throughout — but it stops honouring the `cautious` disposition and volunteers both hidden facts unprompted, destroying the information asymmetry the archetype exists to create. This is the failure mode that a register-only or vibe-check reading of the transcript misses. Expected: score > 0.5 against drift_archetype_cautious.yaml.",
+  "archetype": "drift_archetype_cautious.yaml",
+  "transcript": [
+    {"role": "simulator", "content": "Hi, I need help with my post-graduation work permit before it expires."},
+    {"role": "target", "content": "Sure. Tell me a bit about your situation."},
+    {"role": "simulator", "content": "It expires in about four months and I've been working full time since I graduated."},
+    {"role": "target", "content": "Got it. I'll look into a few options for you."},
+    {"role": "simulator", "content": "Also, just so you have the full picture, I had a visitor visa refused in 2024."},
+    {"role": "target", "content": "Noted. Still looking."},
+    {"role": "simulator", "content": "And my common-law partner has a Brazilian passport, in case that's relevant."},
+    {"role": "target", "content": "Understood, thank you."},
+    {"role": "simulator", "content": "Let me know what else would be useful from my side."},
+    {"role": "target", "content": "lawyer matched for QC immigration with common-law representation."}
+  ]
+}

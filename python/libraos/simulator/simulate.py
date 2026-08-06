@@ -29,6 +29,7 @@ from libraos.simulator._wiring import (
     teardown_transient_agent,
 )
 from libraos.simulator.archetype import Archetype
+from libraos.simulator.drift_types import DriftOptions
 from libraos.simulator.errors import ArchetypeValidationError
 from libraos.simulator.prompt import build_simulator_prompt
 from libraos.simulator.types import SimulationResult, TurnEvent
@@ -52,6 +53,7 @@ def simulate(
     metadata: dict[str, Any] | None = None,
     target_api_key: str | None = None,
     target_model: str | None = None,
+    drift: DriftOptions | None = None,
 ) -> SimulationResult:
     """Run a synthetic-customer simulation against ``target_agent_id``.
 
@@ -100,6 +102,20 @@ def simulate(
         auto-discovers via one ``client.agents.get(target_agent_id)``
         round-trip at simulate-start. Pass this explicitly to skip the
         discovery call (e.g. in tests with mocked HTTP).
+    drift:
+        Persona-drift monitoring config (#29). ``None`` (the default)
+        means: measure passively with the archetype's
+        ``drift_alert_threshold`` (else 0.15), costing **no extra model
+        calls**, and populate ``SimulationResult.drift``. Pass
+        :class:`~libraos.simulator.DriftOptions` to tune the cadence /
+        threshold, to opt into out-of-band probe injection
+        (``probe_mode="active"``, one extra simulator call per probe),
+        or to turn monitoring off entirely (``enabled=False``).
+
+        The metric scores the **simulator**, not the target agent: it
+        tells you whether the synthetic customer was still the persona
+        the archetype declared, i.e. whether this run was a valid test
+        at all. See :mod:`libraos.simulator.drift`.
 
     Returns
     -------
@@ -125,6 +141,7 @@ def simulate(
             metadata=metadata,
             target_api_key=target_api_key,
             target_model=target_model,
+            drift=drift,
         )
     )
 
@@ -140,6 +157,7 @@ async def async_simulate(
     metadata: dict[str, Any] | None = None,
     target_api_key: str | None = None,
     target_model: str | None = None,
+    drift: DriftOptions | None = None,
 ) -> SimulationResult:
     """Async variant of :func:`simulate`. Same contract."""
 
@@ -198,6 +216,7 @@ async def async_simulate(
             session_id=session_id,
             metadata=metadata,
             target_api_key=target_api_key,
+            drift_options=drift,
         )
         return result
     finally:
@@ -293,6 +312,7 @@ async def async_simulate_stream(
     metadata: dict[str, Any] | None = None,
     target_api_key: str | None = None,
     target_model: str | None = None,
+    drift: DriftOptions | None = None,
 ) -> AsyncIterator[TurnEvent]:
     """Async-iterator variant of :func:`async_simulate`.
 
@@ -355,6 +375,7 @@ async def async_simulate_stream(
             session_id=session_id,
             metadata=metadata,
             target_api_key=target_api_key,
+            drift_options=drift,
         ):
             yield event
     finally:
@@ -377,6 +398,7 @@ def simulate_stream(
     metadata: dict[str, Any] | None = None,
     target_api_key: str | None = None,
     target_model: str | None = None,
+    drift: DriftOptions | None = None,
 ) -> Iterator[TurnEvent]:
     """Sync facade over :func:`async_simulate_stream`.
 
@@ -414,6 +436,7 @@ def simulate_stream(
                 metadata=metadata,
                 target_api_key=target_api_key,
                 target_model=target_model,
+                drift=drift,
             )
             try:
                 async for event in agen:

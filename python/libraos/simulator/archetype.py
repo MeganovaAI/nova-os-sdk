@@ -85,6 +85,11 @@ class Archetype(BaseModel):
     termination_conditions: TerminationConditions | None = None
     model_override: str | None = None
 
+    # Persona-drift knobs (#29). Both optional and additive — archetypes
+    # authored before #29 keep validating unchanged.
+    drift_alert_threshold: float | None = Field(default=None, ge=0.0, le=1.0)
+    drift_probes: list[str] | None = None
+
     # ------------------------------------------------------------------ name
 
     @field_validator("name")
@@ -133,6 +138,25 @@ class Archetype(BaseModel):
                     f"item [{i}] must be 1-1000 chars (got {len(item)})"
                 )
             _check_regex_prefix(item, f"failure_signals[{i}]")
+        return v
+
+    # ------------------------------------------------------------ drift_probes
+
+    @field_validator("drift_probes")
+    @classmethod
+    def _validate_drift_probes(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return None
+        if not v:
+            raise ValueError(
+                "must contain at least one probe question when present "
+                "(omit the field entirely to use the built-in probe set)"
+            )
+        for i, item in enumerate(v):
+            if not (1 <= len(item) <= 1000):
+                raise ValueError(
+                    f"item [{i}] must be 1-1000 chars (got {len(item)})"
+                )
         return v
 
     # ---------------------------------------------------------- model_override

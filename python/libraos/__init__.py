@@ -35,6 +35,10 @@ from libraos.simulator import (
     SimulationResult,
     Turn,
     simulate,
+    DriftMetric,
+    DriftTurn,
+    DriftOptions,
+    measure_drift,
 )
 
 __all__ = [
@@ -63,4 +67,8 @@ __all__ = [
     "SimulationResult",
     "Turn",
     "simulate",
+    "DriftMetric",
+    "DriftTurn",
+    "DriftOptions",
+    "measure_drift",
 ]
