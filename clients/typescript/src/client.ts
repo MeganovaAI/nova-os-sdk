@@ -206,6 +206,8 @@ export interface ConnectorConfig {
   config: Record<string, unknown>;
   secretKeys: string[];
   updatedAt: string;
+  /** May employees connect their OWN account for this kind (desk#240)? */
+  personalAllowed?: boolean;
 }
 
 /**
@@ -1221,6 +1223,12 @@ export class NovaClient {
     tenantId?: string;
     config?: Record<string, unknown>;
     secrets?: Record<string, string>;
+    /**
+     * Open/close this kind for personal connection (desk#240). OMIT to leave
+     * the policy alone — the server preserves it on absence, precisely so a
+     * secret rotation cannot silently revoke everyone's permission.
+     */
+    personalAllowed?: boolean;
   }): Promise<ConnectorConfig> {
     const res = await this.rawFetch(`/v1/managed/connectors/${encodeURIComponent(kind)}`, {
       method: "PUT",
@@ -1231,6 +1239,8 @@ export class NovaClient {
         tenant_id: input.tenantId,
         config: input.config ?? {},
         secrets: input.secrets ?? {},
+        // undefined serializes away, which is exactly "leave the policy alone".
+        personal_allowed: input.personalAllowed,
       }),
     });
     if (!res.ok) throw await this.toApiError(res);
@@ -1421,6 +1431,7 @@ function toGroup(g: RawGroup): Group {
 interface RawConnectorConfig {
   kind: string; tenant_id?: string; enabled: boolean; group_id?: string;
   config?: Record<string, unknown>; secret_keys?: string[]; updated_at: string;
+  personal_allowed?: boolean;
 }
 
 function toConnectorConfig(c: RawConnectorConfig): ConnectorConfig {
@@ -1428,6 +1439,7 @@ function toConnectorConfig(c: RawConnectorConfig): ConnectorConfig {
     kind: c.kind, tenantId: c.tenant_id || undefined, enabled: c.enabled,
     groupId: c.group_id || undefined, config: c.config ?? {},
     secretKeys: c.secret_keys ?? [], updatedAt: c.updated_at,
+    personalAllowed: c.personal_allowed ?? false,
   };
 }
 
