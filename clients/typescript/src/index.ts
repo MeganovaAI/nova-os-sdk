@@ -40,6 +40,7 @@ export {
   type GroupMember,
   type MyGroup,
   type ConnectorConfig,
+  type MyConnectorConfig,
   type Entitlements,
 } from "./client.js";
 

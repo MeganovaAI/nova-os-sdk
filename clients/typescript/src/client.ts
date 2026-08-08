@@ -206,6 +206,27 @@ export interface ConnectorConfig {
   config: Record<string, unknown>;
   secretKeys: string[];
   updatedAt: string;
+  /** May employees connect their OWN account for this kind (desk#240)? */
+  personalAllowed?: boolean;
+}
+
+/**
+ * ONE EMPLOYEE's own connection to a service (desk#240) — their Gmail, their
+ * Slack — as opposed to the org-wide {@link ConnectorConfig}.
+ *
+ * No `groupId`: approval groups route ORG actions to approvers, which has no
+ * meaning for a connection acting as one person on their own account. No
+ * `tenantId` and no owner id either — the server takes both from the token,
+ * and every row you can see is yours, so echoing them back would only suggest
+ * these could describe somebody else.
+ */
+export interface MyConnectorConfig {
+  kind: string;
+  enabled: boolean;
+  config: Record<string, unknown>;
+  /** WHICH secrets are set — values never leave the server. */
+  secretKeys: string[];
+  updatedAt: string;
 }
 
 /**
@@ -1202,6 +1223,12 @@ export class NovaClient {
     tenantId?: string;
     config?: Record<string, unknown>;
     secrets?: Record<string, string>;
+    /**
+     * Open/close this kind for personal connection (desk#240). OMIT to leave
+     * the policy alone — the server preserves it on absence, precisely so a
+     * secret rotation cannot silently revoke everyone's permission.
+     */
+    personalAllowed?: boolean;
   }): Promise<ConnectorConfig> {
     const res = await this.rawFetch(`/v1/managed/connectors/${encodeURIComponent(kind)}`, {
       method: "PUT",
@@ -1212,6 +1239,8 @@ export class NovaClient {
         tenant_id: input.tenantId,
         config: input.config ?? {},
         secrets: input.secrets ?? {},
+        // undefined serializes away, which is exactly "leave the policy alone".
+        personal_allowed: input.personalAllowed,
       }),
     });
     if (!res.ok) throw await this.toApiError(res);
@@ -1221,6 +1250,81 @@ export class NovaClient {
 
   async deleteConnectorConfig(kind: string): Promise<void> {
     const res = await this.rawFetch(`/v1/managed/connectors/${encodeURIComponent(kind)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  // ── My own connections (desk#240) ──────────────────────────────────────
+  //
+  // The employee half of the surface above. These need no admin role, and
+  // they are ALWAYS scoped to the caller — there is no user id to pass,
+  // because the server reads the owner from the token and ignores anything
+  // else. That is why none of these methods take one.
+
+  /** My connections (masked — secret values never serialize). */
+  async listMyConnectors(): Promise<MyConnectorConfig[]> {
+    const res = await this.rawFetch("/v1/managed/me/connectors", { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { connectors?: RawMyConnectorConfig[] };
+    return (j.connectors ?? []).map(toMyConnectorConfig);
+  }
+
+  /**
+   * Which kinds an admin has opened for personal connection.
+   *
+   * Deny-by-default server-side: a kind absent from this list cannot be
+   * connected, and PUT will 403. Build the "add a connection" catalog from
+   * this rather than from a hard-coded list, or the UI will offer doors that
+   * do not open.
+   */
+  async listMyConnectorCatalog(): Promise<string[]> {
+    const res = await this.rawFetch("/v1/managed/me/connectors/catalog", { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { kinds?: string[] };
+    return j.kinds ?? [];
+  }
+
+  async getMyConnector(kind: string): Promise<MyConnectorConfig> {
+    const res = await this.rawFetch(`/v1/managed/me/connectors/${encodeURIComponent(kind)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { connector: RawMyConnectorConfig };
+    return toMyConnectorConfig(j.connector);
+  }
+
+  /**
+   * Connect or update MY connection to a service. Same secret-merge semantics
+   * as the org path: non-empty overwrites, empty string DELETES that
+   * credential, absent keys are preserved.
+   *
+   * Throws 403 `personal_connection_not_allowed` when an admin has not opened
+   * this kind — check {@link listMyConnectorCatalog} first.
+   */
+  async putMyConnector(kind: string, input: {
+    enabled: boolean;
+    config?: Record<string, unknown>;
+    secrets?: Record<string, string>;
+  }): Promise<MyConnectorConfig> {
+    const res = await this.rawFetch(`/v1/managed/me/connectors/${encodeURIComponent(kind)}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        enabled: input.enabled,
+        config: input.config ?? {},
+        secrets: input.secrets ?? {},
+      }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { connector: RawMyConnectorConfig };
+    return toMyConnectorConfig(j.connector);
+  }
+
+  /**
+   * Disconnect, destroying the stored credential.
+   *
+   * Works even after an admin closes the kind — a policy change must never
+   * strand your token with no way to revoke it.
+   */
+  async deleteMyConnector(kind: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/me/connectors/${encodeURIComponent(kind)}`, { method: "DELETE" });
     if (!res.ok) throw await this.toApiError(res);
   }
 
@@ -1327,12 +1431,26 @@ function toGroup(g: RawGroup): Group {
 interface RawConnectorConfig {
   kind: string; tenant_id?: string; enabled: boolean; group_id?: string;
   config?: Record<string, unknown>; secret_keys?: string[]; updated_at: string;
+  personal_allowed?: boolean;
 }
 
 function toConnectorConfig(c: RawConnectorConfig): ConnectorConfig {
   return {
     kind: c.kind, tenantId: c.tenant_id || undefined, enabled: c.enabled,
     groupId: c.group_id || undefined, config: c.config ?? {},
+    secretKeys: c.secret_keys ?? [], updatedAt: c.updated_at,
+    personalAllowed: c.personal_allowed ?? false,
+  };
+}
+
+interface RawMyConnectorConfig {
+  kind: string; enabled: boolean;
+  config?: Record<string, unknown>; secret_keys?: string[]; updated_at: string;
+}
+
+function toMyConnectorConfig(c: RawMyConnectorConfig): MyConnectorConfig {
+  return {
+    kind: c.kind, enabled: c.enabled, config: c.config ?? {},
     secretKeys: c.secret_keys ?? [], updatedAt: c.updated_at,
   };
 }
