@@ -9,6 +9,7 @@ const raw = {
   id: "srv-1", name: "acme", url: "https://mcp.acme.example/rpc",
   description: "internal tools", default_policy: "ask",
   enabled: false, has_auth: true, created_at: "t0", updated_at: "t1",
+  governance_mode: "external", governance_enforcement: "audited; external server receives credentials",
 };
 
 const client = (fetchMock: unknown) =>
@@ -27,6 +28,7 @@ describe("mcp servers", () => {
       id: "srv-1", name: "acme", url: "https://mcp.acme.example/rpc",
       description: "internal tools", defaultPolicy: "ask",
       enabled: false, hasAuth: true, createdAt: "t0", updatedAt: "t1",
+      governanceMode: "external", governanceEnforcement: "audited; external server receives credentials",
     }]);
     expect((fetchMock.mock.calls[0] as unknown as [string])[0])
       .toBe("http://x/v1/managed/mcp/servers");
