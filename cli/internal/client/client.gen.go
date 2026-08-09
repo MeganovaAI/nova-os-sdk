@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	BearerAuthScopes = "bearerAuth.Scopes"
-	ScimBearerScopes = "scimBearer.Scopes"
+	BearerAuthScopes     = "bearerAuth.Scopes"
+	CapabilityAuthScopes = "capabilityAuth.Scopes"
+	ScimBearerScopes     = "scimBearer.Scopes"
 )
 
 // Defines values for AgentVisibility.
@@ -117,6 +118,33 @@ func (e AppMigrationStatus) Valid() bool {
 	case AppMigrationStatusApplied:
 		return true
 	case AppMigrationStatusFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutonomyGrantLifecycleState.
+const (
+	AutonomyGrantLifecycleStateExpired    AutonomyGrantLifecycleState = "expired"
+	AutonomyGrantLifecycleStateIssued     AutonomyGrantLifecycleState = "issued"
+	AutonomyGrantLifecycleStateRevoked    AutonomyGrantLifecycleState = "revoked"
+	AutonomyGrantLifecycleStateSuperseded AutonomyGrantLifecycleState = "superseded"
+	AutonomyGrantLifecycleStateSuspended  AutonomyGrantLifecycleState = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the AutonomyGrantLifecycleState enum.
+func (e AutonomyGrantLifecycleState) Valid() bool {
+	switch e {
+	case AutonomyGrantLifecycleStateExpired:
+		return true
+	case AutonomyGrantLifecycleStateIssued:
+		return true
+	case AutonomyGrantLifecycleStateRevoked:
+		return true
+	case AutonomyGrantLifecycleStateSuperseded:
+		return true
+	case AutonomyGrantLifecycleStateSuspended:
 		return true
 	default:
 		return false
@@ -285,6 +313,141 @@ func (e ErrorType) Valid() bool {
 	}
 }
 
+// Defines values for ExecutionCapabilityGovernanceMode.
+const (
+	ExecutionCapabilityGovernanceModeBrokered    ExecutionCapabilityGovernanceMode = "brokered"
+	ExecutionCapabilityGovernanceModeDeskManaged ExecutionCapabilityGovernanceMode = "desk_managed"
+)
+
+// Valid indicates whether the value is a known member of the ExecutionCapabilityGovernanceMode enum.
+func (e ExecutionCapabilityGovernanceMode) Valid() bool {
+	switch e {
+	case ExecutionCapabilityGovernanceModeBrokered:
+		return true
+	case ExecutionCapabilityGovernanceModeDeskManaged:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExecutionCapabilityPolicy.
+const (
+	ExecutionCapabilityPolicyAllow ExecutionCapabilityPolicy = "allow"
+	ExecutionCapabilityPolicyAsk   ExecutionCapabilityPolicy = "ask"
+	ExecutionCapabilityPolicyNever ExecutionCapabilityPolicy = "never"
+)
+
+// Valid indicates whether the value is a known member of the ExecutionCapabilityPolicy enum.
+func (e ExecutionCapabilityPolicy) Valid() bool {
+	switch e {
+	case ExecutionCapabilityPolicyAllow:
+		return true
+	case ExecutionCapabilityPolicyAsk:
+		return true
+	case ExecutionCapabilityPolicyNever:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExecutionCapabilityIssueRequestGovernanceMode.
+const (
+	ExecutionCapabilityIssueRequestGovernanceModeBrokered    ExecutionCapabilityIssueRequestGovernanceMode = "brokered"
+	ExecutionCapabilityIssueRequestGovernanceModeDeskManaged ExecutionCapabilityIssueRequestGovernanceMode = "desk_managed"
+)
+
+// Valid indicates whether the value is a known member of the ExecutionCapabilityIssueRequestGovernanceMode enum.
+func (e ExecutionCapabilityIssueRequestGovernanceMode) Valid() bool {
+	switch e {
+	case ExecutionCapabilityIssueRequestGovernanceModeBrokered:
+		return true
+	case ExecutionCapabilityIssueRequestGovernanceModeDeskManaged:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExecutionCapabilityIssueRequestManagedConnectorConnector.
+const (
+	ExecutionCapabilityIssueRequestManagedConnectorConnectorSlack ExecutionCapabilityIssueRequestManagedConnectorConnector = "slack"
+)
+
+// Valid indicates whether the value is a known member of the ExecutionCapabilityIssueRequestManagedConnectorConnector enum.
+func (e ExecutionCapabilityIssueRequestManagedConnectorConnector) Valid() bool {
+	switch e {
+	case ExecutionCapabilityIssueRequestManagedConnectorConnectorSlack:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExecutionCapabilityIssueRequestPolicy.
+const (
+	ExecutionCapabilityIssueRequestPolicyAllow ExecutionCapabilityIssueRequestPolicy = "allow"
+	ExecutionCapabilityIssueRequestPolicyAsk   ExecutionCapabilityIssueRequestPolicy = "ask"
+	ExecutionCapabilityIssueRequestPolicyNever ExecutionCapabilityIssueRequestPolicy = "never"
+)
+
+// Valid indicates whether the value is a known member of the ExecutionCapabilityIssueRequestPolicy enum.
+func (e ExecutionCapabilityIssueRequestPolicy) Valid() bool {
+	switch e {
+	case ExecutionCapabilityIssueRequestPolicyAllow:
+		return true
+	case ExecutionCapabilityIssueRequestPolicyAsk:
+		return true
+	case ExecutionCapabilityIssueRequestPolicyNever:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExecutionReceiptOutcome.
+const (
+	ExecutionReceiptOutcomeFailed    ExecutionReceiptOutcome = "failed"
+	ExecutionReceiptOutcomeSucceeded ExecutionReceiptOutcome = "succeeded"
+	ExecutionReceiptOutcomeUnknown   ExecutionReceiptOutcome = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the ExecutionReceiptOutcome enum.
+func (e ExecutionReceiptOutcome) Valid() bool {
+	switch e {
+	case ExecutionReceiptOutcomeFailed:
+		return true
+	case ExecutionReceiptOutcomeSucceeded:
+		return true
+	case ExecutionReceiptOutcomeUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExecutionReceiptVerificationStatus.
+const (
+	ExecutionReceiptVerificationStatusContradicted ExecutionReceiptVerificationStatus = "contradicted"
+	ExecutionReceiptVerificationStatusUnverified   ExecutionReceiptVerificationStatus = "unverified"
+	ExecutionReceiptVerificationStatusVerified     ExecutionReceiptVerificationStatus = "verified"
+)
+
+// Valid indicates whether the value is a known member of the ExecutionReceiptVerificationStatus enum.
+func (e ExecutionReceiptVerificationStatus) Valid() bool {
+	switch e {
+	case ExecutionReceiptVerificationStatusContradicted:
+		return true
+	case ExecutionReceiptVerificationStatusUnverified:
+		return true
+	case ExecutionReceiptVerificationStatusVerified:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FeatureStatusResolvedFrom.
 const (
 	FeatureStatusResolvedFromDefault FeatureStatusResolvedFrom = "default"
@@ -360,6 +523,27 @@ func (e FieldTier) Valid() bool {
 	case FieldTierNonSensitive:
 		return true
 	case FieldTierNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovernanceMode.
+const (
+	GovernanceModeBrokered    GovernanceMode = "brokered"
+	GovernanceModeDeskManaged GovernanceMode = "desk_managed"
+	GovernanceModeExternal    GovernanceMode = "external"
+)
+
+// Valid indicates whether the value is a known member of the GovernanceMode enum.
+func (e GovernanceMode) Valid() bool {
+	switch e {
+	case GovernanceModeBrokered:
+		return true
+	case GovernanceModeDeskManaged:
+		return true
+	case GovernanceModeExternal:
 		return true
 	default:
 		return false
@@ -1676,6 +1860,143 @@ type Attachment struct {
 	SizeBytes  int64  `json:"size_bytes"`
 }
 
+// AuthorizationConnectorScope defines model for AuthorizationConnectorScope.
+type AuthorizationConnectorScope struct {
+	ConnectionId *string `json:"connection_id,omitempty"`
+
+	// Details Connector-specific vocabulary, namespaced away from comparable outer fields.
+	Details *map[string]interface{} `json:"details,omitempty"`
+	Kind    string                  `json:"kind"`
+}
+
+// AuthorizationDataScope Canonical comparable policy envelope.
+type AuthorizationDataScope struct {
+	Connector   AuthorizationConnectorScope `json:"connector"`
+	Constraints *map[string]interface{}     `json:"constraints,omitempty"`
+	Operation   string                      `json:"operation"`
+	Resource    string                      `json:"resource"`
+	Selectors   *map[string]interface{}     `json:"selectors,omitempty"`
+}
+
+// AuthorizationDecision Append-only authorization decision with its complete authorization-basis snapshot.
+type AuthorizationDecision struct {
+	BatchId          *string     `json:"batch_id,omitempty"`
+	Corrected        bool        `json:"corrected"`
+	CorrectionReason *string     `json:"correction_reason,omitempty"`
+	DecidedAt        time.Time   `json:"decided_at"`
+	DecidedBy        string      `json:"decided_by"`
+	DecidedByKind    string      `json:"decided_by_kind"`
+	Edited           bool        `json:"edited"`
+	EvaluatedAt      time.Time   `json:"evaluated_at"`
+	EvidenceWeight   float32     `json:"evidence_weight"`
+	GrantId          *string     `json:"grant_id,omitempty"`
+	GrantRevision    *int        `json:"grant_revision,omitempty"`
+	Id               string      `json:"id"`
+	IntentId         string      `json:"intent_id"`
+	OriginalParams   interface{} `json:"original_params,omitempty"`
+	Outcome          string      `json:"outcome"`
+	PolicyVersion    *string     `json:"policy_version,omitempty"`
+	Reason           string      `json:"reason"`
+	ReviewDurationMs *int64      `json:"review_duration_ms,omitempty"`
+	RiskTier         string      `json:"risk_tier"`
+	RuntimeProfile   interface{} `json:"runtime_profile,omitempty"`
+}
+
+// AuthorizationEvidenceProfile defines model for AuthorizationEvidenceProfile.
+type AuthorizationEvidenceProfile struct {
+	ActionClass      string `json:"action_class"`
+	AgentId          string `json:"agent_id"`
+	CurrentDecisions int    `json:"current_decisions"`
+
+	// DataScope Canonical comparable policy envelope.
+	DataScope             AuthorizationDataScope `json:"data_scope"`
+	Decay                 []EvidenceDecayBucket  `json:"decay"`
+	EffectiveApprovalRate float32                `json:"effective_approval_rate"`
+	Eligible              bool                   `json:"eligible"`
+	HistoricalDecisions   int                    `json:"historical_decisions"`
+	Incidents             int                    `json:"incidents"`
+	PolicyVersion         string                 `json:"policy_version"`
+	ProfileHash           string                 `json:"profile_hash"`
+	Reason                string                 `json:"reason"`
+	Reviewers             []ReviewerEvidence     `json:"reviewers"`
+	RiskTier              string                 `json:"risk_tier"`
+	WeightedApproved      float32                `json:"weighted_approved"`
+	WeightedRejected      float32                `json:"weighted_rejected"`
+}
+
+// AuthorizationGraph defines model for AuthorizationGraph.
+type AuthorizationGraph struct {
+	Decisions []AuthorizationDecision `json:"decisions"`
+
+	// Grant Immutable grant definition plus current lifecycle-event projection.
+	Grant *AutonomyGrant `json:"grant,omitempty"`
+
+	// Intent Append-only declaration of a proposed side effect.
+	Intent   AuthorizationIntent `json:"intent"`
+	Receipts []ExecutionReceipt  `json:"receipts"`
+	State    string              `json:"state"`
+}
+
+// AuthorizationIntent Append-only declaration of a proposed side effect.
+type AuthorizationIntent struct {
+	ActionClass     string  `json:"action_class"`
+	AgentConfigHash *string `json:"agent_config_hash,omitempty"`
+	AgentId         string  `json:"agent_id"`
+
+	// DataScope Canonical comparable policy envelope.
+	DataScope               *AuthorizationDataScope `json:"data_scope,omitempty"`
+	ExternalRef             string                  `json:"external_ref"`
+	GroupId                 string                  `json:"group_id"`
+	Id                      string                  `json:"id"`
+	LegacyActionId          *string                 `json:"legacy_action_id,omitempty"`
+	MaxAuthorizationSeconds *int                    `json:"max_authorization_seconds"`
+	Params                  interface{}             `json:"params"`
+	PolicyVersion           *string                 `json:"policy_version,omitempty"`
+	ProposedAt              time.Time               `json:"proposed_at"`
+	ProposedBy              string                  `json:"proposed_by"`
+	ProposedByKind          string                  `json:"proposed_by_kind"`
+	Purpose                 string                  `json:"purpose"`
+	Reversible              *bool                   `json:"reversible"`
+	RiskTier                string                  `json:"risk_tier"`
+	RuntimeProfile          interface{}             `json:"runtime_profile,omitempty"`
+	SessionId               string                  `json:"session_id"`
+	SideEffects             interface{}             `json:"side_effects,omitempty"`
+	Source                  string                  `json:"source"`
+	TenantId                string                  `json:"tenant_id"`
+	ToolName                string                  `json:"tool_name"`
+	ToolSchemaHash          *string                 `json:"tool_schema_hash,omitempty"`
+}
+
+// AutonomyGrant Immutable grant definition plus current lifecycle-event projection.
+type AutonomyGrant struct {
+	ActionClass string                 `json:"action_class"`
+	AgentId     string                 `json:"agent_id"`
+	Constraints map[string]interface{} `json:"constraints"`
+
+	// DataScope Canonical comparable policy envelope.
+	DataScope          AuthorizationDataScope       `json:"data_scope"`
+	EvidenceWindow     AuthorizationEvidenceProfile `json:"evidence_window"`
+	ExpiresAt          time.Time                    `json:"expires_at"`
+	Id                 string                       `json:"id"`
+	IssuedAt           time.Time                    `json:"issued_at"`
+	IssuedBy           string                       `json:"issued_by"`
+	LifecycleChangedAt time.Time                    `json:"lifecycle_changed_at"`
+	LifecycleReason    string                       `json:"lifecycle_reason"`
+	LifecycleState     AutonomyGrantLifecycleState  `json:"lifecycle_state"`
+	PolicyVersion      string                       `json:"policy_version"`
+	PreviousGrantId    *string                      `json:"previous_grant_id,omitempty"`
+	ProfileHash        string                       `json:"profile_hash"`
+	Revision           int                          `json:"revision"`
+	RiskTier           string                       `json:"risk_tier"`
+	RuntimeProfile     interface{}                  `json:"runtime_profile"`
+	SupersededBy       *string                      `json:"superseded_by,omitempty"`
+	TenantId           string                       `json:"tenant_id"`
+	ToolBindings       []string                     `json:"tool_bindings"`
+}
+
+// AutonomyGrantLifecycleState defines model for AutonomyGrant.LifecycleState.
+type AutonomyGrantLifecycleState string
+
 // BundleImportResult defines model for BundleImportResult.
 type BundleImportResult struct {
 	AgentsImported        int       `json:"agents_imported"`
@@ -1765,6 +2086,12 @@ type Connector struct {
 	// Config Connector-specific non-secret settings.
 	Config  map[string]interface{} `json:"config"`
 	Enabled bool                   `json:"enabled"`
+
+	// GovernanceEnforcement Human-readable statement of the actual enforcement boundary.
+	GovernanceEnforcement string `json:"governance_enforcement"`
+
+	// GovernanceMode Where pre-execution policy is enforced. `desk_managed` is native, `brokered` uses a short-lived scoped capability, and `external` is audited but the outside service receives credentials.
+	GovernanceMode GovernanceMode `json:"governance_mode"`
 
 	// GroupId Optional group scoping the connector.
 	GroupId *string `json:"group_id,omitempty"`
@@ -2170,6 +2497,103 @@ type Error struct {
 // ErrorType defines model for Error.Type.
 type ErrorType string
 
+// EvidenceDecayBucket defines model for EvidenceDecayBucket.
+type EvidenceDecayBucket struct {
+	Decisions  int     `json:"decisions"`
+	Kind       string  `json:"kind"`
+	Multiplier float32 `json:"multiplier"`
+}
+
+// ExecutionCapability Short-lived brokered authorization credential; token appears only at issue time.
+type ExecutionCapability struct {
+	ActionClass string `json:"action_class"`
+	AgentId     string `json:"agent_id"`
+
+	// DataScope Canonical comparable policy envelope.
+	DataScope        AuthorizationDataScope            `json:"data_scope"`
+	ExpiresAt        time.Time                         `json:"expires_at"`
+	GovernanceMode   ExecutionCapabilityGovernanceMode `json:"governance_mode"`
+	GrantId          *string                           `json:"grant_id,omitempty"`
+	GrantRevision    *int                              `json:"grant_revision,omitempty"`
+	Id               string                            `json:"id"`
+	IssuedAt         time.Time                         `json:"issued_at"`
+	IssuedBy         string                            `json:"issued_by"`
+	Policy           ExecutionCapabilityPolicy         `json:"policy"`
+	PolicyVersion    string                            `json:"policy_version"`
+	RevocationReason *string                           `json:"revocation_reason,omitempty"`
+	RevokedAt        *time.Time                        `json:"revoked_at,omitempty"`
+	RiskTier         string                            `json:"risk_tier"`
+	RuntimeProfile   interface{}                       `json:"runtime_profile"`
+	TenantId         string                            `json:"tenant_id"`
+	Token            *string                           `json:"token,omitempty"`
+	ToolName         string                            `json:"tool_name"`
+}
+
+// ExecutionCapabilityGovernanceMode defines model for ExecutionCapability.GovernanceMode.
+type ExecutionCapabilityGovernanceMode string
+
+// ExecutionCapabilityPolicy defines model for ExecutionCapability.Policy.
+type ExecutionCapabilityPolicy string
+
+// ExecutionCapabilityIssueRequest Supply `callback` for brokered mode or `managed_connector` for desk-managed mode. The server rejects zero or two execution targets.
+type ExecutionCapabilityIssueRequest struct {
+	ActionClass string `json:"action_class"`
+	AgentId     string `json:"agent_id"`
+	Callback    *struct {
+		Auth struct {
+			SecretRef string `json:"secret_ref"`
+		} `json:"auth"`
+		Url string `json:"url"`
+	} `json:"callback,omitempty"`
+
+	// DataScope Canonical comparable policy envelope.
+	DataScope        AuthorizationDataScope                         `json:"data_scope"`
+	GovernanceMode   *ExecutionCapabilityIssueRequestGovernanceMode `json:"governance_mode,omitempty"`
+	GrantId          *string                                        `json:"grant_id,omitempty"`
+	ManagedConnector *struct {
+		Connector     ExecutionCapabilityIssueRequestManagedConnectorConnector `json:"connector"`
+		IntegrationId string                                                   `json:"integration_id"`
+	} `json:"managed_connector,omitempty"`
+	Policy        ExecutionCapabilityIssueRequestPolicy `json:"policy"`
+	PolicyVersion string                                `json:"policy_version"`
+	RiskTier      string                                `json:"risk_tier"`
+	ToolName      string                                `json:"tool_name"`
+	TtlSeconds    *int                                  `json:"ttl_seconds,omitempty"`
+}
+
+// ExecutionCapabilityIssueRequestGovernanceMode defines model for ExecutionCapabilityIssueRequest.GovernanceMode.
+type ExecutionCapabilityIssueRequestGovernanceMode string
+
+// ExecutionCapabilityIssueRequestManagedConnectorConnector defines model for ExecutionCapabilityIssueRequest.ManagedConnector.Connector.
+type ExecutionCapabilityIssueRequestManagedConnectorConnector string
+
+// ExecutionCapabilityIssueRequestPolicy defines model for ExecutionCapabilityIssueRequest.Policy.
+type ExecutionCapabilityIssueRequestPolicy string
+
+// ExecutionReceipt Immutable result for exactly one execution attempt; retries append receipts.
+type ExecutionReceipt struct {
+	AttemptNo          int                                `json:"attempt_no"`
+	Effect             interface{}                        `json:"effect,omitempty"`
+	EffectSummary      string                             `json:"effect_summary"`
+	Error              *string                            `json:"error,omitempty"`
+	FinishedAt         time.Time                          `json:"finished_at"`
+	Id                 string                             `json:"id"`
+	IdempotencyKey     string                             `json:"idempotency_key"`
+	IntentId           string                             `json:"intent_id"`
+	Outcome            ExecutionReceiptOutcome            `json:"outcome"`
+	ProviderReference  *string                            `json:"provider_reference,omitempty"`
+	Rollback           interface{}                        `json:"rollback,omitempty"`
+	RollbackAvailable  bool                               `json:"rollback_available"`
+	StartedAt          time.Time                          `json:"started_at"`
+	VerificationStatus ExecutionReceiptVerificationStatus `json:"verification_status"`
+}
+
+// ExecutionReceiptOutcome defines model for ExecutionReceipt.Outcome.
+type ExecutionReceiptOutcome string
+
+// ExecutionReceiptVerificationStatus defines model for ExecutionReceipt.VerificationStatus.
+type ExecutionReceiptVerificationStatus string
+
 // ExtractRequest JSON alternative to the multipart upload for text extraction.
 type ExtractRequest struct {
 	// FileBase64 Base64-encoded document bytes.
@@ -2364,6 +2788,9 @@ type FileObject struct {
 	Status        *string `json:"status,omitempty"`
 	StatusDetails *string `json:"status_details,omitempty"`
 }
+
+// GovernanceMode Where pre-execution policy is enforced. `desk_managed` is native, `brokered` uses a short-lived scoped capability, and `external` is audited but the outside service receives credentials.
+type GovernanceMode string
 
 // Group A role-carrying group that gates departmental action queues.
 type Group struct {
@@ -3246,6 +3673,19 @@ type PromotionCandidates struct {
 	FactKeys *[]string `json:"fact_keys,omitempty"`
 }
 
+// ReviewerEvidence defines model for ReviewerEvidence.
+type ReviewerEvidence struct {
+	Batched    int     `json:"batched"`
+	Decisions  int     `json:"decisions"`
+	EditRate   float32 `json:"edit_rate"`
+	Edited     int     `json:"edited"`
+	Fast       int     `json:"fast"`
+	FastRate   float32 `json:"fast_rate"`
+	RejectRate float32 `json:"reject_rate"`
+	Rejected   int     `json:"rejected"`
+	Reviewer   string  `json:"reviewer"`
+}
+
 // Role defines model for Role.
 type Role string
 
@@ -3887,6 +4327,14 @@ type ListAgentsParams struct {
 	Owner *string `form:"owner,omitempty" json:"owner,omitempty"`
 }
 
+// ExecuteCapabilityJSONBody defines parameters for ExecuteCapability.
+type ExecuteCapabilityJSONBody struct {
+	ExternalRef *string     `json:"external_ref,omitempty"`
+	Params      interface{} `json:"params"`
+	Purpose     string      `json:"purpose"`
+	SessionId   *string     `json:"session_id,omitempty"`
+}
+
 // ListConversationsParams defines parameters for ListConversations.
 type ListConversationsParams struct {
 	// Agent Filter to conversations for a single agent.
@@ -3951,6 +4399,51 @@ type ListJobsParams struct {
 type StreamJobParams struct {
 	// LastEventID Resume from event seq — replays missed events from PG before live broadcast.
 	LastEventID *string `json:"Last-Event-ID,omitempty"`
+}
+
+// RevokeExecutionCapabilityJSONBody defines parameters for RevokeExecutionCapability.
+type RevokeExecutionCapabilityJSONBody struct {
+	Reason string `json:"reason"`
+}
+
+// MarkAuthorizationIncidentJSONBody defines parameters for MarkAuthorizationIncident.
+type MarkAuthorizationIncidentJSONBody struct {
+	Reason string `json:"reason"`
+}
+
+// ListAuthorizationGrantsParams defines parameters for ListAuthorizationGrants.
+type ListAuthorizationGrantsParams struct {
+	IncludeExpired *bool `form:"include_expired,omitempty" json:"include_expired,omitempty"`
+}
+
+// EvaluateAndIssueAuthorizationGrantJSONBody defines parameters for EvaluateAndIssueAuthorizationGrant.
+type EvaluateAndIssueAuthorizationGrantJSONBody struct {
+	ActionClass string `json:"action_class"`
+	AgentId     string `json:"agent_id"`
+
+	// DataScope Canonical comparable policy envelope.
+	DataScope     AuthorizationDataScope `json:"data_scope"`
+	MinEvidence   *float32               `json:"min_evidence,omitempty"`
+	PolicyVersion string                 `json:"policy_version"`
+	RiskTier      string                 `json:"risk_tier"`
+	SampleRate    *float32               `json:"sample_rate,omitempty"`
+	ToolBindings  []string               `json:"tool_bindings"`
+	TtlSeconds    *int                   `json:"ttl_seconds,omitempty"`
+}
+
+// RevokeAuthorizationGrantJSONBody defines parameters for RevokeAuthorizationGrant.
+type RevokeAuthorizationGrantJSONBody struct {
+	Reason string `json:"reason"`
+}
+
+// SuspendAuthorizationGrantJSONBody defines parameters for SuspendAuthorizationGrant.
+type SuspendAuthorizationGrantJSONBody struct {
+	Reason string `json:"reason"`
+}
+
+// ListAuthorizationIntentsParams defines parameters for ListAuthorizationIntents.
+type ListAuthorizationIntentsParams struct {
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListDocumentsParams defines parameters for ListDocuments.
@@ -4211,6 +4704,9 @@ type SynthesizeSpeechJSONRequestBody = SpeechRequest
 // TranscribeAudioMultipartRequestBody defines body for TranscribeAudio for multipart/form-data ContentType.
 type TranscribeAudioMultipartRequestBody = TranscriptionRequest
 
+// ExecuteCapabilityJSONRequestBody defines body for ExecuteCapability for application/json ContentType.
+type ExecuteCapabilityJSONRequestBody ExecuteCapabilityJSONBody
+
 // ChatCompletionsJSONRequestBody defines body for ChatCompletions for application/json ContentType.
 type ChatCompletionsJSONRequestBody = ChatCompletionRequest
 
@@ -4252,6 +4748,24 @@ type CreateJobJSONRequestBody = JobCreate
 
 // SubmitCustomToolResultJSONRequestBody defines body for SubmitCustomToolResult for application/json ContentType.
 type SubmitCustomToolResultJSONRequestBody = CustomToolResultRequest
+
+// IssueExecutionCapabilityJSONRequestBody defines body for IssueExecutionCapability for application/json ContentType.
+type IssueExecutionCapabilityJSONRequestBody = ExecutionCapabilityIssueRequest
+
+// RevokeExecutionCapabilityJSONRequestBody defines body for RevokeExecutionCapability for application/json ContentType.
+type RevokeExecutionCapabilityJSONRequestBody RevokeExecutionCapabilityJSONBody
+
+// MarkAuthorizationIncidentJSONRequestBody defines body for MarkAuthorizationIncident for application/json ContentType.
+type MarkAuthorizationIncidentJSONRequestBody MarkAuthorizationIncidentJSONBody
+
+// EvaluateAndIssueAuthorizationGrantJSONRequestBody defines body for EvaluateAndIssueAuthorizationGrant for application/json ContentType.
+type EvaluateAndIssueAuthorizationGrantJSONRequestBody EvaluateAndIssueAuthorizationGrantJSONBody
+
+// RevokeAuthorizationGrantJSONRequestBody defines body for RevokeAuthorizationGrant for application/json ContentType.
+type RevokeAuthorizationGrantJSONRequestBody RevokeAuthorizationGrantJSONBody
+
+// SuspendAuthorizationGrantJSONRequestBody defines body for SuspendAuthorizationGrant for application/json ContentType.
+type SuspendAuthorizationGrantJSONRequestBody SuspendAuthorizationGrantJSONBody
 
 // PutConnectorJSONRequestBody defines body for PutConnector for application/json ContentType.
 type PutConnectorJSONRequestBody = ConnectorUpsert
@@ -5683,6 +6197,11 @@ type ClientInterface interface {
 	// TranscribeAudioWithBody request with any body
 	TranscribeAudioWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ExecuteCapabilityWithBody request with any body
+	ExecuteCapabilityWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ExecuteCapability(ctx context.Context, body ExecuteCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ChatCompletionsWithBody request with any body
 	ChatCompletionsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -5786,6 +6305,45 @@ type ClientInterface interface {
 	SubmitCustomToolResultWithBody(ctx context.Context, messageId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	SubmitCustomToolResult(ctx context.Context, messageId string, body SubmitCustomToolResultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// IssueExecutionCapabilityWithBody request with any body
+	IssueExecutionCapabilityWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	IssueExecutionCapability(ctx context.Context, body IssueExecutionCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeExecutionCapabilityWithBody request with any body
+	RevokeExecutionCapabilityWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RevokeExecutionCapability(ctx context.Context, id string, body RevokeExecutionCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MarkAuthorizationIncidentWithBody request with any body
+	MarkAuthorizationIncidentWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	MarkAuthorizationIncident(ctx context.Context, id string, body MarkAuthorizationIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAuthorizationGrants request
+	ListAuthorizationGrants(ctx context.Context, params *ListAuthorizationGrantsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvaluateAndIssueAuthorizationGrantWithBody request with any body
+	EvaluateAndIssueAuthorizationGrantWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	EvaluateAndIssueAuthorizationGrant(ctx context.Context, body EvaluateAndIssueAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeAuthorizationGrantWithBody request with any body
+	RevokeAuthorizationGrantWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RevokeAuthorizationGrant(ctx context.Context, id string, body RevokeAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SuspendAuthorizationGrantWithBody request with any body
+	SuspendAuthorizationGrantWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SuspendAuthorizationGrant(ctx context.Context, id string, body SuspendAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAuthorizationIntents request
+	ListAuthorizationIntents(ctx context.Context, params *ListAuthorizationIntentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAuthorizationGraph request
+	GetAuthorizationGraph(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListConnectors request
 	ListConnectors(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6833,6 +7391,30 @@ func (c *Client) TranscribeAudioWithBody(ctx context.Context, contentType string
 	return c.Client.Do(req)
 }
 
+func (c *Client) ExecuteCapabilityWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExecuteCapabilityRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ExecuteCapability(ctx context.Context, body ExecuteCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExecuteCapabilityRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ChatCompletionsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewChatCompletionsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -7279,6 +7861,186 @@ func (c *Client) SubmitCustomToolResultWithBody(ctx context.Context, messageId s
 
 func (c *Client) SubmitCustomToolResult(ctx context.Context, messageId string, body SubmitCustomToolResultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubmitCustomToolResultRequest(c.Server, messageId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) IssueExecutionCapabilityWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIssueExecutionCapabilityRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) IssueExecutionCapability(ctx context.Context, body IssueExecutionCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIssueExecutionCapabilityRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RevokeExecutionCapabilityWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeExecutionCapabilityRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RevokeExecutionCapability(ctx context.Context, id string, body RevokeExecutionCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeExecutionCapabilityRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MarkAuthorizationIncidentWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMarkAuthorizationIncidentRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MarkAuthorizationIncident(ctx context.Context, id string, body MarkAuthorizationIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMarkAuthorizationIncidentRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListAuthorizationGrants(ctx context.Context, params *ListAuthorizationGrantsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAuthorizationGrantsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) EvaluateAndIssueAuthorizationGrantWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvaluateAndIssueAuthorizationGrantRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) EvaluateAndIssueAuthorizationGrant(ctx context.Context, body EvaluateAndIssueAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvaluateAndIssueAuthorizationGrantRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RevokeAuthorizationGrantWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeAuthorizationGrantRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RevokeAuthorizationGrant(ctx context.Context, id string, body RevokeAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeAuthorizationGrantRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SuspendAuthorizationGrantWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSuspendAuthorizationGrantRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SuspendAuthorizationGrant(ctx context.Context, id string, body SuspendAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSuspendAuthorizationGrantRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListAuthorizationIntents(ctx context.Context, params *ListAuthorizationIntentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAuthorizationIntentsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAuthorizationGraph(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAuthorizationGraphRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -10457,6 +11219,46 @@ func NewTranscribeAudioRequestWithBody(server string, contentType string, body i
 	return req, nil
 }
 
+// NewExecuteCapabilityRequest calls the generic ExecuteCapability builder with application/json body
+func NewExecuteCapabilityRequest(server string, body ExecuteCapabilityJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewExecuteCapabilityRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewExecuteCapabilityRequestWithBody generates requests for ExecuteCapability with any type of body
+func NewExecuteCapabilityRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/capabilities/execute")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewChatCompletionsRequest calls the generic ChatCompletions builder with application/json body
 func NewChatCompletionsRequest(server string, body ChatCompletionsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -11673,6 +12475,406 @@ func NewSubmitCustomToolResultRequestWithBody(server string, messageId string, c
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewIssueExecutionCapabilityRequest calls the generic IssueExecutionCapability builder with application/json body
+func NewIssueExecutionCapabilityRequest(server string, body IssueExecutionCapabilityJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewIssueExecutionCapabilityRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewIssueExecutionCapabilityRequestWithBody generates requests for IssueExecutionCapability with any type of body
+func NewIssueExecutionCapabilityRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/authorization/capabilities")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRevokeExecutionCapabilityRequest calls the generic RevokeExecutionCapability builder with application/json body
+func NewRevokeExecutionCapabilityRequest(server string, id string, body RevokeExecutionCapabilityJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRevokeExecutionCapabilityRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewRevokeExecutionCapabilityRequestWithBody generates requests for RevokeExecutionCapability with any type of body
+func NewRevokeExecutionCapabilityRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/authorization/capabilities/%s/revoke", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewMarkAuthorizationIncidentRequest calls the generic MarkAuthorizationIncident builder with application/json body
+func NewMarkAuthorizationIncidentRequest(server string, id string, body MarkAuthorizationIncidentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewMarkAuthorizationIncidentRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewMarkAuthorizationIncidentRequestWithBody generates requests for MarkAuthorizationIncident with any type of body
+func NewMarkAuthorizationIncidentRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/authorization/decisions/%s/incident", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListAuthorizationGrantsRequest generates requests for ListAuthorizationGrants
+func NewListAuthorizationGrantsRequest(server string, params *ListAuthorizationGrantsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/authorization/grants")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.IncludeExpired != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_expired", *params.IncludeExpired, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvaluateAndIssueAuthorizationGrantRequest calls the generic EvaluateAndIssueAuthorizationGrant builder with application/json body
+func NewEvaluateAndIssueAuthorizationGrantRequest(server string, body EvaluateAndIssueAuthorizationGrantJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvaluateAndIssueAuthorizationGrantRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewEvaluateAndIssueAuthorizationGrantRequestWithBody generates requests for EvaluateAndIssueAuthorizationGrant with any type of body
+func NewEvaluateAndIssueAuthorizationGrantRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/authorization/grants/evaluate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRevokeAuthorizationGrantRequest calls the generic RevokeAuthorizationGrant builder with application/json body
+func NewRevokeAuthorizationGrantRequest(server string, id string, body RevokeAuthorizationGrantJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRevokeAuthorizationGrantRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewRevokeAuthorizationGrantRequestWithBody generates requests for RevokeAuthorizationGrant with any type of body
+func NewRevokeAuthorizationGrantRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/authorization/grants/%s/revoke", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSuspendAuthorizationGrantRequest calls the generic SuspendAuthorizationGrant builder with application/json body
+func NewSuspendAuthorizationGrantRequest(server string, id string, body SuspendAuthorizationGrantJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSuspendAuthorizationGrantRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewSuspendAuthorizationGrantRequestWithBody generates requests for SuspendAuthorizationGrant with any type of body
+func NewSuspendAuthorizationGrantRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/authorization/grants/%s/suspend", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListAuthorizationIntentsRequest generates requests for ListAuthorizationIntents
+func NewListAuthorizationIntentsRequest(server string, params *ListAuthorizationIntentsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/authorization/intents")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAuthorizationGraphRequest generates requests for GetAuthorizationGraph
+func NewGetAuthorizationGraphRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/authorization/intents/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -14941,6 +16143,11 @@ type ClientWithResponsesInterface interface {
 	// TranscribeAudioWithBodyWithResponse request with any body
 	TranscribeAudioWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TranscribeAudioResponse, error)
 
+	// ExecuteCapabilityWithBodyWithResponse request with any body
+	ExecuteCapabilityWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExecuteCapabilityResponse, error)
+
+	ExecuteCapabilityWithResponse(ctx context.Context, body ExecuteCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*ExecuteCapabilityResponse, error)
+
 	// ChatCompletionsWithBodyWithResponse request with any body
 	ChatCompletionsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChatCompletionsResponse, error)
 
@@ -15044,6 +16251,45 @@ type ClientWithResponsesInterface interface {
 	SubmitCustomToolResultWithBodyWithResponse(ctx context.Context, messageId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitCustomToolResultResponse, error)
 
 	SubmitCustomToolResultWithResponse(ctx context.Context, messageId string, body SubmitCustomToolResultJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitCustomToolResultResponse, error)
+
+	// IssueExecutionCapabilityWithBodyWithResponse request with any body
+	IssueExecutionCapabilityWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IssueExecutionCapabilityResponse, error)
+
+	IssueExecutionCapabilityWithResponse(ctx context.Context, body IssueExecutionCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*IssueExecutionCapabilityResponse, error)
+
+	// RevokeExecutionCapabilityWithBodyWithResponse request with any body
+	RevokeExecutionCapabilityWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevokeExecutionCapabilityResponse, error)
+
+	RevokeExecutionCapabilityWithResponse(ctx context.Context, id string, body RevokeExecutionCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*RevokeExecutionCapabilityResponse, error)
+
+	// MarkAuthorizationIncidentWithBodyWithResponse request with any body
+	MarkAuthorizationIncidentWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MarkAuthorizationIncidentResponse, error)
+
+	MarkAuthorizationIncidentWithResponse(ctx context.Context, id string, body MarkAuthorizationIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*MarkAuthorizationIncidentResponse, error)
+
+	// ListAuthorizationGrantsWithResponse request
+	ListAuthorizationGrantsWithResponse(ctx context.Context, params *ListAuthorizationGrantsParams, reqEditors ...RequestEditorFn) (*ListAuthorizationGrantsResponse, error)
+
+	// EvaluateAndIssueAuthorizationGrantWithBodyWithResponse request with any body
+	EvaluateAndIssueAuthorizationGrantWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvaluateAndIssueAuthorizationGrantResponse, error)
+
+	EvaluateAndIssueAuthorizationGrantWithResponse(ctx context.Context, body EvaluateAndIssueAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*EvaluateAndIssueAuthorizationGrantResponse, error)
+
+	// RevokeAuthorizationGrantWithBodyWithResponse request with any body
+	RevokeAuthorizationGrantWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevokeAuthorizationGrantResponse, error)
+
+	RevokeAuthorizationGrantWithResponse(ctx context.Context, id string, body RevokeAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*RevokeAuthorizationGrantResponse, error)
+
+	// SuspendAuthorizationGrantWithBodyWithResponse request with any body
+	SuspendAuthorizationGrantWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SuspendAuthorizationGrantResponse, error)
+
+	SuspendAuthorizationGrantWithResponse(ctx context.Context, id string, body SuspendAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*SuspendAuthorizationGrantResponse, error)
+
+	// ListAuthorizationIntentsWithResponse request
+	ListAuthorizationIntentsWithResponse(ctx context.Context, params *ListAuthorizationIntentsParams, reqEditors ...RequestEditorFn) (*ListAuthorizationIntentsResponse, error)
+
+	// GetAuthorizationGraphWithResponse request
+	GetAuthorizationGraphWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAuthorizationGraphResponse, error)
 
 	// ListConnectorsWithResponse request
 	ListConnectorsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListConnectorsResponse, error)
@@ -16479,6 +17725,42 @@ func (r TranscribeAudioResponse) StatusCode() int {
 	return 0
 }
 
+type ExecuteCapabilityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Intent AuthorizationGraph         `json:"intent"`
+		Status ExecuteCapability200Status `json:"status"`
+	}
+	JSON202 *struct {
+		ActionId string                     `json:"action_id"`
+		IntentId string                     `json:"intent_id"`
+		Sampled  bool                       `json:"sampled"`
+		Status   ExecuteCapability202Status `json:"status"`
+	}
+	JSON400 *BadRequest
+	JSON401 *Unauthorized
+	JSON403 *Forbidden
+}
+type ExecuteCapability200Status string
+type ExecuteCapability202Status string
+
+// Status returns HTTPResponse.Status
+func (r ExecuteCapabilityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ExecuteCapabilityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ChatCompletionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -17200,6 +18482,246 @@ func (r SubmitCustomToolResultResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r SubmitCustomToolResultResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type IssueExecutionCapabilityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *struct {
+		// Capability Short-lived brokered authorization credential; token appears only at issue time.
+		Capability            ExecutionCapability `json:"capability"`
+		GovernanceEnforcement string              `json:"governance_enforcement"`
+
+		// GovernanceMode Where pre-execution policy is enforced. `desk_managed` is native, `brokered` uses a short-lived scoped capability, and `external` is audited but the outside service receives credentials.
+		GovernanceMode GovernanceMode `json:"governance_mode"`
+		Warning        string         `json:"warning"`
+	}
+	JSON400 *BadRequest
+	JSON401 *Unauthorized
+	JSON403 *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r IssueExecutionCapabilityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r IssueExecutionCapabilityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RevokeExecutionCapabilityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeExecutionCapabilityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeExecutionCapabilityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type MarkAuthorizationIncidentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r MarkAuthorizationIncidentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MarkAuthorizationIncidentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListAuthorizationGrantsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Grants []AutonomyGrant `json:"grants"`
+	}
+	JSON401 *Unauthorized
+	JSON403 *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAuthorizationGrantsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAuthorizationGrantsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type EvaluateAndIssueAuthorizationGrantResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *struct {
+		Evidence AuthorizationEvidenceProfile `json:"evidence"`
+
+		// Grant Immutable grant definition plus current lifecycle-event projection.
+		Grant AutonomyGrant `json:"grant"`
+	}
+	JSON401 *Unauthorized
+	JSON403 *Forbidden
+	JSON422 *map[string]interface{}
+}
+
+// Status returns HTTPResponse.Status
+func (r EvaluateAndIssueAuthorizationGrantResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvaluateAndIssueAuthorizationGrantResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RevokeAuthorizationGrantResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeAuthorizationGrantResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeAuthorizationGrantResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SuspendAuthorizationGrantResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r SuspendAuthorizationGrantResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SuspendAuthorizationGrantResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListAuthorizationIntentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Intents []AuthorizationIntent `json:"intents"`
+	}
+	JSON401 *Unauthorized
+	JSON403 *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAuthorizationIntentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAuthorizationIntentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAuthorizationGraphResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthorizationGraph
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAuthorizationGraphResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAuthorizationGraphResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -19505,6 +21027,23 @@ func (c *ClientWithResponses) TranscribeAudioWithBodyWithResponse(ctx context.Co
 	return ParseTranscribeAudioResponse(rsp)
 }
 
+// ExecuteCapabilityWithBodyWithResponse request with arbitrary body returning *ExecuteCapabilityResponse
+func (c *ClientWithResponses) ExecuteCapabilityWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExecuteCapabilityResponse, error) {
+	rsp, err := c.ExecuteCapabilityWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExecuteCapabilityResponse(rsp)
+}
+
+func (c *ClientWithResponses) ExecuteCapabilityWithResponse(ctx context.Context, body ExecuteCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*ExecuteCapabilityResponse, error) {
+	rsp, err := c.ExecuteCapability(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExecuteCapabilityResponse(rsp)
+}
+
 // ChatCompletionsWithBodyWithResponse request with arbitrary body returning *ChatCompletionsResponse
 func (c *ClientWithResponses) ChatCompletionsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChatCompletionsResponse, error) {
 	rsp, err := c.ChatCompletionsWithBody(ctx, contentType, body, reqEditors...)
@@ -19835,6 +21374,135 @@ func (c *ClientWithResponses) SubmitCustomToolResultWithResponse(ctx context.Con
 		return nil, err
 	}
 	return ParseSubmitCustomToolResultResponse(rsp)
+}
+
+// IssueExecutionCapabilityWithBodyWithResponse request with arbitrary body returning *IssueExecutionCapabilityResponse
+func (c *ClientWithResponses) IssueExecutionCapabilityWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IssueExecutionCapabilityResponse, error) {
+	rsp, err := c.IssueExecutionCapabilityWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIssueExecutionCapabilityResponse(rsp)
+}
+
+func (c *ClientWithResponses) IssueExecutionCapabilityWithResponse(ctx context.Context, body IssueExecutionCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*IssueExecutionCapabilityResponse, error) {
+	rsp, err := c.IssueExecutionCapability(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIssueExecutionCapabilityResponse(rsp)
+}
+
+// RevokeExecutionCapabilityWithBodyWithResponse request with arbitrary body returning *RevokeExecutionCapabilityResponse
+func (c *ClientWithResponses) RevokeExecutionCapabilityWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevokeExecutionCapabilityResponse, error) {
+	rsp, err := c.RevokeExecutionCapabilityWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeExecutionCapabilityResponse(rsp)
+}
+
+func (c *ClientWithResponses) RevokeExecutionCapabilityWithResponse(ctx context.Context, id string, body RevokeExecutionCapabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*RevokeExecutionCapabilityResponse, error) {
+	rsp, err := c.RevokeExecutionCapability(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeExecutionCapabilityResponse(rsp)
+}
+
+// MarkAuthorizationIncidentWithBodyWithResponse request with arbitrary body returning *MarkAuthorizationIncidentResponse
+func (c *ClientWithResponses) MarkAuthorizationIncidentWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MarkAuthorizationIncidentResponse, error) {
+	rsp, err := c.MarkAuthorizationIncidentWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMarkAuthorizationIncidentResponse(rsp)
+}
+
+func (c *ClientWithResponses) MarkAuthorizationIncidentWithResponse(ctx context.Context, id string, body MarkAuthorizationIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*MarkAuthorizationIncidentResponse, error) {
+	rsp, err := c.MarkAuthorizationIncident(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMarkAuthorizationIncidentResponse(rsp)
+}
+
+// ListAuthorizationGrantsWithResponse request returning *ListAuthorizationGrantsResponse
+func (c *ClientWithResponses) ListAuthorizationGrantsWithResponse(ctx context.Context, params *ListAuthorizationGrantsParams, reqEditors ...RequestEditorFn) (*ListAuthorizationGrantsResponse, error) {
+	rsp, err := c.ListAuthorizationGrants(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAuthorizationGrantsResponse(rsp)
+}
+
+// EvaluateAndIssueAuthorizationGrantWithBodyWithResponse request with arbitrary body returning *EvaluateAndIssueAuthorizationGrantResponse
+func (c *ClientWithResponses) EvaluateAndIssueAuthorizationGrantWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvaluateAndIssueAuthorizationGrantResponse, error) {
+	rsp, err := c.EvaluateAndIssueAuthorizationGrantWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvaluateAndIssueAuthorizationGrantResponse(rsp)
+}
+
+func (c *ClientWithResponses) EvaluateAndIssueAuthorizationGrantWithResponse(ctx context.Context, body EvaluateAndIssueAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*EvaluateAndIssueAuthorizationGrantResponse, error) {
+	rsp, err := c.EvaluateAndIssueAuthorizationGrant(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvaluateAndIssueAuthorizationGrantResponse(rsp)
+}
+
+// RevokeAuthorizationGrantWithBodyWithResponse request with arbitrary body returning *RevokeAuthorizationGrantResponse
+func (c *ClientWithResponses) RevokeAuthorizationGrantWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevokeAuthorizationGrantResponse, error) {
+	rsp, err := c.RevokeAuthorizationGrantWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeAuthorizationGrantResponse(rsp)
+}
+
+func (c *ClientWithResponses) RevokeAuthorizationGrantWithResponse(ctx context.Context, id string, body RevokeAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*RevokeAuthorizationGrantResponse, error) {
+	rsp, err := c.RevokeAuthorizationGrant(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeAuthorizationGrantResponse(rsp)
+}
+
+// SuspendAuthorizationGrantWithBodyWithResponse request with arbitrary body returning *SuspendAuthorizationGrantResponse
+func (c *ClientWithResponses) SuspendAuthorizationGrantWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SuspendAuthorizationGrantResponse, error) {
+	rsp, err := c.SuspendAuthorizationGrantWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSuspendAuthorizationGrantResponse(rsp)
+}
+
+func (c *ClientWithResponses) SuspendAuthorizationGrantWithResponse(ctx context.Context, id string, body SuspendAuthorizationGrantJSONRequestBody, reqEditors ...RequestEditorFn) (*SuspendAuthorizationGrantResponse, error) {
+	rsp, err := c.SuspendAuthorizationGrant(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSuspendAuthorizationGrantResponse(rsp)
+}
+
+// ListAuthorizationIntentsWithResponse request returning *ListAuthorizationIntentsResponse
+func (c *ClientWithResponses) ListAuthorizationIntentsWithResponse(ctx context.Context, params *ListAuthorizationIntentsParams, reqEditors ...RequestEditorFn) (*ListAuthorizationIntentsResponse, error) {
+	rsp, err := c.ListAuthorizationIntents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAuthorizationIntentsResponse(rsp)
+}
+
+// GetAuthorizationGraphWithResponse request returning *GetAuthorizationGraphResponse
+func (c *ClientWithResponses) GetAuthorizationGraphWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAuthorizationGraphResponse, error) {
+	rsp, err := c.GetAuthorizationGraph(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAuthorizationGraphResponse(rsp)
 }
 
 // ListConnectorsWithResponse request returning *ListConnectorsResponse
@@ -22648,6 +24316,68 @@ func ParseTranscribeAudioResponse(rsp *http.Response) (*TranscribeAudioResponse,
 	return response, nil
 }
 
+// ParseExecuteCapabilityResponse parses an HTTP response from a ExecuteCapabilityWithResponse call
+func ParseExecuteCapabilityResponse(rsp *http.Response) (*ExecuteCapabilityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ExecuteCapabilityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Intent AuthorizationGraph         `json:"intent"`
+			Status ExecuteCapability200Status `json:"status"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest struct {
+			ActionId string                     `json:"action_id"`
+			IntentId string                     `json:"intent_id"`
+			Sampled  bool                       `json:"sampled"`
+			Status   ExecuteCapability202Status `json:"status"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseChatCompletionsResponse parses an HTTP response from a ChatCompletionsWithResponse call
 func ParseChatCompletionsResponse(rsp *http.Response) (*ChatCompletionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24071,6 +25801,432 @@ func ParseSubmitCustomToolResultResponse(rsp *http.Response) (*SubmitCustomToolR
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseIssueExecutionCapabilityResponse parses an HTTP response from a IssueExecutionCapabilityWithResponse call
+func ParseIssueExecutionCapabilityResponse(rsp *http.Response) (*IssueExecutionCapabilityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &IssueExecutionCapabilityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest struct {
+			// Capability Short-lived brokered authorization credential; token appears only at issue time.
+			Capability            ExecutionCapability `json:"capability"`
+			GovernanceEnforcement string              `json:"governance_enforcement"`
+
+			// GovernanceMode Where pre-execution policy is enforced. `desk_managed` is native, `brokered` uses a short-lived scoped capability, and `external` is audited but the outside service receives credentials.
+			GovernanceMode GovernanceMode `json:"governance_mode"`
+			Warning        string         `json:"warning"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeExecutionCapabilityResponse parses an HTTP response from a RevokeExecutionCapabilityWithResponse call
+func ParseRevokeExecutionCapabilityResponse(rsp *http.Response) (*RevokeExecutionCapabilityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeExecutionCapabilityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseMarkAuthorizationIncidentResponse parses an HTTP response from a MarkAuthorizationIncidentWithResponse call
+func ParseMarkAuthorizationIncidentResponse(rsp *http.Response) (*MarkAuthorizationIncidentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MarkAuthorizationIncidentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAuthorizationGrantsResponse parses an HTTP response from a ListAuthorizationGrantsWithResponse call
+func ParseListAuthorizationGrantsResponse(rsp *http.Response) (*ListAuthorizationGrantsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAuthorizationGrantsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Grants []AutonomyGrant `json:"grants"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvaluateAndIssueAuthorizationGrantResponse parses an HTTP response from a EvaluateAndIssueAuthorizationGrantWithResponse call
+func ParseEvaluateAndIssueAuthorizationGrantResponse(rsp *http.Response) (*EvaluateAndIssueAuthorizationGrantResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvaluateAndIssueAuthorizationGrantResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest struct {
+			Evidence AuthorizationEvidenceProfile `json:"evidence"`
+
+			// Grant Immutable grant definition plus current lifecycle-event projection.
+			Grant AutonomyGrant `json:"grant"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeAuthorizationGrantResponse parses an HTTP response from a RevokeAuthorizationGrantWithResponse call
+func ParseRevokeAuthorizationGrantResponse(rsp *http.Response) (*RevokeAuthorizationGrantResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeAuthorizationGrantResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSuspendAuthorizationGrantResponse parses an HTTP response from a SuspendAuthorizationGrantWithResponse call
+func ParseSuspendAuthorizationGrantResponse(rsp *http.Response) (*SuspendAuthorizationGrantResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SuspendAuthorizationGrantResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAuthorizationIntentsResponse parses an HTTP response from a ListAuthorizationIntentsWithResponse call
+func ParseListAuthorizationIntentsResponse(rsp *http.Response) (*ListAuthorizationIntentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAuthorizationIntentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Intents []AuthorizationIntent `json:"intents"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAuthorizationGraphResponse parses an HTTP response from a GetAuthorizationGraphWithResponse call
+func ParseGetAuthorizationGraphResponse(rsp *http.Response) (*GetAuthorizationGraphResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAuthorizationGraphResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthorizationGraph
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
