@@ -7,6 +7,7 @@ const mk = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s,
 const raw = {
   kind: "freshdesk", tenant_id: "acme", enabled: true, group_id: "support",
   config: { subdomain: "acme" }, secret_keys: ["api_key", "webhook_secret"], updated_at: "t1",
+  governance_mode: "external", governance_enforcement: "audited; connector service receives credentials",
 };
 
 describe("connector configs", () => {
@@ -18,6 +19,8 @@ describe("connector configs", () => {
       config: { subdomain: "acme" }, secretKeys: ["api_key", "webhook_secret"], updatedAt: "t1",
       // #240 policy: absent on the wire reads as false, i.e. deny-by-default.
       personalAllowed: false,
+      governanceMode: "external",
+      governanceEnforcement: "audited; connector service receives credentials",
     }]);
     expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toBe("http://x/v1/managed/connectors");
   });
