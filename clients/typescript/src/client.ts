@@ -251,6 +251,30 @@ export interface ActionDisposition {
   decided: number;
 }
 
+/**
+ * The org's allowlist of email domains for personal connections (desk#268).
+ *
+ * `advisory` is ALWAYS true today and is carried as data rather than assumed by
+ * each caller. Personal connections are credential forms, so the address is
+ * typed by the employee and the credential is what actually decides which
+ * account is reached — this list prevents mistakes and states the policy, and
+ * is not a security boundary until these connections use OAuth.
+ *
+ * Render `advisoryReason` next to the list. When the check moves to a
+ * provider-verified address the flag flips, and a surface that read the field
+ * gets the correction for free; one that hard-coded the caveat does not.
+ *
+ * Empty `domains` means NO restriction — the default, and what every
+ * deployment that has never set one reads.
+ */
+export interface PersonalDomainPolicy {
+  domains: string[];
+  advisory: boolean;
+  advisoryReason: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
 /** Seed policy for the tools discovered on an MCP server (desk#269/#270). */
 export type McpServerPolicy = "allow" | "ask" | "never";
 
@@ -1492,6 +1516,34 @@ export class NovaClient {
     }));
   }
 
+  /** Read the personal-connection domain allowlist (admin). */
+  async getPersonalDomainPolicy(): Promise<PersonalDomainPolicy> {
+    const res = await this.rawFetch("/v1/managed/connectors/personal-domains", { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { policy: RawPersonalDomainPolicy };
+    return toPersonalDomainPolicy(j.policy);
+  }
+
+  /**
+   * Replace the allowlist (admin). An EMPTY array removes the restriction,
+   * which is a legitimate and reversible choice — not a no-op.
+   *
+   * Entries are domains, not addresses: `acme.com`, not `alice@acme.com`. The
+   * server refuses an address with a 400 naming the rule, because a full
+   * address would allow exactly one person while reading like it allows a
+   * company.
+   */
+  async setPersonalDomainPolicy(domains: string[]): Promise<PersonalDomainPolicy> {
+    const res = await this.rawFetch("/v1/managed/connectors/personal-domains", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ domains }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { policy: RawPersonalDomainPolicy };
+    return toPersonalDomainPolicy(j.policy);
+  }
+
   async deleteMcpServer(id: string): Promise<void> {
     const res = await this.rawFetch(`/v1/managed/mcp/servers/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw await this.toApiError(res);
@@ -1627,6 +1679,23 @@ function toMyConnectorConfig(c: RawMyConnectorConfig): MyConnectorConfig {
 interface RawActionDisposition {
   agent_id: string; approved_as_is?: number; edited_then_approved?: number;
   rejected?: number; decided?: number;
+}
+
+interface RawPersonalDomainPolicy {
+  domains?: string[]; advisory?: boolean; advisory_reason?: string;
+  updated_at?: string; updated_by?: string;
+}
+
+function toPersonalDomainPolicy(p: RawPersonalDomainPolicy): PersonalDomainPolicy {
+  return {
+    domains: p.domains ?? [],
+    // Defaults to TRUE when absent. An older kernel that does not send the
+    // field is one where the control is advisory too, so the safe default is
+    // the caveat, never its absence.
+    advisory: p.advisory ?? true,
+    advisoryReason: p.advisory_reason ?? "",
+    updatedAt: p.updated_at, updatedBy: p.updated_by,
+  };
 }
 
 interface RawMcpServer {
