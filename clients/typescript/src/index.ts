@@ -41,6 +41,8 @@ export {
   type MyGroup,
   type ConnectorConfig,
   type MyConnectorConfig,
+  type McpServer,
+  type McpServerPolicy,
   type Entitlements,
 } from "./client.js";
 
