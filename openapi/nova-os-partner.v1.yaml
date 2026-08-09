@@ -2613,8 +2613,8 @@ components:
         params: {}
         data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
         side_effects: {}
-        reversible: { type: [boolean, 'null'] }
-        max_authorization_seconds: { type: [integer, 'null'] }
+        reversible: { type: boolean, nullable: true }
+        max_authorization_seconds: { type: integer, nullable: true }
         risk_tier: { type: string }
         purpose: { type: string }
         source: { type: string }
@@ -2772,6 +2772,38 @@ components:
         revocation_reason: { type: string }
         token: { type: string, writeOnly: true }
       required: [id, tenant_id, agent_id, tool_name, action_class, risk_tier, data_scope, policy, policy_version, governance_mode, runtime_profile, issued_by, issued_at, expires_at]
+    ExecutionCapabilityIssueRequest:
+      type: object
+      description: >-
+        Supply `callback` for brokered mode or `managed_connector` for
+        desk-managed mode. The server rejects zero or two execution targets.
+      properties:
+        grant_id: { type: string }
+        agent_id: { type: string }
+        tool_name: { type: string }
+        action_class: { type: string }
+        risk_tier: { type: string }
+        data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
+        policy: { type: string, enum: [allow, ask, never] }
+        policy_version: { type: string }
+        governance_mode: { type: string, enum: [desk_managed, brokered], default: brokered }
+        callback:
+          type: object
+          properties:
+            url: { type: string, format: uri }
+            auth:
+              type: object
+              properties: { secret_ref: { type: string } }
+              required: [secret_ref]
+          required: [url, auth]
+        managed_connector:
+          type: object
+          properties:
+            connector: { type: string, enum: [slack] }
+            integration_id: { type: string }
+          required: [connector, integration_id]
+        ttl_seconds: { type: integer, minimum: 1, maximum: 86400 }
+      required: [agent_id, tool_name, action_class, risk_tier, data_scope, policy, policy_version]
     ConnectorList:
       type: object
       properties:
@@ -5429,6 +5461,7 @@ paths:
     get:
       operationId: listAuthorizationIntents
       summary: List append-only action intents
+      description: Admin-only, tenant-scoped list of proposed side effects, newest first.
       tags: [Authorization]
       parameters:
         - name: limit
@@ -5472,6 +5505,7 @@ paths:
     get:
       operationId: listAuthorizationGrants
       summary: List immutable autonomy-grant revisions and their lifecycle projection
+      description: Admin-only view of definitions and the current state projected from lifecycle events.
       tags: [Authorization]
       parameters:
         - name: include_expired
@@ -5493,6 +5527,7 @@ paths:
     post:
       operationId: evaluateAndIssueAuthorizationGrant
       summary: Evaluate weighted evidence and issue a grant revision if eligible
+      description: Refuses issuance unless the exact current scope/profile meets the evidence threshold.
       tags: [Authorization]
       requestBody:
         required: true
@@ -5535,6 +5570,7 @@ paths:
     post:
       operationId: suspendAuthorizationGrant
       summary: Suspend a grant immediately; restoration requires a new revision
+      description: Appends a suspension event and makes every child capability unusable immediately.
       tags: [Authorization]
       parameters:
         - name: id
@@ -5559,6 +5595,7 @@ paths:
     post:
       operationId: revokeAuthorizationGrant
       summary: Append a grant-revoked lifecycle event and revoke its capabilities
+      description: Permanently terminates this revision and explicitly marks its child capabilities revoked.
       tags: [Authorization]
       parameters:
         - name: id
@@ -5591,38 +5628,7 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                grant_id: { type: string }
-                agent_id: { type: string }
-                tool_name: { type: string }
-                action_class: { type: string }
-                risk_tier: { type: string }
-                data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
-                policy: { type: string, enum: [allow, ask, never] }
-                policy_version: { type: string }
-                governance_mode: { type: string, enum: [desk_managed, brokered], default: brokered }
-                callback:
-                  type: object
-                  properties:
-                    url: { type: string, format: uri }
-                    auth:
-                      type: object
-                      properties: { secret_ref: { type: string } }
-                      required: [secret_ref]
-                  required: [url, auth]
-                managed_connector:
-                  type: object
-                  properties:
-                    connector: { type: string, enum: [slack] }
-                    integration_id: { type: string }
-                  required: [connector, integration_id]
-                ttl_seconds: { type: integer, minimum: 1, maximum: 86400 }
-              required: [agent_id, tool_name, action_class, risk_tier, data_scope, policy, policy_version]
-              oneOf:
-                - required: [callback]
-                - required: [governance_mode, managed_connector]
+            schema: { $ref: '#/components/schemas/ExecutionCapabilityIssueRequest' }
       responses:
         '201':
           description: Brokered capability with a one-time clear token.
@@ -5643,6 +5649,7 @@ paths:
     post:
       operationId: revokeExecutionCapability
       summary: Revoke a brokered execution capability immediately
+      description: Invalidates the stored token hash without changing historical Decisions or Receipts.
       tags: [Authorization]
       parameters:
         - name: id
@@ -5692,6 +5699,7 @@ paths:
     post:
       operationId: executeCapability
       summary: Execute or queue an action through a scoped capability
+      description: Revalidates token TTL, revocation, parent grant, scope, kill switch, and policy before acting.
       tags: [Authorization]
       security:
         - capabilityAuth: []

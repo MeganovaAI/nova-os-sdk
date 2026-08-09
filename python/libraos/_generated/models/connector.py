@@ -8,6 +8,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..models.governance_mode import GovernanceMode
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -27,6 +28,9 @@ class Connector:
         config (ConnectorConfig): Connector-specific non-secret settings.
         secret_keys (list[str]): Names of the secrets that are set; values are never returned here.
         updated_at (datetime.datetime):
+        governance_mode (GovernanceMode): Where pre-execution policy is enforced. `desk_managed` is native, `brokered`
+            uses a short-lived scoped capability, and `external` is audited but the outside service receives credentials.
+        governance_enforcement (str): Human-readable statement of the actual enforcement boundary.
         tenant_id (str | Unset): Owning tenant; omitted when unscoped.
         group_id (str | Unset): Optional group scoping the connector.
     """
@@ -36,6 +40,8 @@ class Connector:
     config: ConnectorConfig
     secret_keys: list[str]
     updated_at: datetime.datetime
+    governance_mode: GovernanceMode
+    governance_enforcement: str
     tenant_id: str | Unset = UNSET
     group_id: str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -51,6 +57,10 @@ class Connector:
 
         updated_at = self.updated_at.isoformat()
 
+        governance_mode = self.governance_mode.value
+
+        governance_enforcement = self.governance_enforcement
+
         tenant_id = self.tenant_id
 
         group_id = self.group_id
@@ -64,6 +74,8 @@ class Connector:
                 "config": config,
                 "secret_keys": secret_keys,
                 "updated_at": updated_at,
+                "governance_mode": governance_mode,
+                "governance_enforcement": governance_enforcement,
             }
         )
         if tenant_id is not UNSET:
@@ -88,6 +100,10 @@ class Connector:
 
         updated_at = isoparse(d.pop("updated_at"))
 
+        governance_mode = GovernanceMode(d.pop("governance_mode"))
+
+        governance_enforcement = d.pop("governance_enforcement")
+
         tenant_id = d.pop("tenant_id", UNSET)
 
         group_id = d.pop("group_id", UNSET)
@@ -98,6 +114,8 @@ class Connector:
             config=config,
             secret_keys=secret_keys,
             updated_at=updated_at,
+            governance_mode=governance_mode,
+            governance_enforcement=governance_enforcement,
             tenant_id=tenant_id,
             group_id=group_id,
         )
