@@ -229,6 +229,34 @@ export interface MyConnectorConfig {
   updatedAt: string;
 }
 
+/** Seed policy for the tools discovered on an MCP server (desk#269/#270). */
+export type McpServerPolicy = "allow" | "ask" | "never";
+
+/**
+ * An EXTERNAL MCP server an admin has registered (desk#269).
+ *
+ * Not a connector: a connector is an adapter we wrote, this is an address an
+ * admin pointed the deployment at. Every route behind these methods is
+ * admin-only, reads included — the list of endpoints an org has wired into its
+ * agents, and which of them carry a credential, is a map of its outbound reach.
+ *
+ * `hasAuth` reports only WHETHER a credential is stored. There is no method
+ * that returns one, on purpose: an admin who forgets a token re-enters it.
+ */
+export interface McpServer {
+  id: string;
+  name: string;
+  url: string;
+  description: string;
+  /** Discovered tools start here. `ask` parks the first call for approval. */
+  defaultPolicy: McpServerPolicy;
+  /** Registration does not activate — a new server is always created off. */
+  enabled: boolean;
+  hasAuth: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /**
  * A tenant's entitlement flags (employee-assistant #80). Flags gate premium
  * capabilities; a tenant with no stored row reads the "free floor" (every
@@ -1328,6 +1356,104 @@ export class NovaClient {
     if (!res.ok) throw await this.toApiError(res);
   }
 
+  // ── External MCP servers (desk#269) ────────────────────────────────────
+  //
+  // ADMIN-ONLY, reads included. There is deliberately no employee-facing
+  // counterpart and no method here that takes a URL from anywhere but an
+  // admin's own call: an agent's outbound reach is bounded by this registry,
+  // so a prompt-injected agent cannot talk itself into a new endpoint.
+  //
+  // A kernel that predates this feature answers 404. Treat that as "the
+  // deployment has not shipped it" and render nothing, exactly as the personal
+  // connections surface does — not as an error.
+
+  /** Every registered server, masked. Credentials never serialize. */
+  async listMcpServers(): Promise<McpServer[]> {
+    const res = await this.rawFetch("/v1/managed/mcp/servers", { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { servers?: RawMcpServer[] };
+    return (j.servers ?? []).map(toMcpServer);
+  }
+
+  async getMcpServer(id: string): Promise<McpServer> {
+    const res = await this.rawFetch(`/v1/managed/mcp/servers/${encodeURIComponent(id)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { server: RawMcpServer };
+    return toMcpServer(j.server);
+  }
+
+  /**
+   * Register a server. It is ALWAYS created disabled — there is no `enabled`
+   * input, because registering a server and arming it for agents are different
+   * intentions and the server records them as separate audit events. Enable it
+   * with {@link updateMcpServer}.
+   *
+   * `name` becomes the tool-namespace prefix (`<name>__<tool>`): lowercase
+   * letters, digits, `_` and `-`, no `__`, max 40 chars. The server rejects
+   * anything else with a 400 that names the rule.
+   */
+  async createMcpServer(input: {
+    name: string;
+    url: string;
+    description?: string;
+    defaultPolicy?: McpServerPolicy;
+    authToken?: string;
+  }): Promise<McpServer> {
+    const res = await this.rawFetch("/v1/managed/mcp/servers", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: input.name,
+        url: input.url,
+        description: input.description ?? "",
+        default_policy: input.defaultPolicy,
+        auth_token: input.authToken,
+      }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { server: RawMcpServer };
+    return toMcpServer(j.server);
+  }
+
+  /**
+   * Patch a server. Every field is optional and an omitted one is UNCHANGED.
+   *
+   * That matters most for `authToken`. Reads never return the credential, so a
+   * caller re-submitting a whole record necessarily omits it; if omission meant
+   * "delete", an unrelated rename would silently revoke the token and the
+   * server would keep working until its next call. Pass `""` to revoke on purpose.
+   */
+  async updateMcpServer(id: string, input: {
+    name?: string;
+    url?: string;
+    description?: string;
+    defaultPolicy?: McpServerPolicy;
+    enabled?: boolean;
+    authToken?: string;
+  }): Promise<McpServer> {
+    const res = await this.rawFetch(`/v1/managed/mcp/servers/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: input.name,
+        url: input.url,
+        description: input.description,
+        default_policy: input.defaultPolicy,
+        enabled: input.enabled,
+        // undefined serializes away, which is exactly "leave the credential alone".
+        auth_token: input.authToken,
+      }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { server: RawMcpServer };
+    return toMcpServer(j.server);
+  }
+
+  async deleteMcpServer(id: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/mcp/servers/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
   // ── Tenant entitlements (employee-assistant #80) ───────────────────────
 
   /**
@@ -1452,6 +1578,28 @@ function toMyConnectorConfig(c: RawMyConnectorConfig): MyConnectorConfig {
   return {
     kind: c.kind, enabled: c.enabled, config: c.config ?? {},
     secretKeys: c.secret_keys ?? [], updatedAt: c.updated_at,
+  };
+}
+
+interface RawMcpServer {
+  id: string; name: string; url: string; description?: string;
+  default_policy?: string; enabled?: boolean; has_auth?: boolean;
+  created_at?: string; updated_at?: string;
+}
+
+function toMcpServer(s: RawMcpServer): McpServer {
+  return {
+    id: s.id, name: s.name, url: s.url, description: s.description ?? "",
+    // An unrecognised policy reads as `never`, not as `allow`. A value this
+    // client cannot interpret must not be rendered as the permissive end of
+    // the scale — a UI showing "allow" for a policy it did not understand
+    // would be an assertion nobody made.
+    defaultPolicy: s.default_policy === "allow" || s.default_policy === "ask"
+      ? s.default_policy
+      : "never",
+    enabled: s.enabled ?? false,
+    hasAuth: s.has_auth ?? false,
+    createdAt: s.created_at ?? "", updatedAt: s.updated_at ?? "",
   };
 }
 
