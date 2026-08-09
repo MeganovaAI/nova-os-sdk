@@ -82,4 +82,28 @@ describe("authorization lifecycle", () => {
     expect(result).toMatchObject({ status: "awaiting_approval", actionId: "a1" });
     expect(auth.refresh).not.toHaveBeenCalled();
   });
+
+  it("issues the native Slack lifecycle without sending raw connector credentials", async () => {
+    const capability = {
+      id: "cap-1", grant_id: "grant-1", grant_revision: 2, tenant_id: "acme", agent_id: "support",
+      tool_name: "slack_send_message", action_class: "message/send", risk_tier: "medium",
+      data_scope: { resource: "message", operation: "send", connector: { kind: "slack", connection_id: "slack-1" } },
+      policy: "allow", policy_version: "p1", governance_mode: "desk_managed",
+      runtime_profile: { runtime: "libraos" }, issued_by: "admin", issued_at: "t1", expires_at: "t2", token: "lcap_once",
+    };
+    const fetchMock = vi.fn(async () => mk({ capability, governance_mode: "desk_managed",
+      governance_enforcement: "raw connector credentials remain in Desk", warning: "shown once" }, 201));
+    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const result = await client.issueExecutionCapability({
+      grantId: "grant-1", agentId: "support", toolName: "slack_send_message", actionClass: "message/send",
+      riskTier: "medium", policy: "allow", policyVersion: "p1", governanceMode: "desk_managed",
+      dataScope: { resource: "message", operation: "send", connector: { kind: "slack", connectionId: "slack-1" } },
+      managedConnector: { connector: "slack", integrationId: "slack-1" },
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body).toMatchObject({ governance_mode: "desk_managed", managed_connector: { connector: "slack", integration_id: "slack-1" } });
+    expect(body).not.toHaveProperty("callback");
+    expect(JSON.stringify(body)).not.toContain("token");
+    expect(result.capability).toMatchObject({ governanceMode: "desk_managed", token: "lcap_once" });
+  });
 });
