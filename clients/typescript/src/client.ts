@@ -229,6 +229,28 @@ export interface MyConnectorConfig {
   updatedAt: string;
 }
 
+/**
+ * How an agent's proposals have actually been received (desk#270): of its last
+ * N DECIDED actions, how many a human approved untouched, corrected first, or
+ * refused.
+ *
+ * `decided` is the denominator and is always sent. A rate without a visible
+ * denominator is the exact shape of a reassuring number — 97% of 3 decisions
+ * and 97% of 300 render identically and are completely different evidence — so
+ * compute rates against this field rather than against the counts alone.
+ *
+ * `editedThenApproved` is the interesting one. Approved-vs-rejected alone reads
+ * as a pass rate, and an agent whose drafts are always rewritten before they go
+ * out scores a perfect one.
+ */
+export interface ActionDisposition {
+  agentId: string;
+  approvedAsIs: number;
+  editedThenApproved: number;
+  rejected: number;
+  decided: number;
+}
+
 /** Seed policy for the tools discovered on an MCP server (desk#269/#270). */
 export type McpServerPolicy = "allow" | "ask" | "never";
 
@@ -1449,6 +1471,27 @@ export class NovaClient {
     return toMcpServer(j.server);
   }
 
+  /**
+   * Per-agent approval record over each agent's last `window` decided actions
+   * (default 50, capped server-side at 500). Admin-only.
+   *
+   * Reports; does not gate. Whether a poor record should BLOCK raising an agent
+   * to `auto` is a product decision nobody has made.
+   */
+  async listActionDispositions(window?: number): Promise<ActionDisposition[]> {
+    const q = window && window > 0 ? `?window=${encodeURIComponent(String(window))}` : "";
+    const res = await this.rawFetch(`/v1/managed/actions/dispositions${q}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { dispositions?: RawActionDisposition[] };
+    return (j.dispositions ?? []).map((d) => ({
+      agentId: d.agent_id,
+      approvedAsIs: d.approved_as_is ?? 0,
+      editedThenApproved: d.edited_then_approved ?? 0,
+      rejected: d.rejected ?? 0,
+      decided: d.decided ?? 0,
+    }));
+  }
+
   async deleteMcpServer(id: string): Promise<void> {
     const res = await this.rawFetch(`/v1/managed/mcp/servers/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw await this.toApiError(res);
@@ -1579,6 +1622,11 @@ function toMyConnectorConfig(c: RawMyConnectorConfig): MyConnectorConfig {
     kind: c.kind, enabled: c.enabled, config: c.config ?? {},
     secretKeys: c.secret_keys ?? [], updatedAt: c.updated_at,
   };
+}
+
+interface RawActionDisposition {
+  agent_id: string; approved_as_is?: number; edited_then_approved?: number;
+  rejected?: number; decided?: number;
 }
 
 interface RawMcpServer {
