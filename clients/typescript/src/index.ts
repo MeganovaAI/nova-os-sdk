@@ -41,6 +41,7 @@ export {
   type MyGroup,
   type ConnectorConfig,
   type MyConnectorConfig,
+  type ActionDisposition,
   type McpServer,
   type McpServerPolicy,
   type Entitlements,
