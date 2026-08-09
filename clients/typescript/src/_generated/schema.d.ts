@@ -1165,7 +1165,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List append-only action intents */
+        /**
+         * List append-only action intents
+         * @description Admin-only, tenant-scoped list of proposed side effects, newest first.
+         */
         get: operations["listAuthorizationIntents"];
         put?: never;
         post?: never;
@@ -1202,7 +1205,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List immutable autonomy-grant revisions and their lifecycle projection */
+        /**
+         * List immutable autonomy-grant revisions and their lifecycle projection
+         * @description Admin-only view of definitions and the current state projected from lifecycle events.
+         */
         get: operations["listAuthorizationGrants"];
         put?: never;
         post?: never;
@@ -1221,7 +1227,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Evaluate weighted evidence and issue a grant revision if eligible */
+        /**
+         * Evaluate weighted evidence and issue a grant revision if eligible
+         * @description Refuses issuance unless the exact current scope/profile meets the evidence threshold.
+         */
         post: operations["evaluateAndIssueAuthorizationGrant"];
         delete?: never;
         options?: never;
@@ -1238,7 +1247,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Suspend a grant immediately; restoration requires a new revision */
+        /**
+         * Suspend a grant immediately; restoration requires a new revision
+         * @description Appends a suspension event and makes every child capability unusable immediately.
+         */
         post: operations["suspendAuthorizationGrant"];
         delete?: never;
         options?: never;
@@ -1255,7 +1267,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Append a grant-revoked lifecycle event and revoke its capabilities */
+        /**
+         * Append a grant-revoked lifecycle event and revoke its capabilities
+         * @description Permanently terminates this revision and explicitly marks its child capabilities revoked.
+         */
         post: operations["revokeAuthorizationGrant"];
         delete?: never;
         options?: never;
@@ -1292,7 +1307,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Revoke a brokered execution capability immediately */
+        /**
+         * Revoke a brokered execution capability immediately
+         * @description Invalidates the stored token hash without changing historical Decisions or Receipts.
+         */
         post: operations["revokeExecutionCapability"];
         delete?: never;
         options?: never;
@@ -1329,7 +1347,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Execute or queue an action through a scoped capability */
+        /**
+         * Execute or queue an action through a scoped capability
+         * @description Revalidates token TTL, revocation, parent grant, scope, kill switch, and policy before acting.
+         */
         post: operations["executeCapability"];
         delete?: never;
         options?: never;
@@ -4250,6 +4271,36 @@ export interface components {
             revoked_at?: string;
             revocation_reason?: string;
             token?: string;
+        };
+        /** @description Supply `callback` for brokered mode or `managed_connector` for desk-managed mode. The server rejects zero or two execution targets. */
+        ExecutionCapabilityIssueRequest: {
+            grant_id?: string;
+            agent_id: string;
+            tool_name: string;
+            action_class: string;
+            risk_tier: string;
+            data_scope: components["schemas"]["AuthorizationDataScope"];
+            /** @enum {string} */
+            policy: "allow" | "ask" | "never";
+            policy_version: string;
+            /**
+             * @default brokered
+             * @enum {string}
+             */
+            governance_mode: "desk_managed" | "brokered";
+            callback?: {
+                /** Format: uri */
+                url: string;
+                auth: {
+                    secret_ref: string;
+                };
+            };
+            managed_connector?: {
+                /** @enum {string} */
+                connector: "slack";
+                integration_id: string;
+            };
+            ttl_seconds?: number;
         };
         ConnectorList: {
             connectors: components["schemas"]["Connector"][];
@@ -7412,35 +7463,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    grant_id?: string;
-                    agent_id: string;
-                    tool_name: string;
-                    action_class: string;
-                    risk_tier: string;
-                    data_scope: components["schemas"]["AuthorizationDataScope"];
-                    /** @enum {string} */
-                    policy: "allow" | "ask" | "never";
-                    policy_version: string;
-                    /**
-                     * @default brokered
-                     * @enum {string}
-                     */
-                    governance_mode?: "desk_managed" | "brokered";
-                    callback?: {
-                        /** Format: uri */
-                        url: string;
-                        auth: {
-                            secret_ref: string;
-                        };
-                    };
-                    managed_connector?: {
-                        /** @enum {string} */
-                        connector: "slack";
-                        integration_id: string;
-                    };
-                    ttl_seconds?: number;
-                } & (unknown | unknown);
+                "application/json": components["schemas"]["ExecutionCapabilityIssueRequest"];
             };
         };
         responses: {
