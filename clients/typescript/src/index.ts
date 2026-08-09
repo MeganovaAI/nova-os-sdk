@@ -42,6 +42,7 @@ export {
   type ConnectorConfig,
   type MyConnectorConfig,
   type ActionDisposition,
+  type PersonalDomainPolicy,
   type McpServer,
   type McpServerPolicy,
   type Entitlements,
