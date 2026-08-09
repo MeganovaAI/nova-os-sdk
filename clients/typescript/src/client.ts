@@ -291,7 +291,7 @@ export interface AuthorizationEvidenceProfile {
   reviewers: ReviewerEvidence[];
 }
 
-export type GrantLifecycleState = "issued" | "suspended" | "resumed" | "expired" | "revoked" | "superseded";
+export type GrantLifecycleState = "issued" | "suspended" | "expired" | "revoked" | "superseded";
 
 /** Immutable grant definition plus its projected lifecycle state. */
 export interface AutonomyGrant {
@@ -338,6 +338,7 @@ export interface ExecutionCapability {
   dataScope: AuthorizationDataScope;
   policy: "allow" | "ask" | "never";
   policyVersion: string;
+  governanceMode: "desk_managed" | "brokered";
   runtimeProfile: unknown;
   issuedBy: string;
   issuedAt: string;
@@ -1458,6 +1459,14 @@ export class NovaClient {
     if (!res.ok) throw await this.toApiError(res);
   }
 
+  /** Suspend immediately. Restoring autonomy requires a newly issued grant revision. */
+  async suspendAuthorizationGrant(id: string, reason: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/authorization/grants/${encodeURIComponent(id)}/suspend`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
   /**
    * Issue a short-lived brokered capability. The returned token is visible
    * once; store it in the executor, never in browser persistence or logs.
@@ -1471,9 +1480,13 @@ export class NovaClient {
     dataScope: AuthorizationDataScope;
     policy: "allow" | "ask" | "never";
     policyVersion: string;
-    callback: { url: string; auth: { secretRef: string } };
     ttlSeconds?: number;
-  }): Promise<{ capability: ExecutionCapability; governanceMode: GovernanceMode; governanceEnforcement: string; warning: string }> {
+  } & (
+    | { governanceMode: "desk_managed"; managedConnector: { connector: "slack"; integrationId: string } }
+    | { governanceMode?: "brokered"; callback: { url: string; auth: { secretRef: string } } }
+  )): Promise<{ capability: ExecutionCapability; governanceMode: GovernanceMode; governanceEnforcement: string; warning: string }> {
+	const callback = "callback" in input ? input.callback : undefined;
+	const managed = "managedConnector" in input ? input.managedConnector : undefined;
     const res = await this.rawFetch("/v1/managed/authorization/capabilities", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -1486,7 +1499,9 @@ export class NovaClient {
         data_scope: fromAuthorizationDataScope(input.dataScope),
         policy: input.policy,
         policy_version: input.policyVersion,
-        callback: { url: input.callback.url, auth: { secret_ref: input.callback.auth.secretRef } },
+        governance_mode: input.governanceMode ?? "brokered",
+        callback: callback ? { url: callback.url, auth: { secret_ref: callback.auth.secretRef } } : undefined,
+        managed_connector: managed ? { connector: managed.connector, integration_id: managed.integrationId } : undefined,
         ttl_seconds: input.ttlSeconds,
       }),
     });
@@ -2006,6 +2021,7 @@ interface RawExecutionCapability {
   id: string; grant_id?: string; grant_revision?: number; tenant_id: string; agent_id: string; tool_name: string;
   action_class: string; risk_tier: string; data_scope: RawAuthorizationDataScope; policy: "allow" | "ask" | "never";
   policy_version: string; runtime_profile?: unknown; issued_by: string; issued_at: string; expires_at: string;
+  governance_mode: "desk_managed" | "brokered";
   revoked_at?: string; revocation_reason?: string; token?: string;
 }
 
@@ -2092,6 +2108,7 @@ function toExecutionCapability(c: RawExecutionCapability): ExecutionCapability {
     id: c.id, grantId: c.grant_id, grantRevision: c.grant_revision, tenantId: c.tenant_id, agentId: c.agent_id,
     toolName: c.tool_name, actionClass: c.action_class, riskTier: c.risk_tier, dataScope: toAuthorizationDataScope(c.data_scope),
     policy: c.policy, policyVersion: c.policy_version, runtimeProfile: c.runtime_profile, issuedBy: c.issued_by,
+    governanceMode: c.governance_mode,
     issuedAt: c.issued_at, expiresAt: c.expires_at, revokedAt: c.revoked_at,
     revocationReason: c.revocation_reason, token: c.token,
   };

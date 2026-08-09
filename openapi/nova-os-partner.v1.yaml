@@ -2734,7 +2734,7 @@ components:
         issued_by: { type: string }
         issued_at: { type: string, format: date-time }
         expires_at: { type: string, format: date-time }
-        lifecycle_state: { type: string, enum: [issued, suspended, resumed, expired, revoked, superseded] }
+        lifecycle_state: { type: string, enum: [issued, suspended, expired, revoked, superseded] }
         lifecycle_reason: { type: string }
         lifecycle_changed_at: { type: string, format: date-time }
         superseded_by: { type: string }
@@ -2763,6 +2763,7 @@ components:
         data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
         policy: { type: string, enum: [allow, ask, never] }
         policy_version: { type: string }
+        governance_mode: { type: string, enum: [desk_managed, brokered] }
         runtime_profile: {}
         issued_by: { type: string }
         issued_at: { type: string, format: date-time }
@@ -2770,7 +2771,7 @@ components:
         revoked_at: { type: string, format: date-time }
         revocation_reason: { type: string }
         token: { type: string, writeOnly: true }
-      required: [id, tenant_id, agent_id, tool_name, action_class, risk_tier, data_scope, policy, policy_version, runtime_profile, issued_by, issued_at, expires_at]
+      required: [id, tenant_id, agent_id, tool_name, action_class, risk_tier, data_scope, policy, policy_version, governance_mode, runtime_profile, issued_by, issued_at, expires_at]
     ConnectorList:
       type: object
       properties:
@@ -5530,6 +5531,30 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+  /v1/managed/authorization/grants/{id}/suspend:
+    post:
+      operationId: suspendAuthorizationGrant
+      summary: Suspend a grant immediately; restoration requires a new revision
+      tags: [Authorization]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { reason: { type: string } }
+              required: [reason]
+      responses:
+        '200': { description: Suspension took effect immediately }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /v1/managed/authorization/grants/{id}/revoke:
     post:
       operationId: revokeAuthorizationGrant
@@ -5557,8 +5582,10 @@ paths:
   /v1/managed/authorization/capabilities:
     post:
       operationId: issueExecutionCapability
-      summary: Issue a short-lived scoped brokered execution capability
-      description: The clear `lcap_` token is returned once and its hash is stored.
+      summary: Issue a short-lived scoped managed or brokered execution capability
+      description: >-
+        The clear `lcap_` token is returned once and its hash is stored.
+        Desk-managed Slack execution keeps the raw connector credential in Desk.
       tags: [Authorization]
       requestBody:
         required: true
@@ -5575,6 +5602,7 @@ paths:
                 data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
                 policy: { type: string, enum: [allow, ask, never] }
                 policy_version: { type: string }
+                governance_mode: { type: string, enum: [desk_managed, brokered], default: brokered }
                 callback:
                   type: object
                   properties:
@@ -5584,8 +5612,17 @@ paths:
                       properties: { secret_ref: { type: string } }
                       required: [secret_ref]
                   required: [url, auth]
+                managed_connector:
+                  type: object
+                  properties:
+                    connector: { type: string, enum: [slack] }
+                    integration_id: { type: string }
+                  required: [connector, integration_id]
                 ttl_seconds: { type: integer, minimum: 1, maximum: 86400 }
-              required: [agent_id, tool_name, action_class, risk_tier, data_scope, policy, policy_version, callback]
+              required: [agent_id, tool_name, action_class, risk_tier, data_scope, policy, policy_version]
+              oneOf:
+                - required: [callback]
+                - required: [governance_mode, managed_connector]
       responses:
         '201':
           description: Brokered capability with a one-time clear token.
