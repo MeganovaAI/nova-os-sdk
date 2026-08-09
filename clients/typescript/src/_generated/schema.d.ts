@@ -1158,6 +1158,206 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/managed/authorization/intents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List append-only action intents
+         * @description Admin-only, tenant-scoped list of proposed side effects, newest first.
+         */
+        get: operations["listAuthorizationIntents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/authorization/intents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the operational graph for one intent
+         * @description Returns append-only Decisions and Receipts plus the exact grant revision used by a decision.
+         */
+        get: operations["getAuthorizationGraph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/authorization/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List immutable autonomy-grant revisions and their lifecycle projection
+         * @description Admin-only view of definitions and the current state projected from lifecycle events.
+         */
+        get: operations["listAuthorizationGrants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/authorization/grants/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Evaluate weighted evidence and issue a grant revision if eligible
+         * @description Refuses issuance unless the exact current scope/profile meets the evidence threshold.
+         */
+        post: operations["evaluateAndIssueAuthorizationGrant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/authorization/grants/{id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suspend a grant immediately; restoration requires a new revision
+         * @description Appends a suspension event and makes every child capability unusable immediately.
+         */
+        post: operations["suspendAuthorizationGrant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/authorization/grants/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Append a grant-revoked lifecycle event and revoke its capabilities
+         * @description Permanently terminates this revision and explicitly marks its child capabilities revoked.
+         */
+        post: operations["revokeAuthorizationGrant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/authorization/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a short-lived scoped managed or brokered execution capability
+         * @description The clear `lcap_` token is returned once and its hash is stored. Desk-managed Slack execution keeps the raw connector credential in Desk.
+         */
+        post: operations["issueExecutionCapability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/authorization/capabilities/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a brokered execution capability immediately
+         * @description Invalidates the stored token hash without changing historical Decisions or Receipts.
+         */
+        post: operations["revokeExecutionCapability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/authorization/decisions/{id}/incident": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Append an evidence correction event to a Decision
+         * @description The original Decision remains immutable.
+         */
+        post: operations["markAuthorizationIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/capabilities/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute or queue an action through a scoped capability
+         * @description Revalidates token TTL, revocation, parent grant, scope, kill switch, and policy before acting.
+         */
+        post: operations["executeCapability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/managed/actions": {
         parameters: {
             query?: never;
@@ -3853,6 +4053,11 @@ export interface components {
         FieldAccessEventList: {
             events: components["schemas"]["FieldAccessEvent"][];
         };
+        /**
+         * @description Where pre-execution policy is enforced. `desk_managed` is native, `brokered` uses a short-lived scoped capability, and `external` is audited but the outside service receives credentials.
+         * @enum {string}
+         */
+        GovernanceMode: "desk_managed" | "brokered" | "external";
         /** @description A connector configuration with secret values masked; secret_keys lists which secrets are set. */
         Connector: {
             /** @description Connector kind identifier. */
@@ -3870,6 +4075,232 @@ export interface components {
             secret_keys: string[];
             /** Format: date-time */
             updated_at: string;
+            governance_mode: components["schemas"]["GovernanceMode"];
+            /** @description Human-readable statement of the actual enforcement boundary. */
+            governance_enforcement: string;
+        };
+        AuthorizationConnectorScope: {
+            kind: string;
+            connection_id?: string;
+            /** @description Connector-specific vocabulary, namespaced away from comparable outer fields. */
+            details?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Canonical comparable policy envelope. */
+        AuthorizationDataScope: {
+            resource: string;
+            operation: string;
+            selectors?: {
+                [key: string]: unknown;
+            };
+            constraints?: {
+                [key: string]: unknown;
+            };
+            connector: components["schemas"]["AuthorizationConnectorScope"];
+        };
+        /** @description Append-only declaration of a proposed side effect. */
+        AuthorizationIntent: {
+            id: string;
+            tenant_id: string;
+            agent_id: string;
+            session_id: string;
+            tool_name: string;
+            action_class: string;
+            params: unknown;
+            data_scope?: components["schemas"]["AuthorizationDataScope"];
+            side_effects?: unknown;
+            reversible: boolean | null;
+            max_authorization_seconds: number | null;
+            risk_tier: string;
+            purpose: string;
+            source: string;
+            external_ref: string;
+            group_id: string;
+            proposed_by: string;
+            proposed_by_kind: string;
+            /** Format: date-time */
+            proposed_at: string;
+            legacy_action_id?: string;
+            policy_version?: string;
+            agent_config_hash?: string;
+            runtime_profile?: unknown;
+            tool_schema_hash?: string;
+        };
+        /** @description Append-only authorization decision with its complete authorization-basis snapshot. */
+        AuthorizationDecision: {
+            id: string;
+            intent_id: string;
+            outcome: string;
+            risk_tier: string;
+            grant_id?: string;
+            grant_revision?: number;
+            policy_version?: string;
+            runtime_profile?: unknown;
+            /** Format: date-time */
+            evaluated_at: string;
+            decided_by: string;
+            decided_by_kind: string;
+            /** Format: date-time */
+            decided_at: string;
+            reason: string;
+            edited: boolean;
+            original_params?: unknown;
+            /** Format: int64 */
+            review_duration_ms?: number;
+            batch_id?: string;
+            evidence_weight: number;
+            corrected: boolean;
+            correction_reason?: string;
+        };
+        /** @description Immutable result for exactly one execution attempt; retries append receipts. */
+        ExecutionReceipt: {
+            id: string;
+            intent_id: string;
+            attempt_no: number;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            finished_at: string;
+            /** @enum {string} */
+            outcome: "succeeded" | "failed" | "unknown";
+            /** @enum {string} */
+            verification_status: "verified" | "unverified" | "contradicted";
+            provider_reference?: string;
+            effect_summary: string;
+            effect?: unknown;
+            error?: string;
+            idempotency_key: string;
+            rollback_available: boolean;
+            rollback?: unknown;
+        };
+        EvidenceDecayBucket: {
+            kind: string;
+            decisions: number;
+            multiplier: number;
+        };
+        ReviewerEvidence: {
+            reviewer: string;
+            decisions: number;
+            edited: number;
+            rejected: number;
+            fast: number;
+            batched: number;
+            edit_rate: number;
+            reject_rate: number;
+            fast_rate: number;
+        };
+        AuthorizationEvidenceProfile: {
+            agent_id: string;
+            action_class: string;
+            risk_tier: string;
+            policy_version: string;
+            data_scope: components["schemas"]["AuthorizationDataScope"];
+            profile_hash: string;
+            weighted_approved: number;
+            weighted_rejected: number;
+            effective_approval_rate: number;
+            current_decisions: number;
+            historical_decisions: number;
+            incidents: number;
+            eligible: boolean;
+            reason: string;
+            decay: components["schemas"]["EvidenceDecayBucket"][];
+            reviewers: components["schemas"]["ReviewerEvidence"][];
+        };
+        /** @description Immutable grant definition plus current lifecycle-event projection. */
+        AutonomyGrant: {
+            id: string;
+            revision: number;
+            previous_grant_id?: string;
+            tenant_id: string;
+            agent_id: string;
+            action_class: string;
+            tool_bindings: string[];
+            risk_tier: string;
+            data_scope: components["schemas"]["AuthorizationDataScope"];
+            policy_version: string;
+            runtime_profile: unknown;
+            profile_hash: string;
+            evidence_window: components["schemas"]["AuthorizationEvidenceProfile"];
+            constraints: {
+                [key: string]: unknown;
+            };
+            issued_by: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** @enum {string} */
+            lifecycle_state: "issued" | "suspended" | "expired" | "revoked" | "superseded";
+            lifecycle_reason: string;
+            /** Format: date-time */
+            lifecycle_changed_at: string;
+            superseded_by?: string;
+        };
+        AuthorizationGraph: {
+            intent: components["schemas"]["AuthorizationIntent"];
+            decisions: components["schemas"]["AuthorizationDecision"][];
+            receipts: components["schemas"]["ExecutionReceipt"][];
+            grant?: components["schemas"]["AutonomyGrant"];
+            state: string;
+        };
+        /** @description Short-lived brokered authorization credential; token appears only at issue time. */
+        ExecutionCapability: {
+            id: string;
+            grant_id?: string;
+            grant_revision?: number;
+            tenant_id: string;
+            agent_id: string;
+            tool_name: string;
+            action_class: string;
+            risk_tier: string;
+            data_scope: components["schemas"]["AuthorizationDataScope"];
+            /** @enum {string} */
+            policy: "allow" | "ask" | "never";
+            policy_version: string;
+            /** @enum {string} */
+            governance_mode: "desk_managed" | "brokered";
+            runtime_profile: unknown;
+            issued_by: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: date-time */
+            revoked_at?: string;
+            revocation_reason?: string;
+            token?: string;
+        };
+        /** @description Supply `callback` for brokered mode or `managed_connector` for desk-managed mode. The server rejects zero or two execution targets. */
+        ExecutionCapabilityIssueRequest: {
+            grant_id?: string;
+            agent_id: string;
+            tool_name: string;
+            action_class: string;
+            risk_tier: string;
+            data_scope: components["schemas"]["AuthorizationDataScope"];
+            /** @enum {string} */
+            policy: "allow" | "ask" | "never";
+            policy_version: string;
+            /**
+             * @default brokered
+             * @enum {string}
+             */
+            governance_mode: "desk_managed" | "brokered";
+            callback?: {
+                /** Format: uri */
+                url: string;
+                auth: {
+                    secret_ref: string;
+                };
+            };
+            managed_connector?: {
+                /** @enum {string} */
+                connector: "slack";
+                integration_id: string;
+            };
+            ttl_seconds?: number;
         };
         ConnectorList: {
             connectors: components["schemas"]["Connector"][];
@@ -6820,6 +7251,357 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listAuthorizationIntents: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Newest intents first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        intents: components["schemas"]["AuthorizationIntent"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Authorization store unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getAuthorizationGraph: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Intent to outcome graph. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorizationGraph"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Authorization store unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listAuthorizationGrants: {
+        parameters: {
+            query?: {
+                include_expired?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Grant definitions with current lifecycle state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        grants: components["schemas"]["AutonomyGrant"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    evaluateAndIssueAuthorizationGrant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    agent_id: string;
+                    action_class: string;
+                    tool_bindings: string[];
+                    risk_tier: string;
+                    policy_version: string;
+                    data_scope: components["schemas"]["AuthorizationDataScope"];
+                    min_evidence?: number;
+                    ttl_seconds?: number;
+                    sample_rate?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description A new immutable grant revision and its evidence snapshot. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        grant: components["schemas"]["AutonomyGrant"];
+                        evidence: components["schemas"]["AuthorizationEvidenceProfile"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Evidence is not eligible; the evidence profile explains why. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    suspendAuthorizationGrant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Suspension took effect immediately */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revokeAuthorizationGrant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Revocation took effect immediately */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    issueExecutionCapability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecutionCapabilityIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description Brokered capability with a one-time clear token. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        capability: components["schemas"]["ExecutionCapability"];
+                        governance_mode: components["schemas"]["GovernanceMode"];
+                        governance_enforcement: string;
+                        warning: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    revokeExecutionCapability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Capability revoked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    markAuthorizationIncident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Correction event appended */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    executeCapability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    params: unknown;
+                    purpose: string;
+                    external_ref?: string;
+                    session_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Executed; includes the resulting operational graph. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "executed";
+                        intent: components["schemas"]["AuthorizationGraph"];
+                    };
+                };
+            };
+            /** @description Queued for human approval or sampled review. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "awaiting_approval";
+                        sampled: boolean;
+                        action_id: string;
+                        intent_id: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Authorization is halted or unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listActions: {

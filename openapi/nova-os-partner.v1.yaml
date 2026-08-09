@@ -57,6 +57,8 @@ tags:
     description: OpenAI-compatible image generation, edits, and variations.
   - name: Actions
     description: Dry-run / approval queue for side-effecting tool actions.
+  - name: Authorization
+    description: Append-only intent, decision, execution-receipt, and autonomy-grant lifecycle.
   - name: Groups
     description: Departmental groups that gate action approval queues.
   - name: FieldPolicies
@@ -107,6 +109,11 @@ components:
       description: |
         SCIM 2.0 provisioning bearer token (configured server-side), distinct
         from the end-user JWT. Used only by the /scim/v2/* endpoints.
+    capabilityAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: lcap
+      description: Short-lived, scoped `lcap_` execution capability; its clear token is returned once.
   schemas:
     Error:
       type: object
@@ -2535,6 +2542,13 @@ components:
           items: { $ref: '#/components/schemas/FieldAccessEvent' }
       required: [events]
     # ---- connectors ----
+    GovernanceMode:
+      type: string
+      enum: [desk_managed, brokered, external]
+      description: >-
+        Where pre-execution policy is enforced. `desk_managed` is native,
+        `brokered` uses a short-lived scoped capability, and `external` is
+        audited but the outside service receives credentials.
     Connector:
       type: object
       description: A connector configuration with secret values masked; secret_keys lists which secrets are set.
@@ -2561,7 +2575,235 @@ components:
         updated_at:
           type: string
           format: date-time
-      required: [kind, enabled, config, secret_keys, updated_at]
+        governance_mode: { $ref: '#/components/schemas/GovernanceMode' }
+        governance_enforcement:
+          type: string
+          description: Human-readable statement of the actual enforcement boundary.
+      required: [kind, enabled, config, secret_keys, updated_at, governance_mode, governance_enforcement]
+    AuthorizationConnectorScope:
+      type: object
+      properties:
+        kind: { type: string }
+        connection_id: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+          description: Connector-specific vocabulary, namespaced away from comparable outer fields.
+      required: [kind]
+    AuthorizationDataScope:
+      type: object
+      description: Canonical comparable policy envelope.
+      properties:
+        resource: { type: string }
+        operation: { type: string }
+        selectors: { type: object, additionalProperties: true }
+        constraints: { type: object, additionalProperties: true }
+        connector: { $ref: '#/components/schemas/AuthorizationConnectorScope' }
+      required: [resource, operation, connector]
+    AuthorizationIntent:
+      type: object
+      description: Append-only declaration of a proposed side effect.
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        agent_id: { type: string }
+        session_id: { type: string }
+        tool_name: { type: string }
+        action_class: { type: string }
+        params: {}
+        data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
+        side_effects: {}
+        reversible: { type: boolean, nullable: true }
+        max_authorization_seconds: { type: integer, nullable: true }
+        risk_tier: { type: string }
+        purpose: { type: string }
+        source: { type: string }
+        external_ref: { type: string }
+        group_id: { type: string }
+        proposed_by: { type: string }
+        proposed_by_kind: { type: string }
+        proposed_at: { type: string, format: date-time }
+        legacy_action_id: { type: string }
+        policy_version: { type: string }
+        agent_config_hash: { type: string }
+        runtime_profile: {}
+        tool_schema_hash: { type: string }
+      required: [id, tenant_id, agent_id, session_id, tool_name, action_class, params, reversible, max_authorization_seconds, risk_tier, purpose, source, external_ref, group_id, proposed_by, proposed_by_kind, proposed_at]
+    AuthorizationDecision:
+      type: object
+      description: Append-only authorization decision with its complete authorization-basis snapshot.
+      properties:
+        id: { type: string }
+        intent_id: { type: string }
+        outcome: { type: string }
+        risk_tier: { type: string }
+        grant_id: { type: string }
+        grant_revision: { type: integer }
+        policy_version: { type: string }
+        runtime_profile: {}
+        evaluated_at: { type: string, format: date-time }
+        decided_by: { type: string }
+        decided_by_kind: { type: string }
+        decided_at: { type: string, format: date-time }
+        reason: { type: string }
+        edited: { type: boolean }
+        original_params: {}
+        review_duration_ms: { type: integer, format: int64 }
+        batch_id: { type: string }
+        evidence_weight: { type: number }
+        corrected: { type: boolean }
+        correction_reason: { type: string }
+      required: [id, intent_id, outcome, risk_tier, evaluated_at, decided_by, decided_by_kind, decided_at, reason, edited, evidence_weight, corrected]
+    ExecutionReceipt:
+      type: object
+      description: Immutable result for exactly one execution attempt; retries append receipts.
+      properties:
+        id: { type: string }
+        intent_id: { type: string }
+        attempt_no: { type: integer, minimum: 1 }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time }
+        outcome: { type: string, enum: [succeeded, failed, unknown] }
+        verification_status: { type: string, enum: [verified, unverified, contradicted] }
+        provider_reference: { type: string }
+        effect_summary: { type: string }
+        effect: {}
+        error: { type: string }
+        idempotency_key: { type: string }
+        rollback_available: { type: boolean }
+        rollback: {}
+      required: [id, intent_id, attempt_no, started_at, finished_at, outcome, verification_status, effect_summary, idempotency_key, rollback_available]
+    EvidenceDecayBucket:
+      type: object
+      properties:
+        kind: { type: string }
+        decisions: { type: integer }
+        multiplier: { type: number }
+      required: [kind, decisions, multiplier]
+    ReviewerEvidence:
+      type: object
+      properties:
+        reviewer: { type: string }
+        decisions: { type: integer }
+        edited: { type: integer }
+        rejected: { type: integer }
+        fast: { type: integer }
+        batched: { type: integer }
+        edit_rate: { type: number }
+        reject_rate: { type: number }
+        fast_rate: { type: number }
+      required: [reviewer, decisions, edited, rejected, fast, batched, edit_rate, reject_rate, fast_rate]
+    AuthorizationEvidenceProfile:
+      type: object
+      properties:
+        agent_id: { type: string }
+        action_class: { type: string }
+        risk_tier: { type: string }
+        policy_version: { type: string }
+        data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
+        profile_hash: { type: string }
+        weighted_approved: { type: number }
+        weighted_rejected: { type: number }
+        effective_approval_rate: { type: number }
+        current_decisions: { type: integer }
+        historical_decisions: { type: integer }
+        incidents: { type: integer }
+        eligible: { type: boolean }
+        reason: { type: string }
+        decay: { type: array, items: { $ref: '#/components/schemas/EvidenceDecayBucket' } }
+        reviewers: { type: array, items: { $ref: '#/components/schemas/ReviewerEvidence' } }
+      required: [agent_id, action_class, risk_tier, policy_version, data_scope, profile_hash, weighted_approved, weighted_rejected, effective_approval_rate, current_decisions, historical_decisions, incidents, eligible, reason, decay, reviewers]
+    AutonomyGrant:
+      type: object
+      description: Immutable grant definition plus current lifecycle-event projection.
+      properties:
+        id: { type: string }
+        revision: { type: integer, minimum: 1 }
+        previous_grant_id: { type: string }
+        tenant_id: { type: string }
+        agent_id: { type: string }
+        action_class: { type: string }
+        tool_bindings: { type: array, items: { type: string }, minItems: 1 }
+        risk_tier: { type: string }
+        data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
+        policy_version: { type: string }
+        runtime_profile: {}
+        profile_hash: { type: string }
+        evidence_window: { $ref: '#/components/schemas/AuthorizationEvidenceProfile' }
+        constraints: { type: object, additionalProperties: true }
+        issued_by: { type: string }
+        issued_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        lifecycle_state: { type: string, enum: [issued, suspended, expired, revoked, superseded] }
+        lifecycle_reason: { type: string }
+        lifecycle_changed_at: { type: string, format: date-time }
+        superseded_by: { type: string }
+      required: [id, revision, tenant_id, agent_id, action_class, tool_bindings, risk_tier, data_scope, policy_version, runtime_profile, profile_hash, evidence_window, constraints, issued_by, issued_at, expires_at, lifecycle_state, lifecycle_reason, lifecycle_changed_at]
+    AuthorizationGraph:
+      type: object
+      properties:
+        intent: { $ref: '#/components/schemas/AuthorizationIntent' }
+        decisions: { type: array, items: { $ref: '#/components/schemas/AuthorizationDecision' } }
+        receipts: { type: array, items: { $ref: '#/components/schemas/ExecutionReceipt' } }
+        grant: { $ref: '#/components/schemas/AutonomyGrant' }
+        state: { type: string }
+      required: [intent, decisions, receipts, state]
+    ExecutionCapability:
+      type: object
+      description: Short-lived brokered authorization credential; token appears only at issue time.
+      properties:
+        id: { type: string }
+        grant_id: { type: string }
+        grant_revision: { type: integer }
+        tenant_id: { type: string }
+        agent_id: { type: string }
+        tool_name: { type: string }
+        action_class: { type: string }
+        risk_tier: { type: string }
+        data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
+        policy: { type: string, enum: [allow, ask, never] }
+        policy_version: { type: string }
+        governance_mode: { type: string, enum: [desk_managed, brokered] }
+        runtime_profile: {}
+        issued_by: { type: string }
+        issued_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        revoked_at: { type: string, format: date-time }
+        revocation_reason: { type: string }
+        token: { type: string, writeOnly: true }
+      required: [id, tenant_id, agent_id, tool_name, action_class, risk_tier, data_scope, policy, policy_version, governance_mode, runtime_profile, issued_by, issued_at, expires_at]
+    ExecutionCapabilityIssueRequest:
+      type: object
+      description: >-
+        Supply `callback` for brokered mode or `managed_connector` for
+        desk-managed mode. The server rejects zero or two execution targets.
+      properties:
+        grant_id: { type: string }
+        agent_id: { type: string }
+        tool_name: { type: string }
+        action_class: { type: string }
+        risk_tier: { type: string }
+        data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
+        policy: { type: string, enum: [allow, ask, never] }
+        policy_version: { type: string }
+        governance_mode: { type: string, enum: [desk_managed, brokered], default: brokered }
+        callback:
+          type: object
+          properties:
+            url: { type: string, format: uri }
+            auth:
+              type: object
+              properties: { secret_ref: { type: string } }
+              required: [secret_ref]
+          required: [url, auth]
+        managed_connector:
+          type: object
+          properties:
+            connector: { type: string, enum: [slack] }
+            integration_id: { type: string }
+          required: [connector, integration_id]
+        ttl_seconds: { type: integer, minimum: 1, maximum: 86400 }
+      required: [agent_id, tool_name, action_class, risk_tier, data_scope, policy, policy_version]
     ConnectorList:
       type: object
       properties:
@@ -5214,6 +5456,293 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
   # ==== governance ====
+  # ==== authorization lifecycle ====
+  /v1/managed/authorization/intents:
+    get:
+      operationId: listAuthorizationIntents
+      summary: List append-only action intents
+      description: Admin-only, tenant-scoped list of proposed side effects, newest first.
+      tags: [Authorization]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500 }
+      responses:
+        '200':
+          description: Newest intents first.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  intents: { type: array, items: { $ref: '#/components/schemas/AuthorizationIntent' } }
+                required: [intents]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { description: Authorization store unavailable }
+  /v1/managed/authorization/intents/{id}:
+    get:
+      operationId: getAuthorizationGraph
+      summary: Read the operational graph for one intent
+      description: Returns append-only Decisions and Receipts plus the exact grant revision used by a decision.
+      tags: [Authorization]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Intent to outcome graph.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthorizationGraph' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { description: Authorization store unavailable }
+  /v1/managed/authorization/grants:
+    get:
+      operationId: listAuthorizationGrants
+      summary: List immutable autonomy-grant revisions and their lifecycle projection
+      description: Admin-only view of definitions and the current state projected from lifecycle events.
+      tags: [Authorization]
+      parameters:
+        - name: include_expired
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Grant definitions with current lifecycle state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grants: { type: array, items: { $ref: '#/components/schemas/AutonomyGrant' } }
+                required: [grants]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /v1/managed/authorization/grants/evaluate:
+    post:
+      operationId: evaluateAndIssueAuthorizationGrant
+      summary: Evaluate weighted evidence and issue a grant revision if eligible
+      description: Refuses issuance unless the exact current scope/profile meets the evidence threshold.
+      tags: [Authorization]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agent_id: { type: string }
+                action_class: { type: string }
+                tool_bindings: { type: array, items: { type: string }, minItems: 1 }
+                risk_tier: { type: string }
+                policy_version: { type: string }
+                data_scope: { $ref: '#/components/schemas/AuthorizationDataScope' }
+                min_evidence: { type: number, minimum: 0 }
+                ttl_seconds: { type: integer, minimum: 1, maximum: 2592000 }
+                sample_rate: { type: number, minimum: 0, maximum: 1 }
+              required: [agent_id, action_class, tool_bindings, risk_tier, policy_version, data_scope]
+      responses:
+        '201':
+          description: A new immutable grant revision and its evidence snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grant: { $ref: '#/components/schemas/AutonomyGrant' }
+                  evidence: { $ref: '#/components/schemas/AuthorizationEvidenceProfile' }
+                required: [grant, evidence]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422':
+          description: Evidence is not eligible; the evidence profile explains why.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/managed/authorization/grants/{id}/suspend:
+    post:
+      operationId: suspendAuthorizationGrant
+      summary: Suspend a grant immediately; restoration requires a new revision
+      description: Appends a suspension event and makes every child capability unusable immediately.
+      tags: [Authorization]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { reason: { type: string } }
+              required: [reason]
+      responses:
+        '200': { description: Suspension took effect immediately }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/managed/authorization/grants/{id}/revoke:
+    post:
+      operationId: revokeAuthorizationGrant
+      summary: Append a grant-revoked lifecycle event and revoke its capabilities
+      description: Permanently terminates this revision and explicitly marks its child capabilities revoked.
+      tags: [Authorization]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { reason: { type: string } }
+              required: [reason]
+      responses:
+        '200': { description: Revocation took effect immediately }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/managed/authorization/capabilities:
+    post:
+      operationId: issueExecutionCapability
+      summary: Issue a short-lived scoped managed or brokered execution capability
+      description: >-
+        The clear `lcap_` token is returned once and its hash is stored.
+        Desk-managed Slack execution keeps the raw connector credential in Desk.
+      tags: [Authorization]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExecutionCapabilityIssueRequest' }
+      responses:
+        '201':
+          description: Brokered capability with a one-time clear token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  capability: { $ref: '#/components/schemas/ExecutionCapability' }
+                  governance_mode: { $ref: '#/components/schemas/GovernanceMode' }
+                  governance_enforcement: { type: string }
+                  warning: { type: string }
+                required: [capability, governance_mode, governance_enforcement, warning]
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /v1/managed/authorization/capabilities/{id}/revoke:
+    post:
+      operationId: revokeExecutionCapability
+      summary: Revoke a brokered execution capability immediately
+      description: Invalidates the stored token hash without changing historical Decisions or Receipts.
+      tags: [Authorization]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { reason: { type: string } }
+              required: [reason]
+      responses:
+        '200': { description: Capability revoked }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/managed/authorization/decisions/{id}/incident:
+    post:
+      operationId: markAuthorizationIncident
+      summary: Append an evidence correction event to a Decision
+      description: The original Decision remains immutable.
+      tags: [Authorization]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { reason: { type: string } }
+              required: [reason]
+      responses:
+        '200': { description: Correction event appended }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/capabilities/execute:
+    post:
+      operationId: executeCapability
+      summary: Execute or queue an action through a scoped capability
+      description: Revalidates token TTL, revocation, parent grant, scope, kill switch, and policy before acting.
+      tags: [Authorization]
+      security:
+        - capabilityAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                params: {}
+                purpose: { type: string }
+                external_ref: { type: string }
+                session_id: { type: string }
+              required: [params, purpose]
+      responses:
+        '200':
+          description: Executed; includes the resulting operational graph.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [executed] }
+                  intent: { $ref: '#/components/schemas/AuthorizationGraph' }
+                required: [status, intent]
+        '202':
+          description: Queued for human approval or sampled review.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [awaiting_approval] }
+                  sampled: { type: boolean }
+                  action_id: { type: string }
+                  intent_id: { type: string }
+                required: [status, sampled, action_id, intent_id]
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { description: Authorization is halted or unavailable }
+
   /v1/managed/actions:
     get:
       operationId: listActions

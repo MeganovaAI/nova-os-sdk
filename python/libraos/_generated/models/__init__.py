@@ -33,6 +33,18 @@ from .app_migration_list import AppMigrationList
 from .app_migration_status import AppMigrationStatus
 from .approve_action_response_409 import ApproveActionResponse409
 from .attachment import Attachment
+from .authorization_connector_scope import AuthorizationConnectorScope
+from .authorization_connector_scope_details import AuthorizationConnectorScopeDetails
+from .authorization_data_scope import AuthorizationDataScope
+from .authorization_data_scope_constraints import AuthorizationDataScopeConstraints
+from .authorization_data_scope_selectors import AuthorizationDataScopeSelectors
+from .authorization_decision import AuthorizationDecision
+from .authorization_evidence_profile import AuthorizationEvidenceProfile
+from .authorization_graph import AuthorizationGraph
+from .authorization_intent import AuthorizationIntent
+from .autonomy_grant import AutonomyGrant
+from .autonomy_grant_constraints import AutonomyGrantConstraints
+from .autonomy_grant_lifecycle_state import AutonomyGrantLifecycleState
 from .bundle_import_result import BundleImportResult
 from .bundle_manifest import BundleManifest
 from .bundle_manifest_schema_version import BundleManifestSchemaVersion
@@ -103,6 +115,30 @@ from .entitlements_update import EntitlementsUpdate
 from .entitlements_update_flags import EntitlementsUpdateFlags
 from .error import Error
 from .error_type import ErrorType
+from .evaluate_and_issue_authorization_grant_body import EvaluateAndIssueAuthorizationGrantBody
+from .evaluate_and_issue_authorization_grant_response_201 import EvaluateAndIssueAuthorizationGrantResponse201
+from .evaluate_and_issue_authorization_grant_response_422 import EvaluateAndIssueAuthorizationGrantResponse422
+from .evidence_decay_bucket import EvidenceDecayBucket
+from .execute_capability_body import ExecuteCapabilityBody
+from .execute_capability_response_200 import ExecuteCapabilityResponse200
+from .execute_capability_response_200_status import ExecuteCapabilityResponse200Status
+from .execute_capability_response_202 import ExecuteCapabilityResponse202
+from .execute_capability_response_202_status import ExecuteCapabilityResponse202Status
+from .execution_capability import ExecutionCapability
+from .execution_capability_governance_mode import ExecutionCapabilityGovernanceMode
+from .execution_capability_issue_request import ExecutionCapabilityIssueRequest
+from .execution_capability_issue_request_callback import ExecutionCapabilityIssueRequestCallback
+from .execution_capability_issue_request_callback_auth import ExecutionCapabilityIssueRequestCallbackAuth
+from .execution_capability_issue_request_governance_mode import ExecutionCapabilityIssueRequestGovernanceMode
+from .execution_capability_issue_request_managed_connector import ExecutionCapabilityIssueRequestManagedConnector
+from .execution_capability_issue_request_managed_connector_connector import (
+    ExecutionCapabilityIssueRequestManagedConnectorConnector,
+)
+from .execution_capability_issue_request_policy import ExecutionCapabilityIssueRequestPolicy
+from .execution_capability_policy import ExecutionCapabilityPolicy
+from .execution_receipt import ExecutionReceipt
+from .execution_receipt_outcome import ExecutionReceiptOutcome
+from .execution_receipt_verification_status import ExecutionReceiptVerificationStatus
 from .extract_document_files_body import ExtractDocumentFilesBody
 from .extract_request import ExtractRequest
 from .extract_response import ExtractResponse
@@ -137,6 +173,7 @@ from .get_logs_level import GetLogsLevel
 from .get_logs_source import GetLogsSource
 from .get_memory_scope import GetMemoryScope
 from .get_sharepoint_sync_status_response_200 import GetSharepointSyncStatusResponse200
+from .governance_mode import GovernanceMode
 from .group import Group
 from .group_envelope import GroupEnvelope
 from .group_list import GroupList
@@ -164,6 +201,7 @@ from .infra_latency_stat import InfraLatencyStat
 from .infra_tool_error import InfraToolError
 from .ingest_knowledge_response_201 import IngestKnowledgeResponse201
 from .ingest_knowledge_response_201_status import IngestKnowledgeResponse201Status
+from .issue_execution_capability_response_201 import IssueExecutionCapabilityResponse201
 from .job import Job
 from .job_create import JobCreate
 from .job_create_metadata import JobCreateMetadata
@@ -181,6 +219,8 @@ from .knowledge_signal import KnowledgeSignal
 from .knowledge_signal_list import KnowledgeSignalList
 from .knowledge_signal_status import KnowledgeSignalStatus
 from .list_actions_status import ListActionsStatus
+from .list_authorization_grants_response_200 import ListAuthorizationGrantsResponse200
+from .list_authorization_intents_response_200 import ListAuthorizationIntentsResponse200
 from .list_files_recursive import ListFilesRecursive
 from .list_knowledge_signals_status import ListKnowledgeSignalsStatus
 from .list_settings_response_200 import ListSettingsResponse200
@@ -189,6 +229,7 @@ from .log_entry_fields import LogEntryFields
 from .log_list import LogList
 from .log_list_source import LogListSource
 from .manifest import Manifest
+from .mark_authorization_incident_body import MarkAuthorizationIncidentBody
 from .mcp_request import McpRequest
 from .mcp_request_jsonrpc import McpRequestJsonrpc
 from .mcp_request_params import McpRequestParams
@@ -251,6 +292,9 @@ from .put_setting_body import PutSettingBody
 from .reject_action_response_409 import RejectActionResponse409
 from .remove_group_member_response_200 import RemoveGroupMemberResponse200
 from .rename_conversation_body import RenameConversationBody
+from .reviewer_evidence import ReviewerEvidence
+from .revoke_authorization_grant_body import RevokeAuthorizationGrantBody
+from .revoke_execution_capability_body import RevokeExecutionCapabilityBody
 from .role import Role
 from .route_hint_ask_clarification import RouteHintAskClarification
 from .route_hint_ask_clarification_kind import RouteHintAskClarificationKind
@@ -298,6 +342,7 @@ from .stream_event_tool_result_type import StreamEventToolResultType
 from .stream_event_tool_use import StreamEventToolUse
 from .stream_event_tool_use_input import StreamEventToolUseInput
 from .stream_event_tool_use_type import StreamEventToolUseType
+from .suspend_authorization_grant_body import SuspendAuthorizationGrantBody
 from .sync_status import SyncStatus
 from .text_block import TextBlock
 from .text_block_type import TextBlockType
@@ -366,6 +411,18 @@ __all__ = (
     "AppMigrationStatus",
     "ApproveActionResponse409",
     "Attachment",
+    "AuthorizationConnectorScope",
+    "AuthorizationConnectorScopeDetails",
+    "AuthorizationDataScope",
+    "AuthorizationDataScopeConstraints",
+    "AuthorizationDataScopeSelectors",
+    "AuthorizationDecision",
+    "AuthorizationEvidenceProfile",
+    "AuthorizationGraph",
+    "AuthorizationIntent",
+    "AutonomyGrant",
+    "AutonomyGrantConstraints",
+    "AutonomyGrantLifecycleState",
     "BundleImportResult",
     "BundleManifest",
     "BundleManifestSchemaVersion",
@@ -436,6 +493,28 @@ __all__ = (
     "EntitlementsUpdateFlags",
     "Error",
     "ErrorType",
+    "EvaluateAndIssueAuthorizationGrantBody",
+    "EvaluateAndIssueAuthorizationGrantResponse201",
+    "EvaluateAndIssueAuthorizationGrantResponse422",
+    "EvidenceDecayBucket",
+    "ExecuteCapabilityBody",
+    "ExecuteCapabilityResponse200",
+    "ExecuteCapabilityResponse200Status",
+    "ExecuteCapabilityResponse202",
+    "ExecuteCapabilityResponse202Status",
+    "ExecutionCapability",
+    "ExecutionCapabilityGovernanceMode",
+    "ExecutionCapabilityIssueRequest",
+    "ExecutionCapabilityIssueRequestCallback",
+    "ExecutionCapabilityIssueRequestCallbackAuth",
+    "ExecutionCapabilityIssueRequestGovernanceMode",
+    "ExecutionCapabilityIssueRequestManagedConnector",
+    "ExecutionCapabilityIssueRequestManagedConnectorConnector",
+    "ExecutionCapabilityIssueRequestPolicy",
+    "ExecutionCapabilityPolicy",
+    "ExecutionReceipt",
+    "ExecutionReceiptOutcome",
+    "ExecutionReceiptVerificationStatus",
     "ExtractDocumentFilesBody",
     "ExtractRequest",
     "ExtractResponse",
@@ -470,6 +549,7 @@ __all__ = (
     "GetLogsSource",
     "GetMemoryScope",
     "GetSharepointSyncStatusResponse200",
+    "GovernanceMode",
     "Group",
     "GroupEnvelope",
     "GroupList",
@@ -497,6 +577,7 @@ __all__ = (
     "InfraToolError",
     "IngestKnowledgeResponse201",
     "IngestKnowledgeResponse201Status",
+    "IssueExecutionCapabilityResponse201",
     "Job",
     "JobCreate",
     "JobCreateMetadata",
@@ -514,6 +595,8 @@ __all__ = (
     "KnowledgeSignalList",
     "KnowledgeSignalStatus",
     "ListActionsStatus",
+    "ListAuthorizationGrantsResponse200",
+    "ListAuthorizationIntentsResponse200",
     "ListFilesRecursive",
     "ListKnowledgeSignalsStatus",
     "ListSettingsResponse200",
@@ -522,6 +605,7 @@ __all__ = (
     "LogList",
     "LogListSource",
     "Manifest",
+    "MarkAuthorizationIncidentBody",
     "McpRequest",
     "McpRequestJsonrpc",
     "McpRequestParams",
@@ -584,6 +668,9 @@ __all__ = (
     "RejectActionResponse409",
     "RemoveGroupMemberResponse200",
     "RenameConversationBody",
+    "ReviewerEvidence",
+    "RevokeAuthorizationGrantBody",
+    "RevokeExecutionCapabilityBody",
     "Role",
     "RouteHintAskClarification",
     "RouteHintAskClarificationKind",
@@ -631,6 +718,7 @@ __all__ = (
     "StreamEventToolUse",
     "StreamEventToolUseInput",
     "StreamEventToolUseType",
+    "SuspendAuthorizationGrantBody",
     "SyncStatus",
     "TextBlock",
     "TextBlockType",

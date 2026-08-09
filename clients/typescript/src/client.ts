@@ -169,6 +169,186 @@ export interface PendingAction {
   decidedBy?: string;
 }
 
+/** Canonical connector-qualified data envelope used by authorization policy. */
+export interface AuthorizationDataScope {
+  resource: string;
+  operation: string;
+  selectors?: Record<string, unknown>;
+  constraints?: Record<string, unknown>;
+  connector: {
+    kind: string;
+    connectionId?: string;
+    /** Connector vocabulary stays namespaced here so the outer envelope remains comparable. */
+    details?: Record<string, unknown>;
+  };
+}
+
+export interface AuthorizationIntent {
+  id: string;
+  tenantId: string;
+  agentId: string;
+  sessionId: string;
+  toolName: string;
+  actionClass: string;
+  params: unknown;
+  dataScope?: AuthorizationDataScope;
+  sideEffects?: unknown;
+  reversible: boolean | null;
+  maxAuthorizationSeconds: number | null;
+  riskTier: string;
+  purpose: string;
+  source: string;
+  externalRef: string;
+  groupId: string;
+  proposedBy: string;
+  proposedByKind: string;
+  proposedAt: string;
+  legacyActionId?: string;
+  policyVersion?: string;
+  agentConfigHash?: string;
+  runtimeProfile?: unknown;
+  toolSchemaHash?: string;
+}
+
+export interface AuthorizationDecision {
+  id: string;
+  intentId: string;
+  outcome: string;
+  riskTier: string;
+  grantId?: string;
+  grantRevision?: number;
+  policyVersion?: string;
+  runtimeProfile?: unknown;
+  evaluatedAt: string;
+  decidedBy: string;
+  decidedByKind: string;
+  decidedAt: string;
+  reason: string;
+  edited: boolean;
+  originalParams?: unknown;
+  reviewDurationMs?: number;
+  batchId?: string;
+  evidenceWeight: number;
+  corrected: boolean;
+  correctionReason?: string;
+}
+
+export type ExecutionOutcome = "succeeded" | "failed" | "unknown";
+export type VerificationStatus = "verified" | "unverified" | "contradicted";
+
+/** One immutable execution-attempt result. Retries create additional receipts. */
+export interface ExecutionReceipt {
+  id: string;
+  intentId: string;
+  attemptNo: number;
+  startedAt: string;
+  finishedAt: string;
+  outcome: ExecutionOutcome;
+  verificationStatus: VerificationStatus;
+  providerReference?: string;
+  effectSummary: string;
+  effect?: unknown;
+  error?: string;
+  idempotencyKey: string;
+  rollbackAvailable: boolean;
+  rollback?: unknown;
+}
+
+export interface EvidenceDecayBucket {
+  kind: string;
+  decisions: number;
+  multiplier: number;
+}
+
+export interface ReviewerEvidence {
+  reviewer: string;
+  decisions: number;
+  edited: number;
+  rejected: number;
+  fast: number;
+  batched: number;
+  editRate: number;
+  rejectRate: number;
+  fastRate: number;
+}
+
+export interface AuthorizationEvidenceProfile {
+  agentId: string;
+  actionClass: string;
+  riskTier: string;
+  policyVersion: string;
+  dataScope: AuthorizationDataScope;
+  profileHash: string;
+  weightedApproved: number;
+  weightedRejected: number;
+  effectiveApprovalRate: number;
+  currentDecisions: number;
+  historicalDecisions: number;
+  incidents: number;
+  eligible: boolean;
+  reason: string;
+  decay: EvidenceDecayBucket[];
+  reviewers: ReviewerEvidence[];
+}
+
+export type GrantLifecycleState = "issued" | "suspended" | "expired" | "revoked" | "superseded";
+
+/** Immutable grant definition plus its projected lifecycle state. */
+export interface AutonomyGrant {
+  id: string;
+  revision: number;
+  previousGrantId?: string;
+  tenantId: string;
+  agentId: string;
+  actionClass: string;
+  toolBindings: string[];
+  riskTier: string;
+  dataScope: AuthorizationDataScope;
+  policyVersion: string;
+  runtimeProfile: unknown;
+  profileHash: string;
+  evidenceWindow: AuthorizationEvidenceProfile;
+  constraints: Record<string, unknown>;
+  issuedBy: string;
+  issuedAt: string;
+  expiresAt: string;
+  lifecycleState: GrantLifecycleState;
+  lifecycleReason: string;
+  lifecycleChangedAt: string;
+  supersededBy?: string;
+}
+
+export interface AuthorizationGraph {
+  intent: AuthorizationIntent;
+  decisions: AuthorizationDecision[];
+  receipts: ExecutionReceipt[];
+  grant?: AutonomyGrant;
+  state: string;
+}
+
+export interface ExecutionCapability {
+  id: string;
+  grantId?: string;
+  grantRevision?: number;
+  tenantId: string;
+  agentId: string;
+  toolName: string;
+  actionClass: string;
+  riskTier: string;
+  dataScope: AuthorizationDataScope;
+  policy: "allow" | "ask" | "never";
+  policyVersion: string;
+  governanceMode: "desk_managed" | "brokered";
+  runtimeProfile: unknown;
+  issuedBy: string;
+  issuedAt: string;
+  expiresAt: string;
+  revokedAt?: string;
+  revocationReason?: string;
+  /** Returned exactly once by the issue endpoint. */
+  token?: string;
+}
+
 /** A named group in the kernel registry (nova-os#768). */
 export interface Group {
   id: string;
@@ -198,6 +378,8 @@ export interface MyGroup {
  * A connector's kernel-owned settings, MASKED: secretKeys names which
  * credentials are set — values never reach the client (nova-os#777).
  */
+export type GovernanceMode = "desk_managed" | "brokered" | "external";
+
 export interface ConnectorConfig {
   kind: string;
   tenantId?: string;
@@ -208,6 +390,9 @@ export interface ConnectorConfig {
   updatedAt: string;
   /** May employees connect their OWN account for this kind (desk#240)? */
   personalAllowed?: boolean;
+  /** How strongly Desk can enforce policy before this connector executes. */
+  governanceMode: GovernanceMode;
+  governanceEnforcement: string;
 }
 
 /**
@@ -301,6 +486,8 @@ export interface McpServer {
   hasAuth: boolean;
   createdAt: string;
   updatedAt: string;
+  governanceMode: GovernanceMode;
+  governanceEnforcement: string;
 }
 
 /**
@@ -1207,6 +1394,158 @@ export class NovaClient {
     return toPendingAction(j.action);
   }
 
+  // ── Authorization lifecycle (desk#277) ─────────────────────────────
+
+  /** List append-only action intents, newest first. */
+  async listAuthorizationIntents(limit?: number): Promise<AuthorizationIntent[]> {
+    const q = limit == null ? "" : `?limit=${encodeURIComponent(String(limit))}`;
+    const res = await this.rawFetch(`/v1/managed/authorization/intents${q}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { intents?: RawAuthorizationIntent[] };
+    return (j.intents ?? []).map(toAuthorizationIntent);
+  }
+
+  /** Read Intent → Decisions → Receipts and the snapshotted grant basis. */
+  async getAuthorizationGraph(intentId: string): Promise<AuthorizationGraph> {
+    const res = await this.rawFetch(`/v1/managed/authorization/intents/${encodeURIComponent(intentId)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    return toAuthorizationGraph((await res.json()) as RawAuthorizationGraph);
+  }
+
+  async listAuthorizationGrants(includeExpired = false): Promise<AutonomyGrant[]> {
+    const q = includeExpired ? "?include_expired=true" : "";
+    const res = await this.rawFetch(`/v1/managed/authorization/grants${q}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { grants?: RawAutonomyGrant[] };
+    return (j.grants ?? []).map(toAutonomyGrant);
+  }
+
+  /** Evaluate weighted evidence and, only when eligible, issue a new immutable grant revision. */
+  async evaluateAndIssueGrant(input: {
+    agentId: string;
+    actionClass: string;
+    toolBindings: string[];
+    riskTier: string;
+    policyVersion: string;
+    dataScope: AuthorizationDataScope;
+    minEvidence?: number;
+    ttlSeconds?: number;
+    sampleRate?: number;
+  }): Promise<{ grant: AutonomyGrant; evidence: AuthorizationEvidenceProfile }> {
+    const res = await this.rawFetch("/v1/managed/authorization/grants/evaluate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        agent_id: input.agentId,
+        action_class: input.actionClass,
+        tool_bindings: input.toolBindings,
+        risk_tier: input.riskTier,
+        policy_version: input.policyVersion,
+        data_scope: fromAuthorizationDataScope(input.dataScope),
+        min_evidence: input.minEvidence,
+        ttl_seconds: input.ttlSeconds,
+        sample_rate: input.sampleRate,
+      }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { grant: RawAutonomyGrant; evidence: RawAuthorizationEvidenceProfile };
+    return { grant: toAutonomyGrant(j.grant), evidence: toEvidenceProfile(j.evidence) };
+  }
+
+  async revokeAuthorizationGrant(id: string, reason: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/authorization/grants/${encodeURIComponent(id)}/revoke`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /** Suspend immediately. Restoring autonomy requires a newly issued grant revision. */
+  async suspendAuthorizationGrant(id: string, reason: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/authorization/grants/${encodeURIComponent(id)}/suspend`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /**
+   * Issue a short-lived brokered capability. The returned token is visible
+   * once; store it in the executor, never in browser persistence or logs.
+   */
+  async issueExecutionCapability(input: {
+    grantId?: string;
+    agentId: string;
+    toolName: string;
+    actionClass: string;
+    riskTier: string;
+    dataScope: AuthorizationDataScope;
+    policy: "allow" | "ask" | "never";
+    policyVersion: string;
+    ttlSeconds?: number;
+  } & (
+    | { governanceMode: "desk_managed"; managedConnector: { connector: "slack"; integrationId: string } }
+    | { governanceMode?: "brokered"; callback: { url: string; auth: { secretRef: string } } }
+  )): Promise<{ capability: ExecutionCapability; governanceMode: GovernanceMode; governanceEnforcement: string; warning: string }> {
+	const callback = "callback" in input ? input.callback : undefined;
+	const managed = "managedConnector" in input ? input.managedConnector : undefined;
+    const res = await this.rawFetch("/v1/managed/authorization/capabilities", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        grant_id: input.grantId,
+        agent_id: input.agentId,
+        tool_name: input.toolName,
+        action_class: input.actionClass,
+        risk_tier: input.riskTier,
+        data_scope: fromAuthorizationDataScope(input.dataScope),
+        policy: input.policy,
+        policy_version: input.policyVersion,
+        governance_mode: input.governanceMode ?? "brokered",
+        callback: callback ? { url: callback.url, auth: { secret_ref: callback.auth.secretRef } } : undefined,
+        managed_connector: managed ? { connector: managed.connector, integration_id: managed.integrationId } : undefined,
+        ttl_seconds: input.ttlSeconds,
+      }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { capability: RawExecutionCapability; governance_mode: GovernanceMode; governance_enforcement: string; warning: string };
+    return { capability: toExecutionCapability(j.capability), governanceMode: j.governance_mode, governanceEnforcement: j.governance_enforcement, warning: j.warning };
+  }
+
+  async revokeExecutionCapability(id: string, reason: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/authorization/capabilities/${encodeURIComponent(id)}/revoke`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /** Append an evidence correction without mutating the original Decision. */
+  async markAuthorizationIncident(decisionId: string, reason: string): Promise<void> {
+    const res = await this.rawFetch(`/v1/managed/authorization/decisions/${encodeURIComponent(decisionId)}/incident`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+  }
+
+  /**
+   * Execute with an `lcap_` token. An ordinary configured user JWT is never
+   * substituted on 401: the capability is the credential for this endpoint.
+   */
+  async executeCapability(token: string, input: { params: unknown; purpose: string; externalRef?: string; sessionId?: string }): Promise<{
+    status: "executed" | "awaiting_approval";
+    sampled?: boolean;
+    actionId?: string;
+    intentId?: string;
+    intent?: AuthorizationGraph;
+  }> {
+    const res = await this.rawFetch("/v1/capabilities/execute", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ params: input.params, purpose: input.purpose, external_ref: input.externalRef, session_id: input.sessionId }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as { status: "executed" | "awaiting_approval"; sampled?: boolean; action_id?: string; intent_id?: string; intent?: RawAuthorizationGraph };
+    return { status: j.status, sampled: j.sampled, actionId: j.action_id, intentId: j.intent_id, intent: j.intent ? toAuthorizationGraph(j.intent) : undefined };
+  }
+
   /** List groups (admin). */
   async listGroups(): Promise<Group[]> {
     const res = await this.rawFetch("/v1/managed/groups", { method: "GET" });
@@ -1589,15 +1928,16 @@ export class NovaClient {
     if (!baseFetch) throw new Error("No fetch available.");
     const url = this.opts.baseUrl.replace(/\/+$/, "") + path;
 
+    const explicitAuthorization = new Headers(init.headers).has("authorization");
     const withAuth = async (token: string | undefined): Promise<RequestInit> => {
       const headers = new Headers(init.headers);
-      if (token) headers.set("authorization", `Bearer ${token}`);
+      if (token && !explicitAuthorization) headers.set("authorization", `Bearer ${token}`);
       return { ...init, headers };
     };
 
     const token = this.auth ? await this.auth.getAccessToken() : undefined;
     let res = await baseFetch(url, await withAuth(token));
-    if (res.status === 401 && this.auth?.refresh) {
+    if (res.status === 401 && !explicitAuthorization && this.auth?.refresh) {
       const fresh = await this.auth.refresh();
       if (fresh) res = await baseFetch(url, await withAuth(fresh));
     }
@@ -1622,6 +1962,156 @@ interface RawPendingAction {
   created_at: string; decided_at?: string | null;
   input?: unknown; preview?: unknown;
   source?: string; external_ref?: string; group_id?: string; claimed_by?: string; decided_by?: string;
+}
+
+interface RawAuthorizationDataScope {
+  resource: string; operation: string;
+  selectors?: Record<string, unknown>; constraints?: Record<string, unknown>;
+  connector: { kind: string; connection_id?: string; details?: Record<string, unknown> };
+}
+
+interface RawAuthorizationIntent {
+  id: string; tenant_id: string; agent_id: string; session_id: string; tool_name: string; action_class: string;
+  params: unknown; data_scope?: RawAuthorizationDataScope; side_effects?: unknown; reversible: boolean | null;
+  max_authorization_seconds: number | null; risk_tier: string; purpose: string; source: string; external_ref: string;
+  group_id: string; proposed_by: string; proposed_by_kind: string; proposed_at: string; legacy_action_id?: string;
+  policy_version?: string; agent_config_hash?: string; runtime_profile?: unknown; tool_schema_hash?: string;
+}
+
+interface RawAuthorizationDecision {
+  id: string; intent_id: string; outcome: string; risk_tier: string; grant_id?: string; grant_revision?: number;
+  policy_version?: string; runtime_profile?: unknown; evaluated_at: string; decided_by: string; decided_by_kind: string;
+  decided_at: string; reason: string; edited: boolean; original_params?: unknown; review_duration_ms?: number;
+  batch_id?: string; evidence_weight: number; corrected: boolean; correction_reason?: string;
+}
+
+interface RawExecutionReceipt {
+  id: string; intent_id: string; attempt_no: number; started_at: string; finished_at: string;
+  outcome: ExecutionOutcome; verification_status: VerificationStatus; provider_reference?: string;
+  effect_summary: string; effect?: unknown; error?: string; idempotency_key: string;
+  rollback_available: boolean; rollback?: unknown;
+}
+
+interface RawEvidenceDecayBucket { kind: string; decisions: number; multiplier: number }
+interface RawReviewerEvidence {
+  reviewer: string; decisions: number; edited: number; rejected: number; fast: number; batched: number;
+  edit_rate: number; reject_rate: number; fast_rate: number;
+}
+interface RawAuthorizationEvidenceProfile {
+  agent_id: string; action_class: string; risk_tier: string; policy_version: string; data_scope: RawAuthorizationDataScope;
+  profile_hash: string; weighted_approved: number; weighted_rejected: number; effective_approval_rate: number;
+  current_decisions: number; historical_decisions: number; incidents: number; eligible: boolean; reason: string;
+  decay?: RawEvidenceDecayBucket[]; reviewers?: RawReviewerEvidence[];
+}
+
+interface RawAutonomyGrant {
+  id: string; revision: number; previous_grant_id?: string; tenant_id: string; agent_id: string; action_class: string;
+  tool_bindings?: string[]; risk_tier: string; data_scope: RawAuthorizationDataScope; policy_version: string;
+  runtime_profile?: unknown; profile_hash: string; evidence_window: RawAuthorizationEvidenceProfile;
+  constraints?: Record<string, unknown>; issued_by: string; issued_at: string; expires_at: string;
+  lifecycle_state: GrantLifecycleState; lifecycle_reason: string; lifecycle_changed_at: string; superseded_by?: string;
+}
+
+interface RawAuthorizationGraph {
+  intent: RawAuthorizationIntent; decisions?: RawAuthorizationDecision[]; receipts?: RawExecutionReceipt[];
+  grant?: RawAutonomyGrant; state: string;
+}
+
+interface RawExecutionCapability {
+  id: string; grant_id?: string; grant_revision?: number; tenant_id: string; agent_id: string; tool_name: string;
+  action_class: string; risk_tier: string; data_scope: RawAuthorizationDataScope; policy: "allow" | "ask" | "never";
+  policy_version: string; runtime_profile?: unknown; issued_by: string; issued_at: string; expires_at: string;
+  governance_mode: "desk_managed" | "brokered";
+  revoked_at?: string; revocation_reason?: string; token?: string;
+}
+
+function toAuthorizationDataScope(s: RawAuthorizationDataScope): AuthorizationDataScope {
+  return {
+    resource: s.resource, operation: s.operation, selectors: s.selectors, constraints: s.constraints,
+    connector: { kind: s.connector.kind, connectionId: s.connector.connection_id, details: s.connector.details },
+  };
+}
+
+function fromAuthorizationDataScope(s: AuthorizationDataScope): RawAuthorizationDataScope {
+  return {
+    resource: s.resource, operation: s.operation, selectors: s.selectors, constraints: s.constraints,
+    connector: { kind: s.connector.kind, connection_id: s.connector.connectionId, details: s.connector.details },
+  };
+}
+
+function toAuthorizationIntent(i: RawAuthorizationIntent): AuthorizationIntent {
+  return {
+    id: i.id, tenantId: i.tenant_id, agentId: i.agent_id, sessionId: i.session_id, toolName: i.tool_name,
+    actionClass: i.action_class, params: i.params, dataScope: i.data_scope ? toAuthorizationDataScope(i.data_scope) : undefined,
+    sideEffects: i.side_effects, reversible: i.reversible, maxAuthorizationSeconds: i.max_authorization_seconds,
+    riskTier: i.risk_tier, purpose: i.purpose, source: i.source, externalRef: i.external_ref, groupId: i.group_id,
+    proposedBy: i.proposed_by, proposedByKind: i.proposed_by_kind, proposedAt: i.proposed_at,
+    legacyActionId: i.legacy_action_id, policyVersion: i.policy_version, agentConfigHash: i.agent_config_hash,
+    runtimeProfile: i.runtime_profile, toolSchemaHash: i.tool_schema_hash,
+  };
+}
+
+function toAuthorizationDecision(d: RawAuthorizationDecision): AuthorizationDecision {
+  return {
+    id: d.id, intentId: d.intent_id, outcome: d.outcome, riskTier: d.risk_tier, grantId: d.grant_id,
+    grantRevision: d.grant_revision, policyVersion: d.policy_version, runtimeProfile: d.runtime_profile,
+    evaluatedAt: d.evaluated_at, decidedBy: d.decided_by, decidedByKind: d.decided_by_kind, decidedAt: d.decided_at,
+    reason: d.reason, edited: d.edited, originalParams: d.original_params, reviewDurationMs: d.review_duration_ms,
+    batchId: d.batch_id, evidenceWeight: d.evidence_weight, corrected: d.corrected, correctionReason: d.correction_reason,
+  };
+}
+
+function toExecutionReceipt(r: RawExecutionReceipt): ExecutionReceipt {
+  return {
+    id: r.id, intentId: r.intent_id, attemptNo: r.attempt_no, startedAt: r.started_at, finishedAt: r.finished_at,
+    outcome: r.outcome, verificationStatus: r.verification_status, providerReference: r.provider_reference,
+    effectSummary: r.effect_summary, effect: r.effect, error: r.error, idempotencyKey: r.idempotency_key,
+    rollbackAvailable: r.rollback_available, rollback: r.rollback,
+  };
+}
+
+function toEvidenceProfile(p: RawAuthorizationEvidenceProfile): AuthorizationEvidenceProfile {
+  return {
+    agentId: p.agent_id, actionClass: p.action_class, riskTier: p.risk_tier, policyVersion: p.policy_version,
+    dataScope: toAuthorizationDataScope(p.data_scope), profileHash: p.profile_hash, weightedApproved: p.weighted_approved,
+    weightedRejected: p.weighted_rejected, effectiveApprovalRate: p.effective_approval_rate,
+    currentDecisions: p.current_decisions, historicalDecisions: p.historical_decisions, incidents: p.incidents,
+    eligible: p.eligible, reason: p.reason, decay: p.decay ?? [],
+    reviewers: (p.reviewers ?? []).map((r) => ({
+      reviewer: r.reviewer, decisions: r.decisions, edited: r.edited, rejected: r.rejected, fast: r.fast,
+      batched: r.batched, editRate: r.edit_rate, rejectRate: r.reject_rate, fastRate: r.fast_rate,
+    })),
+  };
+}
+
+function toAutonomyGrant(g: RawAutonomyGrant): AutonomyGrant {
+  return {
+    id: g.id, revision: g.revision, previousGrantId: g.previous_grant_id, tenantId: g.tenant_id,
+    agentId: g.agent_id, actionClass: g.action_class, toolBindings: g.tool_bindings ?? [], riskTier: g.risk_tier,
+    dataScope: toAuthorizationDataScope(g.data_scope), policyVersion: g.policy_version, runtimeProfile: g.runtime_profile,
+    profileHash: g.profile_hash, evidenceWindow: toEvidenceProfile(g.evidence_window), constraints: g.constraints ?? {},
+    issuedBy: g.issued_by, issuedAt: g.issued_at, expiresAt: g.expires_at, lifecycleState: g.lifecycle_state,
+    lifecycleReason: g.lifecycle_reason, lifecycleChangedAt: g.lifecycle_changed_at, supersededBy: g.superseded_by,
+  };
+}
+
+function toAuthorizationGraph(g: RawAuthorizationGraph): AuthorizationGraph {
+  return {
+    intent: toAuthorizationIntent(g.intent), decisions: (g.decisions ?? []).map(toAuthorizationDecision),
+    receipts: (g.receipts ?? []).map(toExecutionReceipt), grant: g.grant ? toAutonomyGrant(g.grant) : undefined,
+    state: g.state,
+  };
+}
+
+function toExecutionCapability(c: RawExecutionCapability): ExecutionCapability {
+  return {
+    id: c.id, grantId: c.grant_id, grantRevision: c.grant_revision, tenantId: c.tenant_id, agentId: c.agent_id,
+    toolName: c.tool_name, actionClass: c.action_class, riskTier: c.risk_tier, dataScope: toAuthorizationDataScope(c.data_scope),
+    policy: c.policy, policyVersion: c.policy_version, runtimeProfile: c.runtime_profile, issuedBy: c.issued_by,
+    governanceMode: c.governance_mode,
+    issuedAt: c.issued_at, expiresAt: c.expires_at, revokedAt: c.revoked_at,
+    revocationReason: c.revocation_reason, token: c.token,
+  };
 }
 
 function toPendingAction(a: RawPendingAction): PendingAction {
@@ -1653,6 +2143,7 @@ interface RawConnectorConfig {
   kind: string; tenant_id?: string; enabled: boolean; group_id?: string;
   config?: Record<string, unknown>; secret_keys?: string[]; updated_at: string;
   personal_allowed?: boolean;
+  governance_mode?: GovernanceMode; governance_enforcement?: string;
 }
 
 function toConnectorConfig(c: RawConnectorConfig): ConnectorConfig {
@@ -1661,6 +2152,8 @@ function toConnectorConfig(c: RawConnectorConfig): ConnectorConfig {
     groupId: c.group_id || undefined, config: c.config ?? {},
     secretKeys: c.secret_keys ?? [], updatedAt: c.updated_at,
     personalAllowed: c.personal_allowed ?? false,
+    governanceMode: c.governance_mode ?? "external",
+    governanceEnforcement: c.governance_enforcement ?? "audited; connector service receives credentials",
   };
 }
 
@@ -1702,6 +2195,7 @@ interface RawMcpServer {
   id: string; name: string; url: string; description?: string;
   default_policy?: string; enabled?: boolean; has_auth?: boolean;
   created_at?: string; updated_at?: string;
+  governance_mode?: GovernanceMode; governance_enforcement?: string;
 }
 
 function toMcpServer(s: RawMcpServer): McpServer {
@@ -1717,6 +2211,8 @@ function toMcpServer(s: RawMcpServer): McpServer {
     enabled: s.enabled ?? false,
     hasAuth: s.has_auth ?? false,
     createdAt: s.created_at ?? "", updatedAt: s.updated_at ?? "",
+    governanceMode: s.governance_mode ?? "external",
+    governanceEnforcement: s.governance_enforcement ?? "audited; external server receives credentials",
   };
 }
 
