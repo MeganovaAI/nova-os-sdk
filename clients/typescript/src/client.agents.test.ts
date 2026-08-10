@@ -70,6 +70,16 @@ describe("agent CRUD (#61)", () => {
     expect(beta(get())).toBe("managed-agents-2026-04-01");
   });
 
+  it("updateAgent PUTs only the supplied fields with the beta header", async () => {
+    const { fetchMock, get } = cap();
+    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    await client.updateAgent("marketing-assistant", { system: "Use the house style." });
+    expect(url(get())).toContain("/v1/agents/marketing-assistant");
+    expect(method(get())).toBe("PUT");
+    expect(beta(get())).toBe("managed-agents-2026-04-01");
+    expect(await req(get()).clone().json()).toEqual({ system: "Use the house style." });
+  });
+
   it("deleteAgent DELETEs /v1/agents/{id} with the beta header", async () => {
     let c: { input: Request | string; init?: RequestInit } | undefined;
     const fetchMock = vi.fn(async (input: Request | string, init?: RequestInit) => {
