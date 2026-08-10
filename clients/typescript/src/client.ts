@@ -23,6 +23,8 @@ export type Session = Schemas["Session"];
 export type SessionCreate = Schemas["SessionCreate"];
 export type Deployment = Schemas["Deployment"];
 export type Agent = Schemas["Agent"];
+/** Partial body accepted by {@link NovaClient.updateAgent}. */
+export type UpdateAgentRequest = Schemas["AgentUpdate"];
 /** Body accepted by {@link NovaClient.createAgent}. Mirrors the OpenAPI createAgent request. */
 export type CreateAgentRequest = Record<string, unknown>;
 
@@ -375,6 +377,20 @@ export interface MyGroup {
 }
 
 /**
+ * One of the operator organizations the caller may act as.
+ *
+ * This is an identity/tenant membership, not a customer organization from a
+ * CRM. The active organization still comes from the signed `tenant_id` claim;
+ * this list only describes the organizations the authenticated user belongs to.
+ */
+export interface OperatorOrganization {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+}
+
+/**
  * A connector's kernel-owned settings, MASKED: secretKeys names which
  * credentials are set — values never reach the client (nova-os#777).
  */
@@ -501,6 +517,56 @@ export interface Entitlements {
   updatedAt?: string;
 }
 
+/** Preset windows supported by the administrator usage summary. */
+export type UsageRange = "today" | "7d" | "30d";
+
+/** One point in the daily usage trend. */
+export interface UsageSeriesPoint {
+  date: string;
+  tokens: number;
+  calls: number;
+  costUsd: number;
+}
+
+/** A model, agent, user, API-key, or application usage roll-up. */
+export interface UsageBreakdown {
+  model?: string;
+  agentId?: string;
+  userId?: string;
+  apiKeyId?: string;
+  application?: string;
+  tokens: number;
+  promptTokens: number;
+  completionTokens: number;
+  calls: number;
+  costUsd: number;
+  hasPricing: boolean;
+}
+
+/** Real call-log consumption returned by the admin-only usage endpoint. */
+export interface UsageSummary {
+  range: UsageRange;
+  fetchedAt: string;
+  pricing: { fetchedAt?: string; stale: boolean; error?: string };
+  totals: {
+    tokens: number;
+    promptTokens: number;
+    completionTokens: number;
+    calls: number;
+    costUsd: number;
+    hasPricing: boolean;
+    uniqueModels: number;
+    uniqueAgents: number;
+    uniqueUsers: number;
+  };
+  series: UsageSeriesPoint[];
+  byModel: UsageBreakdown[];
+  byAgent: UsageBreakdown[];
+  byUser: UsageBreakdown[];
+  byApiKey: UsageBreakdown[];
+  byApplication: UsageBreakdown[];
+}
+
 export interface NovaClientOptions {
   /** Base URL of the LibraOS instance. */
   baseUrl: string;
@@ -591,6 +657,17 @@ export class NovaClient {
     const res = await this.rest.api.GET("/v1/agents/{agent_id}", {
       headers: { "anthropic-beta": "managed-agents-2026-04-01" },
       params: { path: { agent_id: agentId } },
+    });
+    throwIfError(res);
+    return res.data as Agent;
+  }
+
+  /** Update only the supplied fields on an agent. */
+  async updateAgent(agentId: string, body: UpdateAgentRequest): Promise<Agent> {
+    const res = await this.rest.api.PUT("/v1/agents/{agent_id}", {
+      headers: { "anthropic-beta": "managed-agents-2026-04-01" },
+      params: { path: { agent_id: agentId } },
+      body,
     });
     throwIfError(res);
     return res.data as Agent;
@@ -1608,6 +1685,26 @@ export class NovaClient {
     return (j.groups ?? []).map((g) => ({ id: g.id, name: g.name, description: g.description || undefined, role: g.role }));
   }
 
+  /**
+   * The caller's active operator-organization memberships. Suspended
+   * organizations are filtered by the server. This endpoint is intentionally
+   * read-only: selecting a different tenant requires the identity provider to
+   * issue a new signed `tenant_id` claim.
+   */
+  async listMyOrganizations(): Promise<OperatorOrganization[]> {
+    const res = await this.rawFetch("/v1/managed/orgs/mine", { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = (await res.json()) as {
+      orgs?: Array<{ id: string; name: string; slug: string; role: string }>;
+    };
+    return (j.orgs ?? []).map((org) => ({
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      role: org.role,
+    }));
+  }
+
   // ── Connector configs (nova-os#777, employee-assistant #38) ────────────
 
   /** List connector configs (admin; masked — secret values never serialize). */
@@ -1918,6 +2015,13 @@ export class NovaClient {
     return toEntitlements(j.entitlements);
   }
 
+  /** Read real platform-meter usage for an administrator-selected window. */
+  async getUsageSummary(range: UsageRange = "7d"): Promise<UsageSummary> {
+    const res = await this.rawFetch(`/api/usage/summary?range=${encodeURIComponent(range)}`, { method: "GET" });
+    if (!res.ok) throw await this.toApiError(res);
+    return toUsageSummary((await res.json()) as RawUsageSummary);
+  }
+
   // ── internals ──────────────────────────────────────────────────────────
 
   /** Bearer-injected, refresh-on-401 raw fetch for SSE/multipart surfaces. */
@@ -2223,5 +2327,60 @@ interface RawEntitlements {
 function toEntitlements(e: RawEntitlements): Entitlements {
   return {
     tenantId: e.tenant_id, flags: e.flags ?? {}, updatedAt: e.updated_at || undefined,
+  };
+}
+
+interface RawUsageBreakdown {
+  model?: string; agent_id?: string; user_id?: string; api_key_id?: string; application?: string;
+  tokens?: number; prompt_tokens?: number; completion_tokens?: number; calls?: number;
+  cost_usd?: number; has_pricing?: boolean;
+}
+
+interface RawUsageSummary {
+  range?: string; fetched_at?: string;
+  pricing?: { fetched_at?: string; stale?: boolean; error?: string };
+  totals?: RawUsageBreakdown & { unique_models?: number; unique_agents?: number; unique_users?: number };
+  series?: Array<{ date?: string; tokens?: number; calls?: number; cost_usd?: number }>;
+  by_model?: RawUsageBreakdown[]; by_agent?: RawUsageBreakdown[]; by_user?: RawUsageBreakdown[];
+  by_api_key?: RawUsageBreakdown[]; by_application?: RawUsageBreakdown[];
+}
+
+function toUsageBreakdown(row: RawUsageBreakdown): UsageBreakdown {
+  return {
+    model: row.model, agentId: row.agent_id, userId: row.user_id,
+    apiKeyId: row.api_key_id, application: row.application,
+    tokens: row.tokens ?? 0, promptTokens: row.prompt_tokens ?? 0,
+    completionTokens: row.completion_tokens ?? 0, calls: row.calls ?? 0,
+    costUsd: row.cost_usd ?? 0, hasPricing: row.has_pricing ?? false,
+  };
+}
+
+function toUsageSummary(raw: RawUsageSummary): UsageSummary {
+  const totals = raw.totals ?? {};
+  const range = raw.range === "today" || raw.range === "30d" ? raw.range : "7d";
+  return {
+    range,
+    fetchedAt: raw.fetched_at ?? "",
+    pricing: {
+      fetchedAt: raw.pricing?.fetched_at,
+      stale: raw.pricing?.stale ?? false,
+      error: raw.pricing?.error,
+    },
+    totals: {
+      tokens: totals.tokens ?? 0, promptTokens: totals.prompt_tokens ?? 0,
+      completionTokens: totals.completion_tokens ?? 0, calls: totals.calls ?? 0,
+      costUsd: totals.cost_usd ?? 0, hasPricing: totals.has_pricing ?? false,
+      uniqueModels: totals.unique_models ?? 0, uniqueAgents: totals.unique_agents ?? 0,
+      uniqueUsers: totals.unique_users ?? 0,
+    },
+    series: (raw.series ?? []).map((point) => ({
+      date: point.date ?? "", tokens: point.tokens ?? 0,
+      calls: point.calls ?? 0, costUsd: point.cost_usd ?? 0,
+    })),
+    byModel: (raw.by_model ?? []).map(toUsageBreakdown),
+    byAgent: (raw.by_agent ?? []).map(toUsageBreakdown),
+    byUser: (raw.by_user ?? []).map(toUsageBreakdown),
+    byApiKey: (raw.by_api_key ?? []).map(toUsageBreakdown),
+    byApplication: (raw.by_application ?? []).map(toUsageBreakdown),
   };
 }
