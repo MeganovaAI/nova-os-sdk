@@ -24,6 +24,7 @@ export {
   type SessionCreate,
   type Deployment,
   type Agent,
+  type UpdateAgentRequest,
   type Transcription,
   type MemoryView,
   type Project,
@@ -52,6 +53,7 @@ export {
   type Group,
   type GroupMember,
   type MyGroup,
+  type OperatorOrganization,
   type ConnectorConfig,
   type GovernanceMode,
   type MyConnectorConfig,
@@ -60,6 +62,10 @@ export {
   type McpServer,
   type McpServerPolicy,
   type Entitlements,
+  type UsageRange,
+  type UsageSeriesPoint,
+  type UsageBreakdown,
+  type UsageSummary,
 } from "./client.js";
 
 // Low-level REST factory (for advanced use / custom auth).
