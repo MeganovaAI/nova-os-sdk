@@ -31,7 +31,7 @@ Partner integration docs for [LibraOS](https://github.com/libraos/sdk) — the a
 |---|---|
 | Python SDK | [`python/README.md`](https://github.com/libraos/sdk/blob/main/python/README.md) |
 | CLI | [`cli/README.md`](https://github.com/libraos/sdk/blob/main/cli/README.md) |
-| OpenAPI spec | [`openapi/nova-os-partner.v1.yaml`](https://github.com/libraos/sdk/blob/main/openapi/nova-os-partner.v1.yaml) |
+| OpenAPI spec | [`openapi/libra-os-partner.v1.yaml`](https://github.com/libraos/sdk/blob/main/openapi/libra-os-partner.v1.yaml) |
 | Worked examples | [`python/examples/`](https://github.com/libraos/sdk/tree/main/python/examples) — 18 numbered examples covering every public surface |
 
 ## Server-side

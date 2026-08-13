@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
+
+if TYPE_CHECKING:
+    from ..models.extract_response_metadata import ExtractResponseMetadata
+
 
 T = TypeVar("T", bound="ExtractResponse")
 
@@ -19,6 +23,7 @@ class ExtractResponse:
         title (str | Unset): Document title when the parser can detect one.
         doc_type (str | Unset): Detected document type (e.g. docx, xlsx, pdf, odt, csv, eml).
         char_count (int | Unset): Length of the extracted text in characters.
+        metadata (ExtractResponseMetadata | Unset): Parser metadata. XLSX includes an exact `sheet_count`.
         elapsed_ms (int | Unset): Server-side processing time in milliseconds.
     """
 
@@ -26,6 +31,7 @@ class ExtractResponse:
     title: str | Unset = UNSET
     doc_type: str | Unset = UNSET
     char_count: int | Unset = UNSET
+    metadata: ExtractResponseMetadata | Unset = UNSET
     elapsed_ms: int | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -37,6 +43,10 @@ class ExtractResponse:
         doc_type = self.doc_type
 
         char_count = self.char_count
+
+        metadata: dict[str, Any] | Unset = UNSET
+        if not isinstance(self.metadata, Unset):
+            metadata = self.metadata.to_dict()
 
         elapsed_ms = self.elapsed_ms
 
@@ -51,6 +61,8 @@ class ExtractResponse:
             field_dict["doc_type"] = doc_type
         if char_count is not UNSET:
             field_dict["char_count"] = char_count
+        if metadata is not UNSET:
+            field_dict["metadata"] = metadata
         if elapsed_ms is not UNSET:
             field_dict["elapsed_ms"] = elapsed_ms
 
@@ -58,6 +70,8 @@ class ExtractResponse:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.extract_response_metadata import ExtractResponseMetadata
+
         d = dict(src_dict)
         text = d.pop("text", UNSET)
 
@@ -67,6 +81,13 @@ class ExtractResponse:
 
         char_count = d.pop("char_count", UNSET)
 
+        _metadata = d.pop("metadata", UNSET)
+        metadata: ExtractResponseMetadata | Unset
+        if isinstance(_metadata, Unset):
+            metadata = UNSET
+        else:
+            metadata = ExtractResponseMetadata.from_dict(_metadata)
+
         elapsed_ms = d.pop("elapsed_ms", UNSET)
 
         extract_response = cls(
@@ -74,6 +95,7 @@ class ExtractResponse:
             title=title,
             doc_type=doc_type,
             char_count=char_count,
+            metadata=metadata,
             elapsed_ms=elapsed_ms,
         )
 

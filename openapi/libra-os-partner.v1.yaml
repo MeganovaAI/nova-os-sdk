@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
-  title: Nova OS Partner API
+  title: LibraOS Partner API
   version: 1.0.0-alpha.6
   description: |
-    Partner integration API for Nova OS. Mirrors Anthropic Managed Agents
+    Partner integration API for LibraOS. Mirrors Anthropic Managed Agents
     1:1 for the compat surface (Section 1.1 of the design); extends with
     employees, multi-model config, web-search backend selection, custom-tool
     webhook callbacks, and async jobs (Section 1.2).
@@ -11,15 +11,15 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
   contact:
-    name: Nova OS Team
-    url: https://github.com/MeganovaAI/nova-os-sdk
+    name: LibraOS Team
+    url: https://github.com/libraos/sdk
     email: support@meganova.ai
 
 servers:
-  - url: https://nova.partner.example.com
-    description: Partner-self-hosted Nova OS (v1 default)
-  - url: https://api.nova-os.com
-    description: Nova OS managed cloud (future)
+  - url: https://libraos.partner.example.com
+    description: Partner-self-hosted LibraOS (v1 default)
+  - url: https://api.libraos.com
+    description: LibraOS managed cloud (future)
   - url: http://localhost:8900
     description: Local development
 
@@ -2006,6 +2006,11 @@ components:
         char_count:
           type: integer
           description: Length of the extracted text in characters.
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: Parser metadata. XLSX includes an exact `sheet_count`.
         elapsed_ms:
           type: integer
           description: Server-side processing time in milliseconds.
@@ -2069,13 +2074,111 @@ components:
           description: Identifier of the source chunk the signal was derived from.
         status:
           type: string
-          enum: [pending, quarantined, eligible, promoted, rejected, superseded]
+          enum: [pending, quarantined, eligible, publishing, promoted, rejected, superseded]
         created_at:
           type: string
           format: date-time
         signature:
           type: string
           description: Integrity signature over the signal contents.
+    KnowledgeSignalPromotionReceipt:
+      type: object
+      required: [id, signal_id, tenant, knowledge_document_id, collection, audience, actor, published_at]
+      properties:
+        id: { type: string }
+        signal_id: { type: string }
+        tenant: { type: string }
+        knowledge_document_id: { type: string }
+        collection: { type: string }
+        audience: { type: string }
+        actor: { type: string }
+        source_chunk_id: { type: string }
+        published_at: { type: string, format: date-time }
+    KnowledgeSignalMutation:
+      type: object
+      required: [signal]
+      properties:
+        signal: { $ref: '#/components/schemas/KnowledgeSignal' }
+        receipt: { $ref: '#/components/schemas/KnowledgeSignalPromotionReceipt' }
+    EvalCase:
+      type: object
+      required: [case_id, prompt, reference, reference_author, reference_reviewer, reference_privacy_reviewed, expected_behavior]
+      properties:
+        case_id: { type: string }
+        prompt: { type: string }
+        reference: { type: string, description: "Human-authored expected behavior; never model-generated." }
+        reference_author: { type: string }
+        reference_reviewer: { type: string }
+        reference_privacy_reviewed: { type: boolean }
+        source_case_id: { type: string, description: "Optional privacy-reviewed resolved-work reference." }
+        criteria: { type: array, items: { type: string } }
+        tags: { type: array, items: { type: string } }
+        expected_source_ids: { type: array, items: { type: string } }
+        forbidden_source_ids: { type: array, items: { type: string } }
+        required_claims: { type: array, items: { type: string } }
+        forbidden_claims: { type: array, items: { type: string } }
+        expected_behavior: { type: string, enum: [answer, abstain] }
+        principal: { type: string }
+        max_source_age_days: { type: integer, minimum: 0 }
+    EvalSuiteRevision:
+      type: object
+      required: [name, revision, case_count, content_hash]
+      properties:
+        name: { type: string }
+        revision: { type: integer }
+        description: { type: string }
+        case_count: { type: integer }
+        content_hash: { type: string }
+        approved_by: { type: string, description: "Admin/domain-owner identity that froze this immutable revision." }
+        approved_at: { type: string, format: date-time }
+        cases: { type: array, items: { $ref: '#/components/schemas/EvalCase' } }
+        created_at: { type: string, format: date-time }
+    EvalRun:
+      type: object
+      required: [run_id, suite_name, suite_revision, suite_digest, blueprint_digest, knowledge_digest, agent_id, status, total_cases]
+      properties:
+        run_id: { type: string }
+        suite_name: { type: string }
+        suite_revision: { type: integer }
+        suite_digest: { type: string }
+        blueprint_digest: { type: string }
+        knowledge_digest: { type: string }
+        agent_id: { type: string }
+        status: { type: string, enum: [running, completed] }
+        total_cases: { type: integer }
+        passed_cases: { type: integer }
+        score: { type: number, minimum: 0, maximum: 1 }
+        metrics:
+          type: object
+          additionalProperties: { type: number, minimum: 0, maximum: 1 }
+        release_blocked: { type: boolean }
+        receipt_id: { type: string }
+        results: { type: array, items: { $ref: '#/components/schemas/EvalCaseResult' } }
+        created_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time }
+    EvalEvidence:
+      type: object
+      required: [source_id]
+      properties:
+        source_id: { type: string }
+        version: { type: string }
+    EvalCaseResult:
+      type: object
+      required: [case_id, output, sources, answer_passed, retrieval_passed, citation_passed, access_passed, abstention_passed]
+      properties:
+        case_id: { type: string }
+        output: { type: string }
+        sources: { type: array, items: { $ref: '#/components/schemas/EvalEvidence' } }
+        answer_passed: { type: boolean }
+        retrieval_passed: { type: boolean }
+        citation_passed: { type: boolean }
+        access_passed: { type: boolean }
+        abstention_passed: { type: boolean }
+        reviewer_note: { type: string }
+        error: { type: string }
+        failed_stage: { type: string, enum: [answer, retrieval, citation, access, abstention] }
+        passed: { type: boolean, readOnly: true }
+        score: { type: number, minimum: 0, maximum: 1, readOnly: true }
     PromotionCandidates:
       type: object
       properties:
@@ -5039,7 +5142,179 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /v1/managed/evals/suites:
+    get:
+      operationId: listEvalSuites
+      summary: List the latest immutable evaluation suite revisions
+      tags: [Knowledge]
+      responses:
+        '200':
+          description: Latest revision of each suite.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suites: { type: array, items: { $ref: '#/components/schemas/EvalSuiteRevision' } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createEvalSuiteRevision
+      summary: Create a new immutable human-authored suite revision
+      tags: [Knowledge]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, cases]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                cases: { type: array, minItems: 1, items: { $ref: '#/components/schemas/EvalCase' } }
+      responses:
+        '201': { description: Immutable suite revision created. }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /v1/managed/evals/suites/{name}/revisions/{revision}:
+    get:
+      operationId: getEvalSuiteRevision
+      summary: Get one exact immutable suite revision
+      tags: [Knowledge]
+      parameters:
+        - { in: path, name: name, required: true, schema: { type: string } }
+        - { in: path, name: revision, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Suite revision and human-authored cases.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EvalSuiteRevision' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/managed/evals/runs:
+    get:
+      operationId: listEvalRuns
+      summary: List durable evaluation runs
+      tags: [Knowledge]
+      responses:
+        '200':
+          description: Runs pinned to exact suite revisions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs: { type: array, items: { $ref: '#/components/schemas/EvalRun' } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: startEvalRun
+      summary: Start a durable run pinned to one suite revision
+      tags: [Knowledge]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [suite_name, agent_id, blueprint_digest, knowledge_digest]
+              properties:
+                suite_name: { type: string }
+                suite_revision: { type: integer, description: Zero or omitted selects the latest revision. }
+                agent_id: { type: string }
+                blueprint_digest: { type: string }
+                knowledge_digest: { type: string }
+      responses:
+        '201':
+          description: Running evaluation record.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EvalRun' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/managed/evals/runs/{id}:
+    get:
+      operationId: getEvalRun
+      summary: Get a durable machine-readable evaluation report and immutable receipt
+      tags: [Knowledge]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Exact run inputs, per-case results, dimension scores and release-blocker state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EvalRun' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/managed/evals/runs/{id}/complete:
+    post:
+      operationId: completeEvalRun
+      summary: Complete a run once with per-case evidence
+      tags: [Knowledge]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [results]
+              properties:
+                results:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    $ref: '#/components/schemas/EvalCaseResult'
+      responses:
+        '200': { description: Completed immutable run result. }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Run is already completed or missing.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   /v1/managed/knowledge-signals:
+    post:
+      operationId: createKnowledgeSignal
+      summary: File a governed starter-set proposal
+      tags: [Knowledge]
+      description: >-
+        Authenticated governed intake. Creates an explicit-keep signal in pending
+        state; non-admin callers are forced into the employee-feedback source app.
+        It never publishes knowledge. Listing and the separate atomic promote and
+        reject decisions remain admin-only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fact_key, content, idempotency_key]
+              properties:
+                fact_key: { type: string }
+                content: { type: string }
+                source_chunk_id: { type: string }
+                app: { type: string, default: desk-knowledge-setup }
+                idempotency_key: { type: string, description: Stable caller key; retries return the same pending signal. }
+      responses:
+        '201':
+          description: Pending proposal signal.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KnowledgeSignalMutation' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Knowledge signal intake is unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
     get:
       operationId: listKnowledgeSignals
       summary: List queued knowledge signals by status
@@ -5052,7 +5327,7 @@ paths:
           description: Filter by signal status. Defaults to pending.
           schema:
             type: string
-            enum: [pending, quarantined, eligible, promoted, rejected, superseded]
+            enum: [pending, quarantined, eligible, publishing, promoted, rejected, superseded]
             default: pending
         - in: query
           name: limit
@@ -5103,6 +5378,84 @@ paths:
         '429': { $ref: '#/components/responses/RateLimited' }
         '503':
           description: Knowledge signals are unavailable on this deployment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/knowledge-signals/{id}/promote:
+    post:
+      operationId: promoteKnowledgeSignal
+      summary: Publish a reviewed knowledge signal
+      tags: [Knowledge]
+      description: >-
+        Admin-only, idempotent publication into the knowledge store. The signal
+        becomes promoted only after indexing succeeds and an immutable receipt
+        is committed. Repeating a completed request returns the same receipt.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                collection: { type: string, default: default }
+                audience: { type: string, default: organization }
+      responses:
+        '200':
+          description: Published signal and immutable publication receipt.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KnowledgeSignalMutation' }
+        '202':
+          description: Another request currently holds the publication lease.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KnowledgeSignalMutation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The signal is in a terminal or currently publishing state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Signal publishing or the knowledge store is unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/managed/knowledge-signals/{id}/reject:
+    post:
+      operationId: rejectKnowledgeSignal
+      summary: Reject a reviewed knowledge signal
+      tags: [Knowledge]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Rejected signal. Repeating a rejection is idempotent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KnowledgeSignalMutation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The signal is promoted or currently publishing.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Knowledge signals are unavailable.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }

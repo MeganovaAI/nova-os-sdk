@@ -59,10 +59,10 @@ jobs:
         run: |
           cd python
           rm -rf libraos/_generated libraos-sdk-generated
-          openapi-python-client generate --path ../openapi/nova-os-partner.v1.yaml \
+          openapi-python-client generate --path ../openapi/libra-os-partner.v1.yaml \
             --config openapi-python-client.yaml
           mv libraos-sdk-generated/libraos._generated libraos/_generated
-          rm -rf nova-os-sdk-generated
+          rm -rf libraos-sdk-generated
 
       - name: Fail on drift
         run: |
