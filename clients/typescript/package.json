@@ -25,7 +25,7 @@
     }
   },
   "scripts": {
-    "codegen": "openapi-typescript ../../openapi/nova-os-partner.v1.yaml -o src/_generated/schema.d.ts",
+    "codegen": "openapi-typescript ../../openapi/libra-os-partner.v1.yaml -o src/_generated/schema.d.ts",
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

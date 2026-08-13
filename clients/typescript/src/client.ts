@@ -95,9 +95,48 @@ export interface KnowledgeSignal {
   factKey: string;
   content: string;
   sourceChunkId: string;
-  status: "pending" | "quarantined" | "eligible" | "promoted" | "rejected" | "superseded" | string;
+  status: "pending" | "quarantined" | "eligible" | "publishing" | "promoted" | "rejected" | "superseded" | string;
   createdAt: string;
   signature: string;
+}
+
+/** Immutable proof returned after a signal has been indexed successfully. */
+export interface KnowledgeSignalPromotionReceipt {
+  id: string;
+  signalId: string;
+  tenant: string;
+  knowledgeDocumentId: string;
+  collection: string;
+  audience: string;
+  actor: string;
+  sourceChunkId?: string;
+  publishedAt: string;
+}
+
+export interface KnowledgeSignalMutation {
+  signal: KnowledgeSignal;
+  receipt?: KnowledgeSignalPromotionReceipt;
+}
+
+/** Native office-document extraction result used by knowledge setup. */
+export interface DocumentExtraction {
+  text: string;
+  title?: string;
+  docType?: string;
+  charCount: number;
+  metadata: Record<string, string>;
+  elapsedMs?: number;
+}
+
+/** OCR result for scanned or image-only PDFs. */
+export interface DocumentOcr {
+  markdown: string;
+  pageCount: number;
+  modelUsed?: string;
+  fallbackChainTriggered: boolean;
+  costUsd?: number;
+  cacheHit: boolean;
+  elapsedMs?: number;
 }
 
 /**
@@ -1206,6 +1245,27 @@ export class NovaClient {
 
   // ── Knowledge Signals (KSG curator) ───────────────────────────────────
 
+  /** Extract text without publishing or indexing the file. */
+  async extractDocument(file: Blob, opts: { fileName: string; signal?: AbortSignal }): Promise<DocumentExtraction> {
+    const form = new FormData();
+    form.append("file", file, opts.fileName);
+    const res = await this.rawFetch("/v1/managed/documents/extract", { method: "POST", body: form, signal: opts.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = await res.json() as { text?: string; title?: string; doc_type?: string; char_count?: number; metadata?: Record<string, string>; elapsed_ms?: number };
+    return { text: j.text ?? "", title: j.title, docType: j.doc_type, charCount: j.char_count ?? (j.text ?? "").length, metadata: j.metadata ?? {}, elapsedMs: j.elapsed_ms };
+  }
+
+  /** OCR a scanned/image-only PDF without publishing it. */
+  async ocrDocument(file: Blob, opts?: { fileName?: string; maxPages?: number; signal?: AbortSignal }): Promise<DocumentOcr> {
+    const form = new FormData();
+    form.append("file", file, opts?.fileName ?? "document.pdf");
+    if (opts?.maxPages != null) form.append("max_pages", String(opts.maxPages));
+    const res = await this.rawFetch("/v1/managed/documents/ocr", { method: "POST", body: form, signal: opts?.signal });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = await res.json() as { markdown?: string; page_count?: number; model_used?: string; fallback_chain_triggered?: boolean; cost_usd?: number; cache_hit?: boolean; elapsed_ms?: number };
+    return { markdown: j.markdown ?? "", pageCount: j.page_count ?? 0, modelUsed: j.model_used, fallbackChainTriggered: j.fallback_chain_triggered ?? false, costUsd: j.cost_usd, cacheHit: j.cache_hit ?? false, elapsedMs: j.elapsed_ms };
+  }
+
   /** Map a raw snake_case signal object to the camelCase {@link KnowledgeSignal} interface. */
   private toKnowledgeSignal(r: {
     id: string; tenant: string; app: string; employee_id: string;
@@ -1237,6 +1297,17 @@ export class NovaClient {
     return (j.signals ?? []).map((s) => this.toKnowledgeSignal(s));
   }
 
+  /** File an explicit starter-set proposal; publication remains a separate reviewed action. */
+  async createKnowledgeSignal(input: { factKey: string; content: string; idempotencyKey: string; sourceChunkId?: string; app?: string }): Promise<KnowledgeSignal> {
+    const res = await this.rawFetch("/v1/managed/knowledge-signals", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fact_key: input.factKey, content: input.content, idempotency_key: input.idempotencyKey, source_chunk_id: input.sourceChunkId ?? "", app: input.app ?? "desk-knowledge-setup" }),
+    });
+    if (!res.ok) throw await this.toApiError(res);
+    const j = await res.json() as { signal: Parameters<NovaClient["toKnowledgeSignal"]>[0] };
+    return this.toKnowledgeSignal(j.signal);
+  }
+
   /**
    * List fact-key strings that are eligible for promotion.
    * Requires admin role. Returns 503 when KSG is disabled.
@@ -1256,9 +1327,36 @@ export class NovaClient {
    * Returns the updated {@link KnowledgeSignal}.
    */
   async promoteKnowledgeSignal(id: string): Promise<KnowledgeSignal> {
-    const res = await this.rawFetch(`/v1/managed/knowledge-signals/${encodeURIComponent(id)}/promote`, { method: "POST" });
+    return (await this.promoteKnowledgeSignalWithReceipt(id)).signal;
+  }
+
+  /** Promote and retain the immutable publication receipt for audit UI. */
+  async promoteKnowledgeSignalWithReceipt(id: string, opts?: { collection?: string; audience?: string }): Promise<KnowledgeSignalMutation> {
+    const body: Record<string, string> = {};
+    if (opts?.collection) body.collection = opts.collection;
+    if (opts?.audience) body.audience = opts.audience;
+    const res = await this.rawFetch(`/v1/managed/knowledge-signals/${encodeURIComponent(id)}/promote`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
     if (!res.ok) throw await this.toApiError(res);
-    return this.toKnowledgeSignal(await res.json() as Parameters<NovaClient["toKnowledgeSignal"]>[0]);
+    const j = await res.json() as {
+      signal: Parameters<NovaClient["toKnowledgeSignal"]>[0];
+      receipt?: {
+        id: string; signal_id: string; tenant: string; knowledge_document_id: string;
+        collection: string; audience: string; actor: string; source_chunk_id?: string; published_at: string;
+      };
+    };
+    return {
+      signal: this.toKnowledgeSignal(j.signal),
+      receipt: j.receipt ? {
+        id: j.receipt.id, signalId: j.receipt.signal_id, tenant: j.receipt.tenant,
+        knowledgeDocumentId: j.receipt.knowledge_document_id, collection: j.receipt.collection,
+        audience: j.receipt.audience, actor: j.receipt.actor, sourceChunkId: j.receipt.source_chunk_id,
+        publishedAt: j.receipt.published_at,
+      } : undefined,
+    };
   }
 
   /**
@@ -1268,7 +1366,8 @@ export class NovaClient {
   async rejectKnowledgeSignal(id: string): Promise<KnowledgeSignal> {
     const res = await this.rawFetch(`/v1/managed/knowledge-signals/${encodeURIComponent(id)}/reject`, { method: "POST" });
     if (!res.ok) throw await this.toApiError(res);
-    return this.toKnowledgeSignal(await res.json() as Parameters<NovaClient["toKnowledgeSignal"]>[0]);
+    const j = await res.json() as { signal: Parameters<NovaClient["toKnowledgeSignal"]>[0] };
+    return this.toKnowledgeSignal(j.signal);
   }
 
   // ── User management (admin-gated) ──────────────────────────────────────

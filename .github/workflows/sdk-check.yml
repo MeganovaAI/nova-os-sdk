@@ -54,7 +54,7 @@ jobs:
           import sys
           import yaml
 
-          spec_path = "nova-os-sdk/openapi/nova-os-partner.v1.yaml"
+          spec_path = "nova-os-sdk/openapi/libra-os-partner.v1.yaml"
           route_index_path = f"caller/{os.environ['ROUTE_INDEX']}"
 
           with open(spec_path) as f:
@@ -101,7 +101,7 @@ jobs:
 
       - name: Compare OpenAPI hash with caller-pinned hash
         run: |
-          actual=$(sha256sum nova-os-sdk/openapi/nova-os-partner.v1.yaml | cut -c1-12)
+          actual=$(sha256sum nova-os-sdk/openapi/libra-os-partner.v1.yaml | cut -c1-12)
           committed=$(cat nova-os-sdk/openapi/openapi-hash.txt)
           if [ "$actual" != "$committed" ]; then
             echo "::error::nova-os-sdk@main has unsynced spec hash (committed=$committed actual=$actual). Open a PR on nova-os-sdk."

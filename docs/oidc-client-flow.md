@@ -9,7 +9,7 @@ end-user login is a separate auth contract, documented here, and consumed by the
 OIDC helper in each client kit (it is **not** generated from the OpenAPI spec).
 
 Once a client holds an access token from this flow, it sets it as the `Bearer` token on every
-REST call described by `openapi/nova-os-partner.v1.yaml`.
+REST call described by `openapi/libra-os-partner.v1.yaml`.
 
 ---
 
@@ -170,7 +170,7 @@ JWTs, so client-side clearing is the logout primitive; short token lifetimes bou
 ## 7. References
 
 - LibraOS OIDC provider — `/oauth/{authorize,login,token,userinfo}`; HS256 id_token; PKCE S256.
-- `openapi/nova-os-partner.v1.yaml` — `Deployment.auth` advertises `oidc_enabled` + `issuer`.
+- `openapi/libra-os-partner.v1.yaml` — `Deployment.auth` advertises `oidc_enabled` + `issuer`.
 - Contract-unification design — `docs/superpowers/specs/2026-06-12-contract-unification-design.md`
   (§2 "the contract is three specs", §5 libraos-sdk owns this doc, §6 refresh grant is the kernel gap).
 - RFC 7636 (PKCE), RFC 6749 §4.1 (Authorization Code), RFC 6749 §6 (Refresh grant).

@@ -6,7 +6,7 @@ Partner integration SDK for **LibraOS** — the agentic operating system that le
 
 This repo ships:
 
-- **OpenAPI spec** (`openapi/nova-os-partner.v1.yaml`) — source of truth for the partner-facing API surface.
+- **OpenAPI spec** (`openapi/libra-os-partner.v1.yaml`) — source of truth for the partner-facing API surface.
 - **CLI** (`cli/`) — single static Go binary for sync, validate, test-callback, export/import.
 - **Python SDK** (`python/`) — reference client library, published to PyPI as `libraos-sdk`.
 - **Docs** (`docs/`) — getting started, Anthropic compatibility, multi-model, web-search, custom tools.

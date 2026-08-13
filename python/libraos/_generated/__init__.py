@@ -1,4 +1,4 @@
-"""A client library for accessing Nova OS Partner API"""
+"""A client library for accessing LibraOS Partner API"""
 
 from .client import AuthenticatedClient, Client
 

@@ -313,6 +313,69 @@ func (e ErrorType) Valid() bool {
 	}
 }
 
+// Defines values for EvalCaseExpectedBehavior.
+const (
+	EvalCaseExpectedBehaviorAbstain EvalCaseExpectedBehavior = "abstain"
+	EvalCaseExpectedBehaviorAnswer  EvalCaseExpectedBehavior = "answer"
+)
+
+// Valid indicates whether the value is a known member of the EvalCaseExpectedBehavior enum.
+func (e EvalCaseExpectedBehavior) Valid() bool {
+	switch e {
+	case EvalCaseExpectedBehaviorAbstain:
+		return true
+	case EvalCaseExpectedBehaviorAnswer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EvalCaseResultFailedStage.
+const (
+	EvalCaseResultFailedStageAbstention EvalCaseResultFailedStage = "abstention"
+	EvalCaseResultFailedStageAccess     EvalCaseResultFailedStage = "access"
+	EvalCaseResultFailedStageAnswer     EvalCaseResultFailedStage = "answer"
+	EvalCaseResultFailedStageCitation   EvalCaseResultFailedStage = "citation"
+	EvalCaseResultFailedStageRetrieval  EvalCaseResultFailedStage = "retrieval"
+)
+
+// Valid indicates whether the value is a known member of the EvalCaseResultFailedStage enum.
+func (e EvalCaseResultFailedStage) Valid() bool {
+	switch e {
+	case EvalCaseResultFailedStageAbstention:
+		return true
+	case EvalCaseResultFailedStageAccess:
+		return true
+	case EvalCaseResultFailedStageAnswer:
+		return true
+	case EvalCaseResultFailedStageCitation:
+		return true
+	case EvalCaseResultFailedStageRetrieval:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EvalRunStatus.
+const (
+	EvalRunStatusCompleted EvalRunStatus = "completed"
+	EvalRunStatusRunning   EvalRunStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the EvalRunStatus enum.
+func (e EvalRunStatus) Valid() bool {
+	switch e {
+	case EvalRunStatusCompleted:
+		return true
+	case EvalRunStatusRunning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ExecutionCapabilityGovernanceMode.
 const (
 	ExecutionCapabilityGovernanceModeBrokered    ExecutionCapabilityGovernanceMode = "brokered"
@@ -696,6 +759,7 @@ const (
 	KnowledgeSignalStatusEligible    KnowledgeSignalStatus = "eligible"
 	KnowledgeSignalStatusPending     KnowledgeSignalStatus = "pending"
 	KnowledgeSignalStatusPromoted    KnowledgeSignalStatus = "promoted"
+	KnowledgeSignalStatusPublishing  KnowledgeSignalStatus = "publishing"
 	KnowledgeSignalStatusQuarantined KnowledgeSignalStatus = "quarantined"
 	KnowledgeSignalStatusRejected    KnowledgeSignalStatus = "rejected"
 	KnowledgeSignalStatusSuperseded  KnowledgeSignalStatus = "superseded"
@@ -709,6 +773,8 @@ func (e KnowledgeSignalStatus) Valid() bool {
 	case KnowledgeSignalStatusPending:
 		return true
 	case KnowledgeSignalStatusPromoted:
+		return true
+	case KnowledgeSignalStatusPublishing:
 		return true
 	case KnowledgeSignalStatusQuarantined:
 		return true
@@ -1530,6 +1596,7 @@ const (
 	ListKnowledgeSignalsParamsStatusEligible    ListKnowledgeSignalsParamsStatus = "eligible"
 	ListKnowledgeSignalsParamsStatusPending     ListKnowledgeSignalsParamsStatus = "pending"
 	ListKnowledgeSignalsParamsStatusPromoted    ListKnowledgeSignalsParamsStatus = "promoted"
+	ListKnowledgeSignalsParamsStatusPublishing  ListKnowledgeSignalsParamsStatus = "publishing"
 	ListKnowledgeSignalsParamsStatusQuarantined ListKnowledgeSignalsParamsStatus = "quarantined"
 	ListKnowledgeSignalsParamsStatusRejected    ListKnowledgeSignalsParamsStatus = "rejected"
 	ListKnowledgeSignalsParamsStatusSuperseded  ListKnowledgeSignalsParamsStatus = "superseded"
@@ -1543,6 +1610,8 @@ func (e ListKnowledgeSignalsParamsStatus) Valid() bool {
 	case ListKnowledgeSignalsParamsStatusPending:
 		return true
 	case ListKnowledgeSignalsParamsStatusPromoted:
+		return true
+	case ListKnowledgeSignalsParamsStatusPublishing:
 		return true
 	case ListKnowledgeSignalsParamsStatusQuarantined:
 		return true
@@ -2497,6 +2566,98 @@ type Error struct {
 // ErrorType defines model for Error.Type.
 type ErrorType string
 
+// EvalCase defines model for EvalCase.
+type EvalCase struct {
+	CaseId             string                   `json:"case_id"`
+	Criteria           *[]string                `json:"criteria,omitempty"`
+	ExpectedBehavior   EvalCaseExpectedBehavior `json:"expected_behavior"`
+	ExpectedSourceIds  *[]string                `json:"expected_source_ids,omitempty"`
+	ForbiddenClaims    *[]string                `json:"forbidden_claims,omitempty"`
+	ForbiddenSourceIds *[]string                `json:"forbidden_source_ids,omitempty"`
+	MaxSourceAgeDays   *int                     `json:"max_source_age_days,omitempty"`
+	Principal          *string                  `json:"principal,omitempty"`
+	Prompt             string                   `json:"prompt"`
+
+	// Reference Human-authored expected behavior; never model-generated.
+	Reference                string    `json:"reference"`
+	ReferenceAuthor          string    `json:"reference_author"`
+	ReferencePrivacyReviewed bool      `json:"reference_privacy_reviewed"`
+	ReferenceReviewer        string    `json:"reference_reviewer"`
+	RequiredClaims           *[]string `json:"required_claims,omitempty"`
+
+	// SourceCaseId Optional privacy-reviewed resolved-work reference.
+	SourceCaseId *string   `json:"source_case_id,omitempty"`
+	Tags         *[]string `json:"tags,omitempty"`
+}
+
+// EvalCaseExpectedBehavior defines model for EvalCase.ExpectedBehavior.
+type EvalCaseExpectedBehavior string
+
+// EvalCaseResult defines model for EvalCaseResult.
+type EvalCaseResult struct {
+	AbstentionPassed bool                       `json:"abstention_passed"`
+	AccessPassed     bool                       `json:"access_passed"`
+	AnswerPassed     bool                       `json:"answer_passed"`
+	CaseId           string                     `json:"case_id"`
+	CitationPassed   bool                       `json:"citation_passed"`
+	Error            *string                    `json:"error,omitempty"`
+	FailedStage      *EvalCaseResultFailedStage `json:"failed_stage,omitempty"`
+	Output           string                     `json:"output"`
+	Passed           *bool                      `json:"passed,omitempty"`
+	RetrievalPassed  bool                       `json:"retrieval_passed"`
+	ReviewerNote     *string                    `json:"reviewer_note,omitempty"`
+	Score            *float32                   `json:"score,omitempty"`
+	Sources          []EvalEvidence             `json:"sources"`
+}
+
+// EvalCaseResultFailedStage defines model for EvalCaseResult.FailedStage.
+type EvalCaseResultFailedStage string
+
+// EvalEvidence defines model for EvalEvidence.
+type EvalEvidence struct {
+	SourceId string  `json:"source_id"`
+	Version  *string `json:"version,omitempty"`
+}
+
+// EvalRun defines model for EvalRun.
+type EvalRun struct {
+	AgentId         string              `json:"agent_id"`
+	BlueprintDigest string              `json:"blueprint_digest"`
+	CompletedAt     *time.Time          `json:"completed_at,omitempty"`
+	CreatedAt       *time.Time          `json:"created_at,omitempty"`
+	KnowledgeDigest string              `json:"knowledge_digest"`
+	Metrics         *map[string]float32 `json:"metrics,omitempty"`
+	PassedCases     *int                `json:"passed_cases,omitempty"`
+	ReceiptId       *string             `json:"receipt_id,omitempty"`
+	ReleaseBlocked  *bool               `json:"release_blocked,omitempty"`
+	Results         *[]EvalCaseResult   `json:"results,omitempty"`
+	RunId           string              `json:"run_id"`
+	Score           *float32            `json:"score,omitempty"`
+	Status          EvalRunStatus       `json:"status"`
+	SuiteDigest     string              `json:"suite_digest"`
+	SuiteName       string              `json:"suite_name"`
+	SuiteRevision   int                 `json:"suite_revision"`
+	TotalCases      int                 `json:"total_cases"`
+}
+
+// EvalRunStatus defines model for EvalRun.Status.
+type EvalRunStatus string
+
+// EvalSuiteRevision defines model for EvalSuiteRevision.
+type EvalSuiteRevision struct {
+	ApprovedAt *time.Time `json:"approved_at,omitempty"`
+
+	// ApprovedBy Admin/domain-owner identity that froze this immutable revision.
+	ApprovedBy  *string     `json:"approved_by,omitempty"`
+	CaseCount   int         `json:"case_count"`
+	Cases       *[]EvalCase `json:"cases,omitempty"`
+	ContentHash string      `json:"content_hash"`
+	CreatedAt   *time.Time  `json:"created_at,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	Name        string      `json:"name"`
+	Revision    int         `json:"revision"`
+}
+
 // EvidenceDecayBucket defines model for EvidenceDecayBucket.
 type EvidenceDecayBucket struct {
 	Decisions  int     `json:"decisions"`
@@ -2613,6 +2774,9 @@ type ExtractResponse struct {
 
 	// ElapsedMs Server-side processing time in milliseconds.
 	ElapsedMs *int `json:"elapsed_ms,omitempty"`
+
+	// Metadata Parser metadata. XLSX includes an exact `sheet_count`.
+	Metadata *map[string]string `json:"metadata,omitempty"`
 
 	// Text The extracted plain text.
 	Text *string `json:"text,omitempty"`
@@ -3119,6 +3283,25 @@ type KnowledgeSignalList struct {
 
 	// Total Number of signals returned.
 	Total *int `json:"total,omitempty"`
+}
+
+// KnowledgeSignalMutation defines model for KnowledgeSignalMutation.
+type KnowledgeSignalMutation struct {
+	Receipt *KnowledgeSignalPromotionReceipt `json:"receipt,omitempty"`
+	Signal  KnowledgeSignal                  `json:"signal"`
+}
+
+// KnowledgeSignalPromotionReceipt defines model for KnowledgeSignalPromotionReceipt.
+type KnowledgeSignalPromotionReceipt struct {
+	Actor               string    `json:"actor"`
+	Audience            string    `json:"audience"`
+	Collection          string    `json:"collection"`
+	Id                  string    `json:"id"`
+	KnowledgeDocumentId string    `json:"knowledge_document_id"`
+	PublishedAt         time.Time `json:"published_at"`
+	SignalId            string    `json:"signal_id"`
+	SourceChunkId       *string   `json:"source_chunk_id,omitempty"`
+	Tenant              string    `json:"tenant"`
 }
 
 // LogEntry One log row. Stable across both sources.
@@ -4517,6 +4700,29 @@ type PutEntitlementsParams struct {
 	Tenant string `form:"tenant" json:"tenant"`
 }
 
+// StartEvalRunJSONBody defines parameters for StartEvalRun.
+type StartEvalRunJSONBody struct {
+	AgentId         string `json:"agent_id"`
+	BlueprintDigest string `json:"blueprint_digest"`
+	KnowledgeDigest string `json:"knowledge_digest"`
+	SuiteName       string `json:"suite_name"`
+
+	// SuiteRevision Zero or omitted selects the latest revision.
+	SuiteRevision *int `json:"suite_revision,omitempty"`
+}
+
+// CompleteEvalRunJSONBody defines parameters for CompleteEvalRun.
+type CompleteEvalRunJSONBody struct {
+	Results []EvalCaseResult `json:"results"`
+}
+
+// CreateEvalSuiteRevisionJSONBody defines parameters for CreateEvalSuiteRevision.
+type CreateEvalSuiteRevisionJSONBody struct {
+	Cases       []EvalCase `json:"cases"`
+	Description *string    `json:"description,omitempty"`
+	Name        string     `json:"name"`
+}
+
 // ListFieldAccessEventsParams defines parameters for ListFieldAccessEvents.
 type ListFieldAccessEventsParams struct {
 	// RecordType Filter by record type.
@@ -4583,10 +4789,27 @@ type ListKnowledgeSignalsParams struct {
 // ListKnowledgeSignalsParamsStatus defines parameters for ListKnowledgeSignals.
 type ListKnowledgeSignalsParamsStatus string
 
+// CreateKnowledgeSignalJSONBody defines parameters for CreateKnowledgeSignal.
+type CreateKnowledgeSignalJSONBody struct {
+	App     *string `json:"app,omitempty"`
+	Content string  `json:"content"`
+	FactKey string  `json:"fact_key"`
+
+	// IdempotencyKey Stable caller key; retries return the same pending signal.
+	IdempotencyKey string  `json:"idempotency_key"`
+	SourceChunkId  *string `json:"source_chunk_id,omitempty"`
+}
+
 // ListPromotionCandidatesParams defines parameters for ListPromotionCandidates.
 type ListPromotionCandidatesParams struct {
 	// Tenant Admin override to read another tenant's candidates. Defaults to the caller's tenant.
 	Tenant *string `form:"tenant,omitempty" json:"tenant,omitempty"`
+}
+
+// PromoteKnowledgeSignalJSONBody defines parameters for PromoteKnowledgeSignal.
+type PromoteKnowledgeSignalJSONBody struct {
+	Audience   *string `json:"audience,omitempty"`
+	Collection *string `json:"collection,omitempty"`
 }
 
 // GetLogsParams defines parameters for GetLogs.
@@ -4800,6 +5023,15 @@ type PutEntitlementsJSONRequestBody = EntitlementsUpdate
 // PutTenantEntitlementsJSONRequestBody defines body for PutTenantEntitlements for application/json ContentType.
 type PutTenantEntitlementsJSONRequestBody = EntitlementsUpdate
 
+// StartEvalRunJSONRequestBody defines body for StartEvalRun for application/json ContentType.
+type StartEvalRunJSONRequestBody StartEvalRunJSONBody
+
+// CompleteEvalRunJSONRequestBody defines body for CompleteEvalRun for application/json ContentType.
+type CompleteEvalRunJSONRequestBody CompleteEvalRunJSONBody
+
+// CreateEvalSuiteRevisionJSONRequestBody defines body for CreateEvalSuiteRevision for application/json ContentType.
+type CreateEvalSuiteRevisionJSONRequestBody CreateEvalSuiteRevisionJSONBody
+
 // UpdateFieldPolicyJSONRequestBody defines body for UpdateFieldPolicy for application/json ContentType.
 type UpdateFieldPolicyJSONRequestBody = FieldPolicy
 
@@ -4814,6 +5046,12 @@ type AddGroupMemberJSONRequestBody = AddGroupMemberRequest
 
 // CreateHookJSONRequestBody defines body for CreateHook for application/json ContentType.
 type CreateHookJSONRequestBody = HookSubscriptionCreate
+
+// CreateKnowledgeSignalJSONRequestBody defines body for CreateKnowledgeSignal for application/json ContentType.
+type CreateKnowledgeSignalJSONRequestBody CreateKnowledgeSignalJSONBody
+
+// PromoteKnowledgeSignalJSONRequestBody defines body for PromoteKnowledgeSignal for application/json ContentType.
+type PromoteKnowledgeSignalJSONRequestBody PromoteKnowledgeSignalJSONBody
 
 // IngestKnowledgeJSONRequestBody defines body for IngestKnowledge for application/json ContentType.
 type IngestKnowledgeJSONRequestBody = KnowledgeIngestRequest
@@ -6436,6 +6674,33 @@ type ClientInterface interface {
 
 	PutTenantEntitlements(ctx context.Context, tenant string, body PutTenantEntitlementsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListEvalRuns request
+	ListEvalRuns(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartEvalRunWithBody request with any body
+	StartEvalRunWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	StartEvalRun(ctx context.Context, body StartEvalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetEvalRun request
+	GetEvalRun(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompleteEvalRunWithBody request with any body
+	CompleteEvalRunWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CompleteEvalRun(ctx context.Context, id string, body CompleteEvalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListEvalSuites request
+	ListEvalSuites(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateEvalSuiteRevisionWithBody request with any body
+	CreateEvalSuiteRevisionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateEvalSuiteRevision(ctx context.Context, body CreateEvalSuiteRevisionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetEvalSuiteRevision request
+	GetEvalSuiteRevision(ctx context.Context, name string, revision int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetFeatures request
 	GetFeatures(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6515,8 +6780,21 @@ type ClientInterface interface {
 	// ListKnowledgeSignals request
 	ListKnowledgeSignals(ctx context.Context, params *ListKnowledgeSignalsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateKnowledgeSignalWithBody request with any body
+	CreateKnowledgeSignalWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateKnowledgeSignal(ctx context.Context, body CreateKnowledgeSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListPromotionCandidates request
 	ListPromotionCandidates(ctx context.Context, params *ListPromotionCandidatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PromoteKnowledgeSignalWithBody request with any body
+	PromoteKnowledgeSignalWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PromoteKnowledgeSignal(ctx context.Context, id string, body PromoteKnowledgeSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RejectKnowledgeSignal request
+	RejectKnowledgeSignal(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListKnowledgeCollections request
 	ListKnowledgeCollections(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8447,6 +8725,126 @@ func (c *Client) PutTenantEntitlements(ctx context.Context, tenant string, body 
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListEvalRuns(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListEvalRunsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartEvalRunWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartEvalRunRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartEvalRun(ctx context.Context, body StartEvalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartEvalRunRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEvalRun(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEvalRunRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CompleteEvalRunWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteEvalRunRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CompleteEvalRun(ctx context.Context, id string, body CompleteEvalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteEvalRunRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListEvalSuites(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListEvalSuitesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateEvalSuiteRevisionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEvalSuiteRevisionRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateEvalSuiteRevision(ctx context.Context, body CreateEvalSuiteRevisionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEvalSuiteRevisionRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEvalSuiteRevision(ctx context.Context, name string, revision int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEvalSuiteRevisionRequest(c.Server, name, revision)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetFeatures(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetFeaturesRequest(c.Server)
 	if err != nil {
@@ -8783,8 +9181,68 @@ func (c *Client) ListKnowledgeSignals(ctx context.Context, params *ListKnowledge
 	return c.Client.Do(req)
 }
 
+func (c *Client) CreateKnowledgeSignalWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateKnowledgeSignalRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateKnowledgeSignal(ctx context.Context, body CreateKnowledgeSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateKnowledgeSignalRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListPromotionCandidates(ctx context.Context, params *ListPromotionCandidatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPromotionCandidatesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PromoteKnowledgeSignalWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPromoteKnowledgeSignalRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PromoteKnowledgeSignal(ctx context.Context, id string, body PromoteKnowledgeSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPromoteKnowledgeSignalRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RejectKnowledgeSignal(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRejectKnowledgeSignalRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -13924,6 +14382,262 @@ func NewPutTenantEntitlementsRequestWithBody(server string, tenant string, conte
 	return req, nil
 }
 
+// NewListEvalRunsRequest generates requests for ListEvalRuns
+func NewListEvalRunsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/evals/runs")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStartEvalRunRequest calls the generic StartEvalRun builder with application/json body
+func NewStartEvalRunRequest(server string, body StartEvalRunJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewStartEvalRunRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewStartEvalRunRequestWithBody generates requests for StartEvalRun with any type of body
+func NewStartEvalRunRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/evals/runs")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetEvalRunRequest generates requests for GetEvalRun
+func NewGetEvalRunRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/evals/runs/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCompleteEvalRunRequest calls the generic CompleteEvalRun builder with application/json body
+func NewCompleteEvalRunRequest(server string, id string, body CompleteEvalRunJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCompleteEvalRunRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewCompleteEvalRunRequestWithBody generates requests for CompleteEvalRun with any type of body
+func NewCompleteEvalRunRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/evals/runs/%s/complete", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListEvalSuitesRequest generates requests for ListEvalSuites
+func NewListEvalSuitesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/evals/suites")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateEvalSuiteRevisionRequest calls the generic CreateEvalSuiteRevision builder with application/json body
+func NewCreateEvalSuiteRevisionRequest(server string, body CreateEvalSuiteRevisionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateEvalSuiteRevisionRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateEvalSuiteRevisionRequestWithBody generates requests for CreateEvalSuiteRevision with any type of body
+func NewCreateEvalSuiteRevisionRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/evals/suites")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetEvalSuiteRevisionRequest generates requests for GetEvalSuiteRevision
+func NewGetEvalSuiteRevisionRequest(server string, name string, revision int) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "name", name, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "revision", revision, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/evals/suites/%s/revisions/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetFeaturesRequest generates requests for GetFeatures
 func NewGetFeaturesRequest(server string) (*http.Request, error) {
 	var err error
@@ -15060,6 +15774,46 @@ func NewListKnowledgeSignalsRequest(server string, params *ListKnowledgeSignalsP
 	return req, nil
 }
 
+// NewCreateKnowledgeSignalRequest calls the generic CreateKnowledgeSignal builder with application/json body
+func NewCreateKnowledgeSignalRequest(server string, body CreateKnowledgeSignalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateKnowledgeSignalRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateKnowledgeSignalRequestWithBody generates requests for CreateKnowledgeSignal with any type of body
+func NewCreateKnowledgeSignalRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/knowledge-signals")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListPromotionCandidatesRequest generates requests for ListPromotionCandidates
 func NewListPromotionCandidatesRequest(server string, params *ListPromotionCandidatesParams) (*http.Request, error) {
 	var err error
@@ -15102,6 +15856,87 @@ func NewListPromotionCandidatesRequest(server string, params *ListPromotionCandi
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPromoteKnowledgeSignalRequest calls the generic PromoteKnowledgeSignal builder with application/json body
+func NewPromoteKnowledgeSignalRequest(server string, id string, body PromoteKnowledgeSignalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPromoteKnowledgeSignalRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPromoteKnowledgeSignalRequestWithBody generates requests for PromoteKnowledgeSignal with any type of body
+func NewPromoteKnowledgeSignalRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/knowledge-signals/%s/promote", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRejectKnowledgeSignalRequest generates requests for RejectKnowledgeSignal
+func NewRejectKnowledgeSignalRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/managed/knowledge-signals/%s/reject", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -16382,6 +17217,33 @@ type ClientWithResponsesInterface interface {
 
 	PutTenantEntitlementsWithResponse(ctx context.Context, tenant string, body PutTenantEntitlementsJSONRequestBody, reqEditors ...RequestEditorFn) (*PutTenantEntitlementsResponse, error)
 
+	// ListEvalRunsWithResponse request
+	ListEvalRunsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEvalRunsResponse, error)
+
+	// StartEvalRunWithBodyWithResponse request with any body
+	StartEvalRunWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartEvalRunResponse, error)
+
+	StartEvalRunWithResponse(ctx context.Context, body StartEvalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*StartEvalRunResponse, error)
+
+	// GetEvalRunWithResponse request
+	GetEvalRunWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetEvalRunResponse, error)
+
+	// CompleteEvalRunWithBodyWithResponse request with any body
+	CompleteEvalRunWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteEvalRunResponse, error)
+
+	CompleteEvalRunWithResponse(ctx context.Context, id string, body CompleteEvalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteEvalRunResponse, error)
+
+	// ListEvalSuitesWithResponse request
+	ListEvalSuitesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEvalSuitesResponse, error)
+
+	// CreateEvalSuiteRevisionWithBodyWithResponse request with any body
+	CreateEvalSuiteRevisionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEvalSuiteRevisionResponse, error)
+
+	CreateEvalSuiteRevisionWithResponse(ctx context.Context, body CreateEvalSuiteRevisionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEvalSuiteRevisionResponse, error)
+
+	// GetEvalSuiteRevisionWithResponse request
+	GetEvalSuiteRevisionWithResponse(ctx context.Context, name string, revision int, reqEditors ...RequestEditorFn) (*GetEvalSuiteRevisionResponse, error)
+
 	// GetFeaturesWithResponse request
 	GetFeaturesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFeaturesResponse, error)
 
@@ -16461,8 +17323,21 @@ type ClientWithResponsesInterface interface {
 	// ListKnowledgeSignalsWithResponse request
 	ListKnowledgeSignalsWithResponse(ctx context.Context, params *ListKnowledgeSignalsParams, reqEditors ...RequestEditorFn) (*ListKnowledgeSignalsResponse, error)
 
+	// CreateKnowledgeSignalWithBodyWithResponse request with any body
+	CreateKnowledgeSignalWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateKnowledgeSignalResponse, error)
+
+	CreateKnowledgeSignalWithResponse(ctx context.Context, body CreateKnowledgeSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateKnowledgeSignalResponse, error)
+
 	// ListPromotionCandidatesWithResponse request
 	ListPromotionCandidatesWithResponse(ctx context.Context, params *ListPromotionCandidatesParams, reqEditors ...RequestEditorFn) (*ListPromotionCandidatesResponse, error)
+
+	// PromoteKnowledgeSignalWithBodyWithResponse request with any body
+	PromoteKnowledgeSignalWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PromoteKnowledgeSignalResponse, error)
+
+	PromoteKnowledgeSignalWithResponse(ctx context.Context, id string, body PromoteKnowledgeSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*PromoteKnowledgeSignalResponse, error)
+
+	// RejectKnowledgeSignalWithResponse request
+	RejectKnowledgeSignalWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*RejectKnowledgeSignalResponse, error)
 
 	// ListKnowledgeCollectionsWithResponse request
 	ListKnowledgeCollectionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListKnowledgeCollectionsResponse, error)
@@ -19389,6 +20264,175 @@ func (r PutTenantEntitlementsResponse) StatusCode() int {
 	return 0
 }
 
+type ListEvalRunsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Runs *[]EvalRun `json:"runs,omitempty"`
+	}
+	JSON403 *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListEvalRunsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListEvalRunsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type StartEvalRunResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *EvalRun
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r StartEvalRunResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartEvalRunResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetEvalRunResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EvalRun
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEvalRunResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEvalRunResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CompleteEvalRunResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON409      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r CompleteEvalRunResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CompleteEvalRunResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListEvalSuitesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Suites *[]EvalSuiteRevision `json:"suites,omitempty"`
+	}
+	JSON403 *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListEvalSuitesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListEvalSuitesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateEvalSuiteRevisionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateEvalSuiteRevisionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateEvalSuiteRevisionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetEvalSuiteRevisionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EvalSuiteRevision
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEvalSuiteRevisionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEvalSuiteRevisionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetFeaturesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -19979,6 +21023,33 @@ func (r ListKnowledgeSignalsResponse) StatusCode() int {
 	return 0
 }
 
+type CreateKnowledgeSignalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *KnowledgeSignalMutation
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON429      *RateLimited
+	JSON503      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateKnowledgeSignalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateKnowledgeSignalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListPromotionCandidatesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -19999,6 +21070,63 @@ func (r ListPromotionCandidatesResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListPromotionCandidatesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PromoteKnowledgeSignalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *KnowledgeSignalMutation
+	JSON202      *KnowledgeSignalMutation
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Error
+	JSON429      *RateLimited
+	JSON503      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r PromoteKnowledgeSignalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PromoteKnowledgeSignalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RejectKnowledgeSignalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *KnowledgeSignalMutation
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Error
+	JSON429      *RateLimited
+	JSON503      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r RejectKnowledgeSignalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RejectKnowledgeSignalResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -21794,6 +22922,93 @@ func (c *ClientWithResponses) PutTenantEntitlementsWithResponse(ctx context.Cont
 	return ParsePutTenantEntitlementsResponse(rsp)
 }
 
+// ListEvalRunsWithResponse request returning *ListEvalRunsResponse
+func (c *ClientWithResponses) ListEvalRunsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEvalRunsResponse, error) {
+	rsp, err := c.ListEvalRuns(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListEvalRunsResponse(rsp)
+}
+
+// StartEvalRunWithBodyWithResponse request with arbitrary body returning *StartEvalRunResponse
+func (c *ClientWithResponses) StartEvalRunWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartEvalRunResponse, error) {
+	rsp, err := c.StartEvalRunWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartEvalRunResponse(rsp)
+}
+
+func (c *ClientWithResponses) StartEvalRunWithResponse(ctx context.Context, body StartEvalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*StartEvalRunResponse, error) {
+	rsp, err := c.StartEvalRun(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartEvalRunResponse(rsp)
+}
+
+// GetEvalRunWithResponse request returning *GetEvalRunResponse
+func (c *ClientWithResponses) GetEvalRunWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetEvalRunResponse, error) {
+	rsp, err := c.GetEvalRun(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEvalRunResponse(rsp)
+}
+
+// CompleteEvalRunWithBodyWithResponse request with arbitrary body returning *CompleteEvalRunResponse
+func (c *ClientWithResponses) CompleteEvalRunWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteEvalRunResponse, error) {
+	rsp, err := c.CompleteEvalRunWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteEvalRunResponse(rsp)
+}
+
+func (c *ClientWithResponses) CompleteEvalRunWithResponse(ctx context.Context, id string, body CompleteEvalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteEvalRunResponse, error) {
+	rsp, err := c.CompleteEvalRun(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteEvalRunResponse(rsp)
+}
+
+// ListEvalSuitesWithResponse request returning *ListEvalSuitesResponse
+func (c *ClientWithResponses) ListEvalSuitesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListEvalSuitesResponse, error) {
+	rsp, err := c.ListEvalSuites(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListEvalSuitesResponse(rsp)
+}
+
+// CreateEvalSuiteRevisionWithBodyWithResponse request with arbitrary body returning *CreateEvalSuiteRevisionResponse
+func (c *ClientWithResponses) CreateEvalSuiteRevisionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEvalSuiteRevisionResponse, error) {
+	rsp, err := c.CreateEvalSuiteRevisionWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEvalSuiteRevisionResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateEvalSuiteRevisionWithResponse(ctx context.Context, body CreateEvalSuiteRevisionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEvalSuiteRevisionResponse, error) {
+	rsp, err := c.CreateEvalSuiteRevision(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEvalSuiteRevisionResponse(rsp)
+}
+
+// GetEvalSuiteRevisionWithResponse request returning *GetEvalSuiteRevisionResponse
+func (c *ClientWithResponses) GetEvalSuiteRevisionWithResponse(ctx context.Context, name string, revision int, reqEditors ...RequestEditorFn) (*GetEvalSuiteRevisionResponse, error) {
+	rsp, err := c.GetEvalSuiteRevision(ctx, name, revision, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEvalSuiteRevisionResponse(rsp)
+}
+
 // GetFeaturesWithResponse request returning *GetFeaturesResponse
 func (c *ClientWithResponses) GetFeaturesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFeaturesResponse, error) {
 	rsp, err := c.GetFeatures(ctx, reqEditors...)
@@ -22041,6 +23256,23 @@ func (c *ClientWithResponses) ListKnowledgeSignalsWithResponse(ctx context.Conte
 	return ParseListKnowledgeSignalsResponse(rsp)
 }
 
+// CreateKnowledgeSignalWithBodyWithResponse request with arbitrary body returning *CreateKnowledgeSignalResponse
+func (c *ClientWithResponses) CreateKnowledgeSignalWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateKnowledgeSignalResponse, error) {
+	rsp, err := c.CreateKnowledgeSignalWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateKnowledgeSignalResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateKnowledgeSignalWithResponse(ctx context.Context, body CreateKnowledgeSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateKnowledgeSignalResponse, error) {
+	rsp, err := c.CreateKnowledgeSignal(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateKnowledgeSignalResponse(rsp)
+}
+
 // ListPromotionCandidatesWithResponse request returning *ListPromotionCandidatesResponse
 func (c *ClientWithResponses) ListPromotionCandidatesWithResponse(ctx context.Context, params *ListPromotionCandidatesParams, reqEditors ...RequestEditorFn) (*ListPromotionCandidatesResponse, error) {
 	rsp, err := c.ListPromotionCandidates(ctx, params, reqEditors...)
@@ -22048,6 +23280,32 @@ func (c *ClientWithResponses) ListPromotionCandidatesWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseListPromotionCandidatesResponse(rsp)
+}
+
+// PromoteKnowledgeSignalWithBodyWithResponse request with arbitrary body returning *PromoteKnowledgeSignalResponse
+func (c *ClientWithResponses) PromoteKnowledgeSignalWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PromoteKnowledgeSignalResponse, error) {
+	rsp, err := c.PromoteKnowledgeSignalWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePromoteKnowledgeSignalResponse(rsp)
+}
+
+func (c *ClientWithResponses) PromoteKnowledgeSignalWithResponse(ctx context.Context, id string, body PromoteKnowledgeSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*PromoteKnowledgeSignalResponse, error) {
+	rsp, err := c.PromoteKnowledgeSignal(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePromoteKnowledgeSignalResponse(rsp)
+}
+
+// RejectKnowledgeSignalWithResponse request returning *RejectKnowledgeSignalResponse
+func (c *ClientWithResponses) RejectKnowledgeSignalWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*RejectKnowledgeSignalResponse, error) {
+	rsp, err := c.RejectKnowledgeSignal(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRejectKnowledgeSignalResponse(rsp)
 }
 
 // ListKnowledgeCollectionsWithResponse request returning *ListKnowledgeCollectionsResponse
@@ -27553,6 +28811,269 @@ func ParsePutTenantEntitlementsResponse(rsp *http.Response) (*PutTenantEntitleme
 	return response, nil
 }
 
+// ParseListEvalRunsResponse parses an HTTP response from a ListEvalRunsWithResponse call
+func ParseListEvalRunsResponse(rsp *http.Response) (*ListEvalRunsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListEvalRunsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Runs *[]EvalRun `json:"runs,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartEvalRunResponse parses an HTTP response from a StartEvalRunWithResponse call
+func ParseStartEvalRunResponse(rsp *http.Response) (*StartEvalRunResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartEvalRunResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest EvalRun
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetEvalRunResponse parses an HTTP response from a GetEvalRunWithResponse call
+func ParseGetEvalRunResponse(rsp *http.Response) (*GetEvalRunResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEvalRunResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EvalRun
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCompleteEvalRunResponse parses an HTTP response from a CompleteEvalRunWithResponse call
+func ParseCompleteEvalRunResponse(rsp *http.Response) (*CompleteEvalRunResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CompleteEvalRunResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListEvalSuitesResponse parses an HTTP response from a ListEvalSuitesWithResponse call
+func ParseListEvalSuitesResponse(rsp *http.Response) (*ListEvalSuitesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListEvalSuitesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Suites *[]EvalSuiteRevision `json:"suites,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateEvalSuiteRevisionResponse parses an HTTP response from a CreateEvalSuiteRevisionWithResponse call
+func ParseCreateEvalSuiteRevisionResponse(rsp *http.Response) (*CreateEvalSuiteRevisionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateEvalSuiteRevisionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetEvalSuiteRevisionResponse parses an HTTP response from a GetEvalSuiteRevisionWithResponse call
+func ParseGetEvalSuiteRevisionResponse(rsp *http.Response) (*GetEvalSuiteRevisionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEvalSuiteRevisionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EvalSuiteRevision
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetFeaturesResponse parses an HTTP response from a GetFeaturesWithResponse call
 func ParseGetFeaturesResponse(rsp *http.Response) (*GetFeaturesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -28670,6 +30191,67 @@ func ParseListKnowledgeSignalsResponse(rsp *http.Response) (*ListKnowledgeSignal
 	return response, nil
 }
 
+// ParseCreateKnowledgeSignalResponse parses an HTTP response from a CreateKnowledgeSignalWithResponse call
+func ParseCreateKnowledgeSignalResponse(rsp *http.Response) (*CreateKnowledgeSignalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateKnowledgeSignalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest KnowledgeSignalMutation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListPromotionCandidatesResponse parses an HTTP response from a ListPromotionCandidatesWithResponse call
 func ParseListPromotionCandidatesResponse(rsp *http.Response) (*ListPromotionCandidatesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -28704,6 +30286,149 @@ func ParseListPromotionCandidatesResponse(rsp *http.Response) (*ListPromotionCan
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePromoteKnowledgeSignalResponse parses an HTTP response from a PromoteKnowledgeSignalWithResponse call
+func ParsePromoteKnowledgeSignalResponse(rsp *http.Response) (*PromoteKnowledgeSignalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PromoteKnowledgeSignalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest KnowledgeSignalMutation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest KnowledgeSignalMutation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRejectKnowledgeSignalResponse parses an HTTP response from a RejectKnowledgeSignalWithResponse call
+func ParseRejectKnowledgeSignalResponse(rsp *http.Response) (*RejectKnowledgeSignalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RejectKnowledgeSignalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest KnowledgeSignalMutation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest RateLimited

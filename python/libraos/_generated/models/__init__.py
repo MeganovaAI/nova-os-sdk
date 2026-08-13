@@ -58,6 +58,7 @@ from .chat_completion_response_persisted_state import ChatCompletionResponsePers
 from .chat_completion_usage import ChatCompletionUsage
 from .chat_message import ChatMessage
 from .claim_action_response_409 import ClaimActionResponse409
+from .complete_eval_run_body import CompleteEvalRunBody
 from .connector import Connector
 from .connector_config import ConnectorConfig
 from .connector_credentials import ConnectorCredentials
@@ -87,7 +88,9 @@ from .create_action_request_input import CreateActionRequestInput
 from .create_action_request_preview import CreateActionRequestPreview
 from .create_action_request_risk import CreateActionRequestRisk
 from .create_agent_key_body import CreateAgentKeyBody
+from .create_eval_suite_revision_body import CreateEvalSuiteRevisionBody
 from .create_group_request import CreateGroupRequest
+from .create_knowledge_signal_body import CreateKnowledgeSignalBody
 from .create_service_key_request import CreateServiceKeyRequest
 from .custom_tool import CustomTool
 from .custom_tool_callback import CustomToolCallback
@@ -115,6 +118,15 @@ from .entitlements_update import EntitlementsUpdate
 from .entitlements_update_flags import EntitlementsUpdateFlags
 from .error import Error
 from .error_type import ErrorType
+from .eval_case import EvalCase
+from .eval_case_expected_behavior import EvalCaseExpectedBehavior
+from .eval_case_result import EvalCaseResult
+from .eval_case_result_failed_stage import EvalCaseResultFailedStage
+from .eval_evidence import EvalEvidence
+from .eval_run import EvalRun
+from .eval_run_metrics import EvalRunMetrics
+from .eval_run_status import EvalRunStatus
+from .eval_suite_revision import EvalSuiteRevision
 from .evaluate_and_issue_authorization_grant_body import EvaluateAndIssueAuthorizationGrantBody
 from .evaluate_and_issue_authorization_grant_response_201 import EvaluateAndIssueAuthorizationGrantResponse201
 from .evaluate_and_issue_authorization_grant_response_422 import EvaluateAndIssueAuthorizationGrantResponse422
@@ -142,6 +154,7 @@ from .execution_receipt_verification_status import ExecutionReceiptVerificationS
 from .extract_document_files_body import ExtractDocumentFilesBody
 from .extract_request import ExtractRequest
 from .extract_response import ExtractResponse
+from .extract_response_metadata import ExtractResponseMetadata
 from .feature_list import FeatureList
 from .feature_status import FeatureStatus
 from .feature_status_resolved_from import FeatureStatusResolvedFrom
@@ -217,10 +230,14 @@ from .knowledge_search_request import KnowledgeSearchRequest
 from .knowledge_search_response import KnowledgeSearchResponse
 from .knowledge_signal import KnowledgeSignal
 from .knowledge_signal_list import KnowledgeSignalList
+from .knowledge_signal_mutation import KnowledgeSignalMutation
+from .knowledge_signal_promotion_receipt import KnowledgeSignalPromotionReceipt
 from .knowledge_signal_status import KnowledgeSignalStatus
 from .list_actions_status import ListActionsStatus
 from .list_authorization_grants_response_200 import ListAuthorizationGrantsResponse200
 from .list_authorization_intents_response_200 import ListAuthorizationIntentsResponse200
+from .list_eval_runs_response_200 import ListEvalRunsResponse200
+from .list_eval_suites_response_200 import ListEvalSuitesResponse200
 from .list_files_recursive import ListFilesRecursive
 from .list_knowledge_signals_status import ListKnowledgeSignalsStatus
 from .list_settings_response_200 import ListSettingsResponse200
@@ -284,6 +301,7 @@ from .persona_manifest_entry import PersonaManifestEntry
 from .persona_manifest_entry_emits_route_hint_kinds_item import PersonaManifestEntryEmitsRouteHintKindsItem
 from .persona_not_found_error import PersonaNotFoundError
 from .persona_triage import PersonaTriage
+from .promote_knowledge_signal_body import PromoteKnowledgeSignalBody
 from .promotion_candidates import PromotionCandidates
 from .put_connector_response_200 import PutConnectorResponse200
 from .put_house_profile_response_409 import PutHouseProfileResponse409
@@ -323,6 +341,7 @@ from .setting_value import SettingValue
 from .skill import Skill
 from .skill_run_response import SkillRunResponse
 from .speech_request import SpeechRequest
+from .start_eval_run_body import StartEvalRunBody
 from .stream_event_custom_tool_use import StreamEventCustomToolUse
 from .stream_event_custom_tool_use_input import StreamEventCustomToolUseInput
 from .stream_event_custom_tool_use_type import StreamEventCustomToolUseType
@@ -436,6 +455,7 @@ __all__ = (
     "ChatCompletionUsage",
     "ChatMessage",
     "ClaimActionResponse409",
+    "CompleteEvalRunBody",
     "Connector",
     "ConnectorConfig",
     "ConnectorCredentials",
@@ -465,7 +485,9 @@ __all__ = (
     "CreateActionRequestPreview",
     "CreateActionRequestRisk",
     "CreateAgentKeyBody",
+    "CreateEvalSuiteRevisionBody",
     "CreateGroupRequest",
+    "CreateKnowledgeSignalBody",
     "CreateServiceKeyRequest",
     "CustomTool",
     "CustomToolCallback",
@@ -493,6 +515,15 @@ __all__ = (
     "EntitlementsUpdateFlags",
     "Error",
     "ErrorType",
+    "EvalCase",
+    "EvalCaseExpectedBehavior",
+    "EvalCaseResult",
+    "EvalCaseResultFailedStage",
+    "EvalEvidence",
+    "EvalRun",
+    "EvalRunMetrics",
+    "EvalRunStatus",
+    "EvalSuiteRevision",
     "EvaluateAndIssueAuthorizationGrantBody",
     "EvaluateAndIssueAuthorizationGrantResponse201",
     "EvaluateAndIssueAuthorizationGrantResponse422",
@@ -518,6 +549,7 @@ __all__ = (
     "ExtractDocumentFilesBody",
     "ExtractRequest",
     "ExtractResponse",
+    "ExtractResponseMetadata",
     "FeatureList",
     "FeatureStatus",
     "FeatureStatusResolvedFrom",
@@ -593,10 +625,14 @@ __all__ = (
     "KnowledgeSearchResponse",
     "KnowledgeSignal",
     "KnowledgeSignalList",
+    "KnowledgeSignalMutation",
+    "KnowledgeSignalPromotionReceipt",
     "KnowledgeSignalStatus",
     "ListActionsStatus",
     "ListAuthorizationGrantsResponse200",
     "ListAuthorizationIntentsResponse200",
+    "ListEvalRunsResponse200",
+    "ListEvalSuitesResponse200",
     "ListFilesRecursive",
     "ListKnowledgeSignalsStatus",
     "ListSettingsResponse200",
@@ -660,6 +696,7 @@ __all__ = (
     "PersonaManifestEntryEmitsRouteHintKindsItem",
     "PersonaNotFoundError",
     "PersonaTriage",
+    "PromoteKnowledgeSignalBody",
     "PromotionCandidates",
     "PutConnectorResponse200",
     "PutHouseProfileResponse409",
@@ -699,6 +736,7 @@ __all__ = (
     "Skill",
     "SkillRunResponse",
     "SpeechRequest",
+    "StartEvalRunBody",
     "StreamEventCustomToolUse",
     "StreamEventCustomToolUseInput",
     "StreamEventCustomToolUseType",
