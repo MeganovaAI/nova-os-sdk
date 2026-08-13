@@ -38,7 +38,7 @@ only the first exists today:
 
 | Contract | Source of truth | Today |
 |---|---|---|
-| **REST data** (agents, messages, jobs, documents, sessions, knowledge) | `openapi/nova-os-partner.v1.yaml` (2,207 lines) | ✅ exists, rich |
+| **REST data** (agents, messages, jobs, documents, sessions, knowledge) | `openapi/libra-os-partner.v1.yaml` (2,207 lines) | ✅ exists, rich |
 | **Auth** (interactive login) | OIDC `/oauth/*` (Auth-Code + PKCE + refresh) — deliberately **not** in the OpenAPI spec (`bearerAuth` assumes a partner-minted JWT) | ⚠️ separate, undocumented in the SDK |
 | **Streaming** (chat events) | AG-UI event shape | ⚠️ separate, no typed artifact |
 
@@ -46,7 +46,7 @@ only the first exists today:
 contracts (OIDC flow, AG-UI events) are shared **specs/helpers**, not generated from OpenAPI.
 
 ```
-libraos-sdk/openapi/nova-os-partner.v1.yaml   ── REST source of truth
+libraos-sdk/openapi/libra-os-partner.v1.yaml   ── REST source of truth
         │  (codegen)
         ├── TS client-kit   →  employee-ui (web) + school-ui
         └── Swift NovaOSClient →  nova-ios   (replaces the "assumed" /api/v1)
@@ -83,7 +83,7 @@ This is the single decision that stops nova-ios's invented contract from leaking
 ## 5. Per-repo responsibilities
 
 **`libraos-sdk` (owner)**
-- Keep `openapi/nova-os-partner.v1.yaml` the REST truth; gap-fill the shapes both clients need
+- Keep `openapi/libra-os-partner.v1.yaml` the REST truth; gap-fill the shapes both clients need
   (deployment/capabilities; confirm `sessions`, `documents/upload`, `agents/jobs`, `messages`).
 - Add two hand-authored shared artifacts:
   - **`docs/oidc-client-flow.md`** — Auth-Code+PKCE+refresh sequence, client registration
@@ -144,7 +144,7 @@ This is the single decision that stops nova-ios's invented contract from leaking
 
 - `nova-os` CLAUDE.md §"Kernel discipline" (#361); `docs/research/technology/is-nova-os-a-kernel/`
 - `nova-os` `docs/architecture/nova-os-is-a-kernel.md`
-- `libraos-sdk/openapi/nova-os-partner.v1.yaml` (REST truth)
+- `libraos-sdk/openapi/libra-os-partner.v1.yaml` (REST truth)
 - `nova-ios` `docs/superpowers/specs/2026-06-11-nova-os-connectivity-design.md` (the *assumed* contract)
 - `nova-os` branch `feat/oidc-ios-client`; `nova-os-school` branch `feat/i5-oidc-refresh`
 - `nova-os-school/services/school-ui` (the built web reference to extract the TS kit from)

@@ -3,7 +3,7 @@
  *
  * Three layers, mirroring the Python SDK split (generated types + hand-written
  * ergonomics):
- *  - generated REST types from `openapi/nova-os-partner.v1.yaml` (re-exported as `components`/`paths`);
+ *  - generated REST types from `openapi/libra-os-partner.v1.yaml` (re-exported as `components`/`paths`);
  *  - an OIDC Auth-Code+PKCE+refresh helper (public-client, transport-agnostic);
  *  - AG-UI streaming event types + a typed SSE parser;
  *  - a thin {@link NovaClient} tying them together (Bearer + refresh-on-401).
@@ -35,6 +35,10 @@ export {
   type Collection,
   type CreateAgentRequest,
   type KnowledgeSignal,
+  type KnowledgeSignalPromotionReceipt,
+  type KnowledgeSignalMutation,
+  type DocumentExtraction,
+  type DocumentOcr,
   type User,
   type PendingAction,
   type AuthorizationDataScope,

@@ -1,6 +1,6 @@
 .PHONY: spec-validate spec-lint spec-hash spec-check codegen-go codegen-python codegen-ts smoke
 
-SPEC := openapi/nova-os-partner.v1.yaml
+SPEC := openapi/libra-os-partner.v1.yaml
 HASH_FILE := openapi/openapi-hash.txt
 
 spec-validate:
@@ -31,7 +31,7 @@ codegen-python:
 	  openapi-python-client generate --path ../$(SPEC) --overwrite \
 	    --config openapi-python-client.yaml && \
 	  mv libraos-sdk-generated/libraos._generated libraos/_generated && \
-	  rm -rf nova-os-sdk-generated
+	  rm -rf libraos-sdk-generated
 
 codegen-ts:
 	cd clients/typescript && npm run codegen
@@ -41,4 +41,4 @@ smoke:
 	$(MAKE) codegen-go
 	$(MAKE) codegen-python
 	cd cli && go build ./...
-	cd python && python -c "import nova_os; print('import ok')"
+	cd python && python -c "import libraos; print('import ok')"

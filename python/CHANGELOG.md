@@ -159,7 +159,7 @@ Every Python public surface, including the wire formats for HMAC signing, SSE ev
 - `c.settings` resource (admin-only)
 - `nova-os-cli logs` subcommand
 - `nova-os-cli sync --prune` (destructive sync)
-- TypeScript / Rust / Go-direct client SDKs — codegen from `openapi/nova-os-partner.v1.yaml` if needed
+- TypeScript / Rust / Go-direct client SDKs — codegen from `openapi/libra-os-partner.v1.yaml` if needed
 
 ## [0.9.0rc1] — 2026-05-01
 

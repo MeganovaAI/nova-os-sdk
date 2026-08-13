@@ -964,6 +964,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/managed/evals/suites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the latest immutable evaluation suite revisions */
+        get: operations["listEvalSuites"];
+        put?: never;
+        /** Create a new immutable human-authored suite revision */
+        post: operations["createEvalSuiteRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/evals/suites/{name}/revisions/{revision}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one exact immutable suite revision */
+        get: operations["getEvalSuiteRevision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/evals/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List durable evaluation runs */
+        get: operations["listEvalRuns"];
+        put?: never;
+        /** Start a durable run pinned to one suite revision */
+        post: operations["startEvalRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/evals/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a durable machine-readable evaluation report and immutable receipt */
+        get: operations["getEvalRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/evals/runs/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete a run once with per-case evidence */
+        post: operations["completeEvalRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/managed/knowledge-signals": {
         parameters: {
             query?: never;
@@ -977,7 +1064,11 @@ export interface paths {
          */
         get: operations["listKnowledgeSignals"];
         put?: never;
-        post?: never;
+        /**
+         * File a governed starter-set proposal
+         * @description Authenticated governed intake. Creates an explicit-keep signal in pending state; non-admin callers are forced into the employee-feedback source app. It never publishes knowledge. Listing and the separate atomic promote and reject decisions remain admin-only.
+         */
+        post: operations["createKnowledgeSignal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -998,6 +1089,43 @@ export interface paths {
         get: operations["listPromotionCandidates"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/knowledge-signals/{id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a reviewed knowledge signal
+         * @description Admin-only, idempotent publication into the knowledge store. The signal becomes promoted only after indexing succeeds and an immutable receipt is committed. Repeating a completed request returns the same receipt.
+         */
+        post: operations["promoteKnowledgeSignal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/managed/knowledge-signals/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a reviewed knowledge signal */
+        post: operations["rejectKnowledgeSignal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3676,6 +3804,10 @@ export interface components {
             doc_type?: string;
             /** @description Length of the extracted text in characters. */
             char_count?: number;
+            /** @description Parser metadata. XLSX includes an exact `sheet_count`. */
+            metadata?: {
+                [key: string]: string;
+            };
             /** @description Server-side processing time in milliseconds. */
             elapsed_ms?: number;
         };
@@ -3723,11 +3855,106 @@ export interface components {
             /** @description Identifier of the source chunk the signal was derived from. */
             source_chunk_id?: string;
             /** @enum {string} */
-            status?: "pending" | "quarantined" | "eligible" | "promoted" | "rejected" | "superseded";
+            status?: "pending" | "quarantined" | "eligible" | "publishing" | "promoted" | "rejected" | "superseded";
             /** Format: date-time */
             created_at?: string;
             /** @description Integrity signature over the signal contents. */
             signature?: string;
+        };
+        KnowledgeSignalPromotionReceipt: {
+            id: string;
+            signal_id: string;
+            tenant: string;
+            knowledge_document_id: string;
+            collection: string;
+            audience: string;
+            actor: string;
+            source_chunk_id?: string;
+            /** Format: date-time */
+            published_at: string;
+        };
+        KnowledgeSignalMutation: {
+            signal: components["schemas"]["KnowledgeSignal"];
+            receipt?: components["schemas"]["KnowledgeSignalPromotionReceipt"];
+        };
+        EvalCase: {
+            case_id: string;
+            prompt: string;
+            /** @description Human-authored expected behavior; never model-generated. */
+            reference: string;
+            reference_author: string;
+            reference_reviewer: string;
+            reference_privacy_reviewed: boolean;
+            /** @description Optional privacy-reviewed resolved-work reference. */
+            source_case_id?: string;
+            criteria?: string[];
+            tags?: string[];
+            expected_source_ids?: string[];
+            forbidden_source_ids?: string[];
+            required_claims?: string[];
+            forbidden_claims?: string[];
+            /** @enum {string} */
+            expected_behavior: "answer" | "abstain";
+            principal?: string;
+            max_source_age_days?: number;
+        };
+        EvalSuiteRevision: {
+            name: string;
+            revision: number;
+            description?: string;
+            case_count: number;
+            content_hash: string;
+            /** @description Admin/domain-owner identity that froze this immutable revision. */
+            approved_by?: string;
+            /** Format: date-time */
+            approved_at?: string;
+            cases?: components["schemas"]["EvalCase"][];
+            /** Format: date-time */
+            created_at?: string;
+        };
+        EvalRun: {
+            run_id: string;
+            suite_name: string;
+            suite_revision: number;
+            suite_digest: string;
+            blueprint_digest: string;
+            knowledge_digest: string;
+            agent_id: string;
+            /** @enum {string} */
+            status: "running" | "completed";
+            total_cases: number;
+            passed_cases?: number;
+            score?: number;
+            metrics?: {
+                [key: string]: number;
+            };
+            release_blocked?: boolean;
+            receipt_id?: string;
+            results?: components["schemas"]["EvalCaseResult"][];
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            completed_at?: string;
+        };
+        EvalEvidence: {
+            source_id: string;
+            version?: string;
+        };
+        EvalCaseResult: {
+            case_id: string;
+            output: string;
+            sources: components["schemas"]["EvalEvidence"][];
+            answer_passed: boolean;
+            retrieval_passed: boolean;
+            citation_passed: boolean;
+            access_passed: boolean;
+            abstention_passed: boolean;
+            reviewer_note?: string;
+            error?: string;
+            /** @enum {string} */
+            failed_stage?: "answer" | "retrieval" | "citation" | "access" | "abstention";
+            readonly passed?: boolean;
+            readonly score?: number;
         };
         PromotionCandidates: {
             /** @description Fact keys that have cleared the promotion quorum. */
@@ -6755,11 +6982,204 @@ export interface operations {
             429: components["responses"]["RateLimited"];
         };
     };
+    listEvalSuites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Latest revision of each suite. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        suites?: components["schemas"]["EvalSuiteRevision"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createEvalSuiteRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    description?: string;
+                    cases: components["schemas"]["EvalCase"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Immutable suite revision created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getEvalSuiteRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+                revision: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Suite revision and human-authored cases. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalSuiteRevision"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listEvalRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Runs pinned to exact suite revisions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runs?: components["schemas"]["EvalRun"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    startEvalRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    suite_name: string;
+                    /** @description Zero or omitted selects the latest revision. */
+                    suite_revision?: number;
+                    agent_id: string;
+                    blueprint_digest: string;
+                    knowledge_digest: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Running evaluation record. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalRun"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getEvalRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exact run inputs, per-case results, dimension scores and release-blocker state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalRun"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    completeEvalRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    results: components["schemas"]["EvalCaseResult"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Completed immutable run result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            /** @description Run is already completed or missing. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     listKnowledgeSignals: {
         parameters: {
             query?: {
                 /** @description Filter by signal status. Defaults to pending. */
-                status?: "pending" | "quarantined" | "eligible" | "promoted" | "rejected" | "superseded";
+                status?: "pending" | "quarantined" | "eligible" | "publishing" | "promoted" | "rejected" | "superseded";
                 /** @description Maximum signals to return. Defaults to 100. */
                 limit?: number;
                 /** @description Admin override to read another tenant's signals. Defaults to the caller's tenant. */
@@ -6784,6 +7204,51 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             429: components["responses"]["RateLimited"];
             /** @description Knowledge signals are unavailable on this deployment. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createKnowledgeSignal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    fact_key: string;
+                    content: string;
+                    source_chunk_id?: string;
+                    /** @default desk-knowledge-setup */
+                    app?: string;
+                    /** @description Stable caller key; retries return the same pending signal. */
+                    idempotency_key: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Pending proposal signal. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeSignalMutation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            /** @description Knowledge signal intake is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -6819,6 +7284,112 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             429: components["responses"]["RateLimited"];
             /** @description Knowledge signals are unavailable on this deployment. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    promoteKnowledgeSignal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @default default */
+                    collection?: string;
+                    /** @default organization */
+                    audience?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Published signal and immutable publication receipt. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeSignalMutation"];
+                };
+            };
+            /** @description Another request currently holds the publication lease. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeSignalMutation"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The signal is in a terminal or currently publishing state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Signal publishing or the knowledge store is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    rejectKnowledgeSignal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rejected signal. Repeating a rejection is idempotent. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeSignalMutation"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The signal is promoted or currently publishing. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            /** @description Knowledge signals are unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
