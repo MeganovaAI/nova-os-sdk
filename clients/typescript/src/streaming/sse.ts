@@ -7,7 +7,7 @@
  * runtime with `fetch` + `ReadableStream` (browser, Node 22, RN with a polyfill).
  */
 
-import type { AgUiEvent } from "./events.js";
+import type { AgUiEvent, AgUiStreamEvent } from "./events.js";
 
 /** A single parsed SSE frame: its `event:` name (if any) and decoded `data` payload. */
 export interface SseFrame<T = unknown> {
@@ -72,35 +72,50 @@ export async function* parseSse<T = unknown>(
  * silently drops the stream. */
 export async function* parseAgUiStream(
   response: Response,
-): AsyncGenerator<AgUiEvent, void, unknown> {
+): AsyncGenerator<AgUiStreamEvent, void, unknown> {
   const AGUI_TYPES = new Set([
     "RUN_STARTED", "RUN_FINISHED", "RUN_ERROR",
     "TEXT_MESSAGE_START", "TEXT_MESSAGE_CONTENT", "TEXT_MESSAGE_END",
-    "TOOL_CALL_START", "TOOL_CALL_ARGS", "TOOL_CALL_END", "STATE_DELTA", "CUSTOM",
+    "REASONING_MESSAGE_START", "REASONING_MESSAGE_CONTENT", "REASONING_MESSAGE_END",
+    "TOOL_CALL_START", "TOOL_CALL_ARGS", "TOOL_CALL_END", "TOOL_CALL_RESULT",
+    "STATE_DELTA", "STATE_SNAPSHOT", "CUSTOM", "RAW",
   ]);
   for await (const frame of parseSse<Record<string, unknown>>(response)) {
     const d = frame.data;
     if (!d || typeof d !== "object" || !("type" in d)) continue;
     const t = (d as { type: string }).type;
     if (AGUI_TYPES.has(t)) {
-      yield d as unknown as AgUiEvent;
+      yield withSseId(d as unknown as AgUiEvent, frame.id);
       continue;
     }
     // ── Anthropic-native SSE → AG-UI translation ──
     if (t === "content_block_delta") {
       const delta = (d as { delta?: { type?: string; text?: string } }).delta;
       if (delta?.type === "text_delta" && typeof delta.text === "string") {
-        yield { type: "TEXT_MESSAGE_CONTENT", messageId: "", delta: delta.text } as AgUiEvent;
+        yield withSseId({ type: "TEXT_MESSAGE_CONTENT", messageId: "", delta: delta.text }, frame.id);
+      } else if (delta?.type === "citations_delta") {
+        const citation = (delta as { citation?: unknown }).citation;
+        if (citation !== undefined) {
+          yield withSseId({
+            type: "CUSTOM",
+            name: "nova.citations",
+            value: { citations: [citation] },
+          }, frame.id);
+        }
       }
     } else if (t === "message_stop") {
-      yield { type: "RUN_FINISHED", threadId: "", runId: "" } as AgUiEvent;
+      yield withSseId({ type: "RUN_FINISHED", threadId: "", runId: "" }, frame.id);
     } else if (t === "error") {
       const err = (d as { error?: { message?: string } }).error;
-      yield { type: "RUN_ERROR", message: err?.message ?? "stream error" } as AgUiEvent;
+      yield withSseId({ type: "RUN_ERROR", message: err?.message ?? "stream error" }, frame.id);
     }
     // message_start / content_block_start / content_block_stop / message_delta /
     // ping — no AG-UI equivalent needed; skip.
   }
+}
+
+function withSseId(event: AgUiEvent, id: string | undefined): AgUiStreamEvent {
+  return id === undefined ? event : { ...event, sseId: id };
 }
 
 function indexOfFrameBoundary(buf: string): number {

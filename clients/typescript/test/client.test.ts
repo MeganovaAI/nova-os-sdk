@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { NovaClient } from "../src/index.js";
+import { LibraOSClient } from "../src/index.js";
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -8,13 +8,13 @@ function jsonResponse(status: number, body: unknown): Response {
   });
 }
 
-describe("NovaClient", () => {
+describe("LibraOSClient", () => {
   it("attaches a static bearer token", async () => {
     const fetchMock = vi.fn(async (_url: unknown, _init?: RequestInit) =>
       jsonResponse(200, { version: "v0.1.9", capabilities: ["async_jobs"] }),
     );
-    const client = new NovaClient({
-      baseUrl: "https://nova.example",
+    const client = new LibraOSClient({
+      baseUrl: "https://libraos.example",
       auth: "tok_static",
       fetch: fetchMock as unknown as typeof fetch,
     });
@@ -32,8 +32,8 @@ describe("NovaClient", () => {
       return jsonResponse(200, { version: "v0.1.9", capabilities: [] });
     });
     const refresh = vi.fn(async () => "tok_fresh");
-    const client = new NovaClient({
-      baseUrl: "https://nova.example",
+    const client = new LibraOSClient({
+      baseUrl: "https://libraos.example",
       auth: { getAccessToken: () => "tok_old", refresh },
       fetch: fetchMock as unknown as typeof fetch,
     });
@@ -47,8 +47,8 @@ describe("NovaClient", () => {
     const fetchMock = vi.fn(async () =>
       jsonResponse(404, { type: "not_found_error", message: "no such job" }),
     );
-    const client = new NovaClient({
-      baseUrl: "https://nova.example",
+    const client = new LibraOSClient({
+      baseUrl: "https://libraos.example",
       auth: "t",
       fetch: fetchMock as unknown as typeof fetch,
     });

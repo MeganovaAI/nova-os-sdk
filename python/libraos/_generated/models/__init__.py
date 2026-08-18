@@ -57,6 +57,9 @@ from .chat_completion_response_nova_grounding import ChatCompletionResponseNovaG
 from .chat_completion_response_persisted_state import ChatCompletionResponsePersistedState
 from .chat_completion_usage import ChatCompletionUsage
 from .chat_message import ChatMessage
+from .citation import Citation
+from .citation_cite_source import CitationCiteSource
+from .citation_type import CitationType
 from .claim_action_response_409 import ClaimActionResponse409
 from .complete_eval_run_body import CompleteEvalRunBody
 from .connector import Connector
@@ -76,6 +79,7 @@ from .conversation_detail_metadata import ConversationDetailMetadata
 from .conversation_list import ConversationList
 from .conversation_message import ConversationMessage
 from .conversation_metadata import ConversationMetadata
+from .conversation_scope import ConversationScope
 from .count_tokens_message import CountTokensMessage
 from .count_tokens_message_content_type_1_item import CountTokensMessageContentType1Item
 from .count_tokens_message_role import CountTokensMessageRole
@@ -91,6 +95,7 @@ from .create_agent_key_body import CreateAgentKeyBody
 from .create_eval_suite_revision_body import CreateEvalSuiteRevisionBody
 from .create_group_request import CreateGroupRequest
 from .create_knowledge_signal_body import CreateKnowledgeSignalBody
+from .create_message_x_protocol import CreateMessageXProtocol
 from .create_service_key_request import CreateServiceKeyRequest
 from .custom_tool import CustomTool
 from .custom_tool_callback import CustomToolCallback
@@ -454,6 +459,9 @@ __all__ = (
     "ChatCompletionResponsePersistedState",
     "ChatCompletionUsage",
     "ChatMessage",
+    "Citation",
+    "CitationCiteSource",
+    "CitationType",
     "ClaimActionResponse409",
     "CompleteEvalRunBody",
     "Connector",
@@ -473,6 +481,7 @@ __all__ = (
     "ConversationList",
     "ConversationMessage",
     "ConversationMetadata",
+    "ConversationScope",
     "CountTokensMessage",
     "CountTokensMessageContentType1Item",
     "CountTokensMessageRole",
@@ -488,6 +497,7 @@ __all__ = (
     "CreateEvalSuiteRevisionBody",
     "CreateGroupRequest",
     "CreateKnowledgeSignalBody",
+    "CreateMessageXProtocol",
     "CreateServiceKeyRequest",
     "CustomTool",
     "CustomToolCallback",

@@ -11,7 +11,7 @@ import { createRestClient, throwIfError, type AuthProvider, type RestClient } fr
 import { OidcClient } from "./auth/oidc.js";
 import { NovaApiError } from "./errors.js";
 import { parseAgUiStream } from "./streaming/sse.js";
-import type { AgUiEvent } from "./streaming/events.js";
+import type { AgUiStreamEvent } from "./streaming/events.js";
 
 type Schemas = components["schemas"];
 export type MessageRequest = Schemas["MessageRequest"];
@@ -23,19 +23,19 @@ export type Session = Schemas["Session"];
 export type SessionCreate = Schemas["SessionCreate"];
 export type Deployment = Schemas["Deployment"];
 export type Agent = Schemas["Agent"];
-/** Partial body accepted by {@link NovaClient.updateAgent}. */
+/** Partial body accepted by {@link LibraOSClient.updateAgent}. */
 export type UpdateAgentRequest = Schemas["AgentUpdate"];
-/** Body accepted by {@link NovaClient.createAgent}. Mirrors the OpenAPI createAgent request. */
+/** Body accepted by {@link LibraOSClient.createAgent}. Mirrors the OpenAPI createAgent request. */
 export type CreateAgentRequest = Record<string, unknown>;
 
-/** Result of {@link NovaClient.transcribeAudio}. `json` returns `{text, language?}`; `verbose_json` adds `duration`. */
+/** Result of {@link LibraOSClient.transcribeAudio}. `json` returns `{text, language?}`; `verbose_json` adds `duration`. */
 export interface Transcription {
   text: string;
   language?: string;
   duration?: number;
 }
 
-/** A user's observational memory for one persona, from {@link NovaClient.getMemory}. */
+/** A user's observational memory for one persona, from {@link LibraOSClient.getMemory}. */
 export interface MemoryView {
   agentId: string;
   scope: "corporate" | "personal";
@@ -54,8 +54,8 @@ export interface ProjectFile {
 
 /**
  * A document in the company-wide `default` knowledge collection.
- * Returned by {@link NovaClient.listCorporateDocuments}.
- * `id` is the chunk source path — pass it to {@link NovaClient.deleteCorporateDocument}.
+ * Returned by {@link LibraOSClient.listCorporateDocuments}.
+ * `id` is the chunk source path — pass it to {@link LibraOSClient.deleteCorporateDocument}.
  */
 export interface CorporateDocument {
   id: string;
@@ -66,8 +66,8 @@ export interface CorporateDocument {
 }
 
 /**
- * A named knowledge collection, returned by {@link NovaClient.listCollections},
- * {@link NovaClient.createCollection}, and {@link NovaClient.getCollection}.
+ * A named knowledge collection, returned by {@link LibraOSClient.listCollections},
+ * {@link LibraOSClient.createCollection}, and {@link LibraOSClient.getCollection}.
  */
 export interface Collection {
   id: string;
@@ -82,9 +82,9 @@ export interface Collection {
 
 /**
  * A knowledge-signal entry emitted by an employee session and queued for
- * admin curation. Returned by {@link NovaClient.listKnowledgeSignals},
- * {@link NovaClient.promoteKnowledgeSignal}, and
- * {@link NovaClient.rejectKnowledgeSignal}.
+ * admin curation. Returned by {@link LibraOSClient.listKnowledgeSignals},
+ * {@link LibraOSClient.promoteKnowledgeSignal}, and
+ * {@link LibraOSClient.rejectKnowledgeSignal}.
  */
 export interface KnowledgeSignal {
   id: string;
@@ -168,7 +168,10 @@ export interface Project {
   facts?: string[];
 }
 
-/** One of the caller's conversations (from {@link NovaClient.listConversations}). */
+/** Server-enforced data boundary for a conversation or message turn. */
+export type ConversationScope = "personal" | "corporate";
+
+/** One of the caller's conversations (from {@link LibraOSClient.listConversations}). */
 export interface ConversationSummary {
   id: string;
   agentId: string;
@@ -177,6 +180,8 @@ export interface ConversationSummary {
   lastActiveAt: string;
   messageCount: number;
   projectId?: string | null;
+  /** Omitted only for an empty conversation created before its first turn. */
+  scope?: ConversationScope;
 }
 
 /** A persisted message in a conversation. */
@@ -407,7 +412,7 @@ export interface GroupMember {
   createdAt: string;
 }
 
-/** One of the caller's own memberships, from {@link NovaClient.listMyGroups}. */
+/** One of the caller's own memberships, from {@link LibraOSClient.listMyGroups}. */
 export interface MyGroup {
   id: string;
   name: string;
@@ -606,7 +611,7 @@ export interface UsageSummary {
   byApplication: UsageBreakdown[];
 }
 
-export interface NovaClientOptions {
+export interface LibraOSClientOptions {
   /** Base URL of the LibraOS instance. */
   baseUrl: string;
   /**
@@ -619,7 +624,22 @@ export interface NovaClientOptions {
   fetch?: typeof fetch;
 }
 
-function toAuthProvider(auth: NovaClientOptions["auth"]): AuthProvider | undefined {
+/** Transport controls for a streaming message request. */
+export interface StreamMessageOptions {
+  /** Abort reading and close the response stream. */
+  signal?: AbortSignal;
+  /**
+   * Resume token for servers that emit SSE `id:` fields. Current
+   * `/v1/messages` deployments recover through conversation reconciliation,
+   * but the option keeps the client forward-compatible.
+   */
+  lastEventId?: string;
+}
+
+/** @deprecated Use {@link LibraOSClientOptions}. */
+export type NovaClientOptions = LibraOSClientOptions;
+
+function toAuthProvider(auth: LibraOSClientOptions["auth"]): AuthProvider | undefined {
   if (!auth) return undefined;
   if (typeof auth === "string") {
     return { getAccessToken: () => auth };
@@ -639,12 +659,12 @@ function toAuthProvider(auth: NovaClientOptions["auth"]): AuthProvider | undefin
   return auth;
 }
 
-export class NovaClient {
+export class LibraOSClient {
   private readonly rest: RestClient;
-  private readonly opts: NovaClientOptions;
+  private readonly opts: LibraOSClientOptions;
   private readonly auth?: AuthProvider;
 
-  constructor(options: NovaClientOptions) {
+  constructor(options: LibraOSClientOptions) {
     this.opts = options;
     this.auth = toAuthProvider(options.auth);
     this.rest = createRestClient({
@@ -729,23 +749,43 @@ export class NovaClient {
       body: { ...request, stream: false },
     });
     throwIfError(res);
-    return res.data as MessageResponse;
+    const message = res.data as MessageResponse;
+    // `/v1/messages` keeps the Anthropic-compatible `model` body field equal
+    // to the requested persona id, while the provider model that actually ran
+    // is authoritative in the LibraOS observability headers. Fold those headers
+    // into the typed extensions so browser clients do not mistake an agent id
+    // such as `support-assistant` for the model used by the test.
+    const modelUsed = res.response.headers.get("x-nova-model-used")?.trim();
+    const fallback = res.response.headers.get("x-nova-model-fallback-triggered")?.trim();
+    return {
+      ...message,
+      ...(modelUsed ? { model_used: modelUsed } : {}),
+      ...(fallback ? { fallback_triggered: fallback === "1" || fallback.toLowerCase() === "true" } : {}),
+    };
   }
 
   /**
    * Send a streaming message and iterate AG-UI events. Sets `X-Protocol: ag-ui`
-   * so the server emits the AG-UI dialect. Yields typed {@link AgUiEvent}s.
+   * so the server emits the AG-UI dialect. Yields typed
+   * {@link AgUiStreamEvent}s and rejects non-2xx responses before parsing.
    */
-  async *streamMessage(request: MessageRequest): AsyncGenerator<AgUiEvent, void, unknown> {
+  async *streamMessage(
+    request: MessageRequest,
+    opts?: StreamMessageOptions,
+  ): AsyncGenerator<AgUiStreamEvent, void, unknown> {
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+      accept: "text/event-stream",
+      "x-protocol": "ag-ui",
+    };
+    if (opts?.lastEventId) headers["last-event-id"] = opts.lastEventId;
     const res = await this.rawFetch("/v1/messages", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "text/event-stream",
-        "x-protocol": "ag-ui",
-      },
+      headers,
       body: JSON.stringify({ ...request, stream: true }),
+      signal: opts?.signal,
     });
+    if (!res.ok) throw await this.toApiError(res);
     yield* parseAgUiStream(res);
   }
 
@@ -782,7 +822,7 @@ export class NovaClient {
   async *streamJob(
     jobId: string,
     lastEventId?: string,
-  ): AsyncGenerator<AgUiEvent, void, unknown> {
+  ): AsyncGenerator<AgUiStreamEvent, void, unknown> {
     const headers: Record<string, string> = {
       accept: "text/event-stream",
       "x-protocol": "ag-ui",
@@ -792,6 +832,7 @@ export class NovaClient {
       method: "GET",
       headers,
     });
+    if (!res.ok) throw await this.toApiError(res);
     yield* parseAgUiStream(res);
   }
 
@@ -867,19 +908,21 @@ export class NovaClient {
   // ── Conversations ──────────────────────────────────────────────────────
 
   /** List the caller's conversations (newest first), optionally for one agent. */
-  async listConversations(opts?: { agentId?: string; limit?: number; signal?: AbortSignal }): Promise<ConversationSummary[]> {
+  async listConversations(opts?: { agentId?: string; scope?: ConversationScope; limit?: number; signal?: AbortSignal }): Promise<ConversationSummary[]> {
     const qs = new URLSearchParams();
     if (opts?.agentId) qs.set("agent", opts.agentId);
+    if (opts?.scope) qs.set("scope", opts.scope);
     if (opts?.limit != null) qs.set("limit", String(opts.limit));
     const q = qs.toString();
     const res = await this.rawFetch(`/v1/conversations${q ? `?${q}` : ""}`, { method: "GET", signal: opts?.signal });
     if (!res.ok) throw await this.toApiError(res);
     const j = (await res.json()) as {
-      conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null }>;
+      conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null; scope?: ConversationScope }>;
     };
     return (j.conversations ?? []).map((c) => ({
       id: c.id, agentId: c.agent_id, title: c.title ?? null,
-      createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null,
+      createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count,
+      projectId: c.project_id ?? null, ...(c.scope ? { scope: c.scope } : {}),
     }));
   }
 
@@ -888,11 +931,11 @@ export class NovaClient {
     const res = await this.rawFetch(`/v1/conversations/${encodeURIComponent(id)}`, { method: "GET", signal: opts?.signal });
     if (!res.ok) throw await this.toApiError(res);
     const j = (await res.json()) as {
-      id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null;
+      id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null; scope?: ConversationScope;
       messages?: Array<{ id?: string; role: string; content: string; timestamp: string; seq?: number }>;
     };
     return {
-      conversation: { id: j.id, agentId: j.agent_id, title: j.title ?? null, createdAt: j.created_at, lastActiveAt: j.last_active_at, messageCount: j.message_count, projectId: j.project_id ?? null },
+      conversation: { id: j.id, agentId: j.agent_id, title: j.title ?? null, createdAt: j.created_at, lastActiveAt: j.last_active_at, messageCount: j.message_count, projectId: j.project_id ?? null, ...(j.scope ? { scope: j.scope } : {}) },
       messages: (j.messages ?? []).map((m) => ({ id: m.id, role: m.role as ConversationMessage["role"], content: m.content, timestamp: m.timestamp, seq: m.seq })),
     };
   }
@@ -926,20 +969,20 @@ export class NovaClient {
   async listProjects(opts?: { signal?: AbortSignal }): Promise<Project[]> {
     const res = await this.rawFetch("/v1/projects", { method: "GET", signal: opts?.signal });
     if (!res.ok) throw await this.toApiError(res);
-    const j = (await res.json()) as { projects?: Array<Parameters<NovaClient["toProject"]>[0]> };
+    const j = (await res.json()) as { projects?: Array<Parameters<LibraOSClient["toProject"]>[0]> };
     return (j.projects ?? []).map((p) => this.toProject(p));
   }
 
   async createProject(input: { name: string; description?: string }): Promise<Project> {
     const res = await this.rawFetch("/v1/projects", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
     if (!res.ok) throw await this.toApiError(res);
-    return this.toProject(await res.json() as Parameters<NovaClient["toProject"]>[0]);
+    return this.toProject(await res.json() as Parameters<LibraOSClient["toProject"]>[0]);
   }
 
   async getProject(id: string): Promise<Project> {
     const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}`, { method: "GET" });
     if (!res.ok) throw await this.toApiError(res);
-    return this.toProject(await res.json() as Parameters<NovaClient["toProject"]>[0]);
+    return this.toProject(await res.json() as Parameters<LibraOSClient["toProject"]>[0]);
   }
 
   async renameProject(id: string, input: { name?: string; description?: string }): Promise<void> {
@@ -1073,7 +1116,7 @@ export class NovaClient {
       signal: opts?.signal,
     });
     if (!res.ok) throw await this.toApiError(res);
-    return ((await res.json()) as Array<Parameters<NovaClient["toCollection"]>[0]>).map((c) => this.toCollection(c));
+    return ((await res.json()) as Array<Parameters<LibraOSClient["toCollection"]>[0]>).map((c) => this.toCollection(c));
   }
 
   /**
@@ -1095,7 +1138,7 @@ export class NovaClient {
       signal: opts?.signal,
     });
     if (!res.ok) throw await this.toApiError(res);
-    return this.toCollection(await res.json() as Parameters<NovaClient["toCollection"]>[0]);
+    return this.toCollection(await res.json() as Parameters<LibraOSClient["toCollection"]>[0]);
   }
 
   /** Get a single knowledge collection by id. GET `/api/knowledge/collections/:id`. */
@@ -1105,7 +1148,7 @@ export class NovaClient {
       signal: opts?.signal,
     });
     if (!res.ok) throw await this.toApiError(res);
-    return this.toCollection(await res.json() as Parameters<NovaClient["toCollection"]>[0]);
+    return this.toCollection(await res.json() as Parameters<LibraOSClient["toCollection"]>[0]);
   }
 
   /** Delete a knowledge collection by id (admin-only). DELETE `/api/knowledge/collections/:id`. */
@@ -1227,8 +1270,8 @@ export class NovaClient {
   async listProjectConversations(id: string, opts?: { signal?: AbortSignal }): Promise<ConversationSummary[]> {
     const res = await this.rawFetch(`/v1/projects/${encodeURIComponent(id)}/conversations`, { method: "GET", signal: opts?.signal });
     if (!res.ok) throw await this.toApiError(res);
-    const j = (await res.json()) as { conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null }> };
-    return (j.conversations ?? []).map((c) => ({ id: c.id, agentId: c.agent_id, title: c.title ?? null, createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null }));
+    const j = (await res.json()) as { conversations?: Array<{ id: string; agent_id: string; title: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null; scope?: ConversationScope }> };
+    return (j.conversations ?? []).map((c) => ({ id: c.id, agentId: c.agent_id, title: c.title ?? null, createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null, ...(c.scope ? { scope: c.scope } : {}) }));
   }
 
   async createConversation(input?: { id?: string; agentId?: string; projectId?: string; metadata?: Record<string, unknown> }): Promise<ConversationSummary> {
@@ -1239,8 +1282,8 @@ export class NovaClient {
     if (input?.metadata) body.metadata = input.metadata;
     const res = await this.rawFetch("/v1/conversations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     if (!res.ok) throw await this.toApiError(res);
-    const c = (await res.json()) as { id: string; agent_id: string; title?: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null };
-    return { id: c.id, agentId: c.agent_id, title: c.title ?? null, createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null };
+    const c = (await res.json()) as { id: string; agent_id: string; title?: string | null; created_at: string; last_active_at: string; message_count: number; project_id?: string | null; scope?: ConversationScope };
+    return { id: c.id, agentId: c.agent_id, title: c.title ?? null, createdAt: c.created_at, lastActiveAt: c.last_active_at, messageCount: c.message_count, projectId: c.project_id ?? null, ...(c.scope ? { scope: c.scope } : {}) };
   }
 
   // ── Knowledge Signals (KSG curator) ───────────────────────────────────
@@ -1293,7 +1336,7 @@ export class NovaClient {
     const q = qs.toString();
     const res = await this.rawFetch(`/v1/managed/knowledge-signals${q ? `?${q}` : ""}`, { method: "GET", signal: opts?.signal });
     if (!res.ok) throw await this.toApiError(res);
-    const j = (await res.json()) as { signals?: Array<Parameters<NovaClient["toKnowledgeSignal"]>[0]> };
+    const j = (await res.json()) as { signals?: Array<Parameters<LibraOSClient["toKnowledgeSignal"]>[0]> };
     return (j.signals ?? []).map((s) => this.toKnowledgeSignal(s));
   }
 
@@ -1304,7 +1347,7 @@ export class NovaClient {
       body: JSON.stringify({ fact_key: input.factKey, content: input.content, idempotency_key: input.idempotencyKey, source_chunk_id: input.sourceChunkId ?? "", app: input.app ?? "desk-knowledge-setup" }),
     });
     if (!res.ok) throw await this.toApiError(res);
-    const j = await res.json() as { signal: Parameters<NovaClient["toKnowledgeSignal"]>[0] };
+    const j = await res.json() as { signal: Parameters<LibraOSClient["toKnowledgeSignal"]>[0] };
     return this.toKnowledgeSignal(j.signal);
   }
 
@@ -1342,7 +1385,7 @@ export class NovaClient {
     });
     if (!res.ok) throw await this.toApiError(res);
     const j = await res.json() as {
-      signal: Parameters<NovaClient["toKnowledgeSignal"]>[0];
+      signal: Parameters<LibraOSClient["toKnowledgeSignal"]>[0];
       receipt?: {
         id: string; signal_id: string; tenant: string; knowledge_document_id: string;
         collection: string; audience: string; actor: string; source_chunk_id?: string; published_at: string;
@@ -1366,7 +1409,7 @@ export class NovaClient {
   async rejectKnowledgeSignal(id: string): Promise<KnowledgeSignal> {
     const res = await this.rawFetch(`/v1/managed/knowledge-signals/${encodeURIComponent(id)}/reject`, { method: "POST" });
     if (!res.ok) throw await this.toApiError(res);
-    const j = await res.json() as { signal: Parameters<NovaClient["toKnowledgeSignal"]>[0] };
+    const j = await res.json() as { signal: Parameters<LibraOSClient["toKnowledgeSignal"]>[0] };
     return this.toKnowledgeSignal(j.signal);
   }
 
@@ -1395,7 +1438,7 @@ export class NovaClient {
   async listUsers(opts?: { signal?: AbortSignal }): Promise<User[]> {
     const res = await this.rawFetch("/api/users", { method: "GET", signal: opts?.signal });
     if (!res.ok) throw await this.toApiError(res);
-    return ((await res.json()) as Array<Parameters<NovaClient["toUser"]>[0]>).map((u) => this.toUser(u));
+    return ((await res.json()) as Array<Parameters<LibraOSClient["toUser"]>[0]>).map((u) => this.toUser(u));
   }
 
   /**
@@ -1409,7 +1452,7 @@ export class NovaClient {
       body: JSON.stringify(input),
     });
     if (!res.ok) throw await this.toApiError(res);
-    return this.toUser(await res.json() as Parameters<NovaClient["toUser"]>[0]);
+    return this.toUser(await res.json() as Parameters<LibraOSClient["toUser"]>[0]);
   }
 
   /**
@@ -1427,7 +1470,7 @@ export class NovaClient {
       body: JSON.stringify(body),
     });
     if (!res.ok) throw await this.toApiError(res);
-    return this.toUser(await res.json() as Parameters<NovaClient["toUser"]>[0]);
+    return this.toUser(await res.json() as Parameters<LibraOSClient["toUser"]>[0]);
   }
 
   /**
@@ -2156,6 +2199,12 @@ export class NovaClient {
     }
   }
 }
+
+/**
+ * @deprecated Use {@link LibraOSClient}. Kept as a source-compatible alias
+ * while existing applications migrate to the LibraOS name.
+ */
+export { LibraOSClient as NovaClient };
 
 // ── pending-actions/groups wire shapes (snake_case → camelCase) ───────────
 

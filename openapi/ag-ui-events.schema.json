@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/MeganovaAI/nova-os-sdk/openapi/ag-ui-events.schema.json",
-  "title": "Nova OS AG-UI streaming events",
-  "description": "Typed shape of the AG-UI streaming events Nova OS emits over Server-Sent Events on chat surfaces (the `X-Protocol: ag-ui` gated stream). This is a SEPARATE contract from the OpenAPI partner spec's `StreamEvent` union (the #99-native snake_case dialect): AG-UI is the adopted streaming standard (nova-os #370) whose wire fields are camelCase and whose `type` discriminator values are the canonical `@ag-ui/core` SCREAMING_SNAKE set. Hand-maintained to mirror nova-os `internal/server/streaming/agui/events.go`; the OpenAPI codegen does NOT produce these (it emits no SSE runtime). Each event is one `data: {json}\\n\\n` SSE frame; `type` discriminates.",
+  "$id": "https://github.com/libraos/sdk/openapi/ag-ui-events.schema.json",
+  "title": "LibraOS AG-UI streaming events",
+  "description": "Typed shape of the AG-UI streaming events LibraOS emits over Server-Sent Events on chat surfaces (the `X-Protocol: ag-ui` gated stream). This is a SEPARATE contract from the OpenAPI partner spec's `StreamEvent` union (the native snake_case dialect): AG-UI is the adopted streaming standard whose wire fields are camelCase and whose `type` discriminator values are the canonical `@ag-ui/core` SCREAMING_SNAKE set. Hand-maintained to mirror the LibraOS server's `internal/server/streaming/agui/events.go`; OpenAPI codegen does NOT produce these runtime event types. Each event is one `data: {json}\\n\\n` SSE frame; `type` discriminates.",
   "oneOf": [
     { "$ref": "#/$defs/RunStarted" },
     { "$ref": "#/$defs/RunFinished" },

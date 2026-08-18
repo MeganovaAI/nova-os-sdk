@@ -5,17 +5,21 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.create_message_x_protocol import CreateMessageXProtocol
 from ...models.error import Error
 from ...models.message_request import MessageRequest
 from ...models.message_response import MessageResponse
-from ...types import Response
+from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     *,
     body: MessageRequest,
+    x_protocol: CreateMessageXProtocol | Unset = UNSET,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
+    if not isinstance(x_protocol, Unset):
+        headers["X-Protocol"] = str(x_protocol)
 
     _kwargs: dict[str, Any] = {
         "method": "post",
@@ -48,10 +52,20 @@ def _parse_response(
 
         return response_401
 
+    if response.status_code == 403:
+        response_403 = Error.from_dict(response.json())
+
+        return response_403
+
     if response.status_code == 404:
         response_404 = Error.from_dict(response.json())
 
         return response_404
+
+    if response.status_code == 422:
+        response_422 = Error.from_dict(response.json())
+
+        return response_422
 
     if response.status_code == 426:
         response_426 = Error.from_dict(response.json())
@@ -62,6 +76,11 @@ def _parse_response(
         response_429 = Error.from_dict(response.json())
 
         return response_429
+
+    if response.status_code == 503:
+        response_503 = Error.from_dict(response.json())
+
+        return response_503
 
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
@@ -84,16 +103,22 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: MessageRequest,
+    x_protocol: CreateMessageXProtocol | Unset = UNSET,
 ) -> Response[Error | MessageResponse]:
     """Send an Anthropic-compatible message
 
-     Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+     Route to a LibraOS agent via `metadata.agent_id`; omit for the default agent.
 
     When `stream:false`, returns a single `MessageResponse`.
-    When `stream:true`, returns SSE with one `event:` line + JSON
-    payload per event. Event types defined by `StreamEvent`.
+    When `stream:true`, returns SSE. With `X-Protocol: ag-ui`, frames use
+    the AG-UI contract in `openapi/ag-ui-events.schema.json`; otherwise
+    they use the Anthropic-compatible event sequence defined by `StreamEvent`.
+    Desk clients send `conversation_id`, a stable per-turn `message_id`,
+    and an explicit `scope` so the turn is persisted within the correct
+    personal/company boundary.
 
     Args:
+        x_protocol (CreateMessageXProtocol | Unset):
         body (MessageRequest):
 
     Raises:
@@ -106,6 +131,7 @@ def sync_detailed(
 
     kwargs = _get_kwargs(
         body=body,
+        x_protocol=x_protocol,
     )
 
     response = client.get_httpx_client().request(
@@ -119,16 +145,22 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: MessageRequest,
+    x_protocol: CreateMessageXProtocol | Unset = UNSET,
 ) -> Error | MessageResponse | None:
     """Send an Anthropic-compatible message
 
-     Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+     Route to a LibraOS agent via `metadata.agent_id`; omit for the default agent.
 
     When `stream:false`, returns a single `MessageResponse`.
-    When `stream:true`, returns SSE with one `event:` line + JSON
-    payload per event. Event types defined by `StreamEvent`.
+    When `stream:true`, returns SSE. With `X-Protocol: ag-ui`, frames use
+    the AG-UI contract in `openapi/ag-ui-events.schema.json`; otherwise
+    they use the Anthropic-compatible event sequence defined by `StreamEvent`.
+    Desk clients send `conversation_id`, a stable per-turn `message_id`,
+    and an explicit `scope` so the turn is persisted within the correct
+    personal/company boundary.
 
     Args:
+        x_protocol (CreateMessageXProtocol | Unset):
         body (MessageRequest):
 
     Raises:
@@ -142,6 +174,7 @@ def sync(
     return sync_detailed(
         client=client,
         body=body,
+        x_protocol=x_protocol,
     ).parsed
 
 
@@ -149,16 +182,22 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: MessageRequest,
+    x_protocol: CreateMessageXProtocol | Unset = UNSET,
 ) -> Response[Error | MessageResponse]:
     """Send an Anthropic-compatible message
 
-     Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+     Route to a LibraOS agent via `metadata.agent_id`; omit for the default agent.
 
     When `stream:false`, returns a single `MessageResponse`.
-    When `stream:true`, returns SSE with one `event:` line + JSON
-    payload per event. Event types defined by `StreamEvent`.
+    When `stream:true`, returns SSE. With `X-Protocol: ag-ui`, frames use
+    the AG-UI contract in `openapi/ag-ui-events.schema.json`; otherwise
+    they use the Anthropic-compatible event sequence defined by `StreamEvent`.
+    Desk clients send `conversation_id`, a stable per-turn `message_id`,
+    and an explicit `scope` so the turn is persisted within the correct
+    personal/company boundary.
 
     Args:
+        x_protocol (CreateMessageXProtocol | Unset):
         body (MessageRequest):
 
     Raises:
@@ -171,6 +210,7 @@ async def asyncio_detailed(
 
     kwargs = _get_kwargs(
         body=body,
+        x_protocol=x_protocol,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -182,16 +222,22 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: MessageRequest,
+    x_protocol: CreateMessageXProtocol | Unset = UNSET,
 ) -> Error | MessageResponse | None:
     """Send an Anthropic-compatible message
 
-     Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+     Route to a LibraOS agent via `metadata.agent_id`; omit for the default agent.
 
     When `stream:false`, returns a single `MessageResponse`.
-    When `stream:true`, returns SSE with one `event:` line + JSON
-    payload per event. Event types defined by `StreamEvent`.
+    When `stream:true`, returns SSE. With `X-Protocol: ag-ui`, frames use
+    the AG-UI contract in `openapi/ag-ui-events.schema.json`; otherwise
+    they use the Anthropic-compatible event sequence defined by `StreamEvent`.
+    Desk clients send `conversation_id`, a stable per-turn `message_id`,
+    and an explicit `scope` so the turn is persisted within the correct
+    personal/company boundary.
 
     Args:
+        x_protocol (CreateMessageXProtocol | Unset):
         body (MessageRequest):
 
     Raises:
@@ -206,5 +252,6 @@ async def asyncio(
         await asyncio_detailed(
             client=client,
             body=body,
+            x_protocol=x_protocol,
         )
     ).parsed

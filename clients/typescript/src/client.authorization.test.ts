@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "user-jwt", refresh: vi.fn(async () => "fresh-user-jwt") };
 const mk = (body: unknown, status = 200) =>
@@ -51,7 +51,7 @@ describe("authorization lifecycle", () => {
         idempotency_key: "action-1", rollback_available: false }],
       grant, state: "execution_unknown",
     }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const graph = await client.getAuthorizationGraph("intent:1");
     expect(graph.intent.dataScope?.connector.connectionId).toBe("org");
     expect(graph.decisions[0]).toMatchObject({ grantId: "grant-1", grantRevision: 2 });
@@ -61,7 +61,7 @@ describe("authorization lifecycle", () => {
 
   it("serializes canonical data scope and explicit tool bindings when evaluating a grant", async () => {
     const fetchMock = vi.fn(async () => mk({ grant, evidence }, 201));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await client.evaluateAndIssueGrant({
       agentId: "support", actionClass: "ticket/reply", toolBindings: ["reply"], riskTier: "medium",
       policyVersion: "p1", dataScope: { resource: "ticket", operation: "reply",
@@ -77,7 +77,7 @@ describe("authorization lifecycle", () => {
       expect(new Headers(init.headers).get("authorization")).toBe("Bearer lcap_once");
       return mk({ status: "awaiting_approval", action_id: "a1", intent_id: "intent:a1" }, 202);
     });
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const result = await client.executeCapability("lcap_once", { params: { ticket: 42 }, purpose: "answer" });
     expect(result).toMatchObject({ status: "awaiting_approval", actionId: "a1" });
     expect(auth.refresh).not.toHaveBeenCalled();
@@ -93,7 +93,7 @@ describe("authorization lifecycle", () => {
     };
     const fetchMock = vi.fn(async () => mk({ capability, governance_mode: "desk_managed",
       governance_enforcement: "raw connector credentials remain in Desk", warning: "shown once" }, 201));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const result = await client.issueExecutionCapability({
       grantId: "grant-1", agentId: "support", toolName: "slack_send_message", actionClass: "message/send",
       riskTier: "medium", policy: "allow", policyVersion: "p1", governanceMode: "desk_managed",

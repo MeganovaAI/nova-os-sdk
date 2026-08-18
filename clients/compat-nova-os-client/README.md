@@ -10,7 +10,7 @@ re-exports `@libraos/client` unchanged, so existing imports keep working:
 import { NovaClient } from "@meganova/nova-os-client";
 
 // preferred
-import { NovaClient } from "@libraos/client";
+import { LibraOSClient } from "@libraos/client";
 ```
 
 Please migrate your imports to `@libraos/client`. This alias will be kept for

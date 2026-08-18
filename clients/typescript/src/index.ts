@@ -6,15 +6,20 @@
  *  - generated REST types from `openapi/libra-os-partner.v1.yaml` (re-exported as `components`/`paths`);
  *  - an OIDC Auth-Code+PKCE+refresh helper (public-client, transport-agnostic);
  *  - AG-UI streaming event types + a typed SSE parser;
- *  - a thin {@link NovaClient} tying them together (Bearer + refresh-on-401).
+ *  - a thin {@link LibraOSClient} tying them together (Bearer + refresh-on-401).
  *
  * No React/framework dependencies — runs in browsers, Node 22, and React Native.
  */
 
 // Convenience client + endpoint method types.
 export {
+  LibraOSClient,
+  /** @deprecated Use LibraOSClient. */
   NovaClient,
+  type LibraOSClientOptions,
+  /** @deprecated Use LibraOSClientOptions. */
   type NovaClientOptions,
+  type StreamMessageOptions,
   type MessageRequest,
   type MessageResponse,
   type JobCreate,
@@ -29,6 +34,7 @@ export {
   type MemoryView,
   type Project,
   type ProjectFile,
+  type ConversationScope,
   type ConversationSummary,
   type ConversationMessage,
   type CorporateDocument,
@@ -110,6 +116,7 @@ export {
 } from "./streaming/sse.js";
 export type {
   AgUiEvent,
+  AgUiStreamEvent,
   AgUiEventType,
   RunStarted,
   RunFinished,

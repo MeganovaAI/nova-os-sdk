@@ -17,6 +17,7 @@ Partner integration docs for [LibraOS](https://github.com/libraos/sdk) — the a
 | Doc | What it covers |
 |---|---|
 | [Getting Started](getting-started.md) | Front-door table, 5-minute first call, three drop-in compat surfaces, scenario matrix |
+| [Desk Chat and Conversation API](desk-chat-api.md) | Conversation CRUD, persisted messages, AG-UI streaming, citations, scope isolation, recovery |
 | [Anthropic API Compatibility](anthropic-compat.md) | Endpoint-by-endpoint matrix, what's identical, what's extended, what's not implemented |
 | [Multi-Model Routing](multi-model.md) | Three slots (answer / planner / skill), five-level cascade, fallback semantics |
 | [Web Search Backends](web-search.md) | Five pluggable backends, cost-quality table, fallback chains, reformulator, recency intent |
@@ -51,7 +52,7 @@ For partners who need to operate LibraOS themselves:
 
 **CLI 1.0.0** — Multi-arch binaries (`linux/darwin/windows × amd64/arm64`), cosign-signed, Docker image at `ghcr.io/meganovaai/nova-os-cli`.
 
-**OpenAPI alpha.5** — Partner-facing API surface continuing to grow toward the v1 freeze. The Python SDK \`__version__\` is stable at 1.0.0; \`OPENAPI_VERSION\` tracks the spec separately.
+**OpenAPI alpha.7** — Partner-facing API surface continuing to grow toward the v1 freeze. The Python SDK \`__version__\` is stable at 1.0.0; \`OPENAPI_VERSION\` tracks the spec separately.
 
 **Server image** — `ghcr.io/meganovaai/nova-os:v0.1.7` (and `:latest`).
 

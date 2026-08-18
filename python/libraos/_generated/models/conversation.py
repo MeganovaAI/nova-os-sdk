@@ -8,6 +8,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..models.conversation_scope import ConversationScope
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -28,6 +29,8 @@ class Conversation:
         last_active_at (datetime.datetime):
         message_count (int):
         title (None | str | Unset): Null until set via rename.
+        project_id (None | str | Unset): Project containing the conversation; omitted when it is in General.
+        scope (ConversationScope | Unset): Personal assistant data or governed organization data.
         metadata (ConversationMetadata | Unset): App-owned metadata map. Omitted when empty.
     """
 
@@ -37,6 +40,8 @@ class Conversation:
     last_active_at: datetime.datetime
     message_count: int
     title: None | str | Unset = UNSET
+    project_id: None | str | Unset = UNSET
+    scope: ConversationScope | Unset = UNSET
     metadata: ConversationMetadata | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -57,6 +62,16 @@ class Conversation:
         else:
             title = self.title
 
+        project_id: None | str | Unset
+        if isinstance(self.project_id, Unset):
+            project_id = UNSET
+        else:
+            project_id = self.project_id
+
+        scope: str | Unset = UNSET
+        if not isinstance(self.scope, Unset):
+            scope = self.scope.value
+
         metadata: dict[str, Any] | Unset = UNSET
         if not isinstance(self.metadata, Unset):
             metadata = self.metadata.to_dict()
@@ -74,6 +89,10 @@ class Conversation:
         )
         if title is not UNSET:
             field_dict["title"] = title
+        if project_id is not UNSET:
+            field_dict["project_id"] = project_id
+        if scope is not UNSET:
+            field_dict["scope"] = scope
         if metadata is not UNSET:
             field_dict["metadata"] = metadata
 
@@ -103,6 +122,22 @@ class Conversation:
 
         title = _parse_title(d.pop("title", UNSET))
 
+        def _parse_project_id(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        project_id = _parse_project_id(d.pop("project_id", UNSET))
+
+        _scope = d.pop("scope", UNSET)
+        scope: ConversationScope | Unset
+        if isinstance(_scope, Unset):
+            scope = UNSET
+        else:
+            scope = ConversationScope(_scope)
+
         _metadata = d.pop("metadata", UNSET)
         metadata: ConversationMetadata | Unset
         if isinstance(_metadata, Unset):
@@ -117,6 +152,8 @@ class Conversation:
             last_active_at=last_active_at,
             message_count=message_count,
             title=title,
+            project_id=project_id,
+            scope=scope,
             metadata=metadata,
         )
 

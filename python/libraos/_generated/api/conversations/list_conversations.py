@@ -6,6 +6,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.conversation_list import ConversationList
+from ...models.conversation_scope import ConversationScope
 from ...models.error import Error
 from ...types import UNSET, Response, Unset
 
@@ -13,12 +14,19 @@ from ...types import UNSET, Response, Unset
 def _get_kwargs(
     *,
     agent: str | Unset = UNSET,
+    scope: ConversationScope | Unset = UNSET,
     limit: int | Unset = 50,
 ) -> dict[str, Any]:
 
     params: dict[str, Any] = {}
 
     params["agent"] = agent
+
+    json_scope: str | Unset = UNSET
+    if not isinstance(scope, Unset):
+        json_scope = scope.value
+
+    params["scope"] = json_scope
 
     params["limit"] = limit
 
@@ -40,6 +48,11 @@ def _parse_response(
         response_200 = ConversationList.from_dict(response.json())
 
         return response_200
+
+    if response.status_code == 400:
+        response_400 = Error.from_dict(response.json())
+
+        return response_400
 
     if response.status_code == 401:
         response_401 = Error.from_dict(response.json())
@@ -67,6 +80,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     agent: str | Unset = UNSET,
+    scope: ConversationScope | Unset = UNSET,
     limit: int | Unset = 50,
 ) -> Response[ConversationList | Error]:
     """List conversations
@@ -75,6 +89,7 @@ def sync_detailed(
 
     Args:
         agent (str | Unset):
+        scope (ConversationScope | Unset): Personal assistant data or governed organization data.
         limit (int | Unset):  Default: 50.
 
     Raises:
@@ -87,6 +102,7 @@ def sync_detailed(
 
     kwargs = _get_kwargs(
         agent=agent,
+        scope=scope,
         limit=limit,
     )
 
@@ -101,6 +117,7 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     agent: str | Unset = UNSET,
+    scope: ConversationScope | Unset = UNSET,
     limit: int | Unset = 50,
 ) -> ConversationList | Error | None:
     """List conversations
@@ -109,6 +126,7 @@ def sync(
 
     Args:
         agent (str | Unset):
+        scope (ConversationScope | Unset): Personal assistant data or governed organization data.
         limit (int | Unset):  Default: 50.
 
     Raises:
@@ -122,6 +140,7 @@ def sync(
     return sync_detailed(
         client=client,
         agent=agent,
+        scope=scope,
         limit=limit,
     ).parsed
 
@@ -130,6 +149,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     agent: str | Unset = UNSET,
+    scope: ConversationScope | Unset = UNSET,
     limit: int | Unset = 50,
 ) -> Response[ConversationList | Error]:
     """List conversations
@@ -138,6 +158,7 @@ async def asyncio_detailed(
 
     Args:
         agent (str | Unset):
+        scope (ConversationScope | Unset): Personal assistant data or governed organization data.
         limit (int | Unset):  Default: 50.
 
     Raises:
@@ -150,6 +171,7 @@ async def asyncio_detailed(
 
     kwargs = _get_kwargs(
         agent=agent,
+        scope=scope,
         limit=limit,
     )
 
@@ -162,6 +184,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     agent: str | Unset = UNSET,
+    scope: ConversationScope | Unset = UNSET,
     limit: int | Unset = 50,
 ) -> ConversationList | Error | None:
     """List conversations
@@ -170,6 +193,7 @@ async def asyncio(
 
     Args:
         agent (str | Unset):
+        scope (ConversationScope | Unset): Personal assistant data or governed organization data.
         limit (int | Unset):  Default: 50.
 
     Raises:
@@ -184,6 +208,7 @@ async def asyncio(
         await asyncio_detailed(
             client=client,
             agent=agent,
+            scope=scope,
             limit=limit,
         )
     ).parsed

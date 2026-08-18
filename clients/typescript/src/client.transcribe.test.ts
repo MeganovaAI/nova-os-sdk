@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "tok" };
 
@@ -12,7 +12,7 @@ describe("transcribeAudio", () => {
           headers: { "content-type": "application/json" },
         }),
     );
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const blob = new Blob(["audio"], { type: "audio/webm" });
 
     const out = await client.transcribeAudio(blob, { fileName: "speech.webm", model: "m", language: "en" });
@@ -32,7 +32,7 @@ describe("transcribeAudio", () => {
 
   it("rejects on a non-ok response", async () => {
     const fetchMock = vi.fn(async () => new Response("bad", { status: 400 }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await expect(client.transcribeAudio(new Blob(["a"], { type: "audio/webm" }))).rejects.toBeTruthy();
   });
 });

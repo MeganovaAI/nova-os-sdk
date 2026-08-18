@@ -8,6 +8,8 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..types import UNSET, Unset
+
 T = TypeVar("T", bound="ConversationMessage")
 
 
@@ -18,11 +20,15 @@ class ConversationMessage:
         role (str): e.g. `user`, `assistant`.
         content (str):
         timestamp (datetime.datetime):
+        id (str | Unset): Stable message id; user turns echo the request's `message_id`.
+        seq (int | Unset): Server-assigned, 1-based monotonic ordering within the conversation.
     """
 
     role: str
     content: str
     timestamp: datetime.datetime
+    id: str | Unset = UNSET
+    seq: int | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -31,6 +37,10 @@ class ConversationMessage:
         content = self.content
 
         timestamp = self.timestamp.isoformat()
+
+        id = self.id
+
+        seq = self.seq
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -41,6 +51,10 @@ class ConversationMessage:
                 "timestamp": timestamp,
             }
         )
+        if id is not UNSET:
+            field_dict["id"] = id
+        if seq is not UNSET:
+            field_dict["seq"] = seq
 
         return field_dict
 
@@ -53,10 +67,16 @@ class ConversationMessage:
 
         timestamp = isoparse(d.pop("timestamp"))
 
+        id = d.pop("id", UNSET)
+
+        seq = d.pop("seq", UNSET)
+
         conversation_message = cls(
             role=role,
             content=content,
             timestamp=timestamp,
+            id=id,
+            seq=seq,
         )
 
         conversation_message.additional_properties = d

@@ -118,7 +118,7 @@ export interface StateSnapshot {
 }
 
 /**
- * Escape hatch for Nova-OS-specific extensions without a standard AG-UI type.
+ * Escape hatch for LibraOS-specific extensions without a standard AG-UI type.
  * `name` is a `nova.<x>` namespaced inner event (e.g. "nova.route_hint").
  * Canonical discriminator "CUSTOM" (NOT "CUSTOM_EVENT").
  */
@@ -153,6 +153,13 @@ export type AgUiEvent =
   | StateSnapshot
   | CustomEvent
   | RawEvent;
+
+/**
+ * An AG-UI event yielded by the SSE client. `sseId` is present only when the
+ * server emitted an SSE `id:` field and can be supplied as `Last-Event-ID` on
+ * a resumable endpoint.
+ */
+export type AgUiStreamEvent = AgUiEvent & { sseId?: string };
 
 /** The set of valid AG-UI `type` discriminator values. */
 export type AgUiEventType = AgUiEvent["type"];

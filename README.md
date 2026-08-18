@@ -9,7 +9,7 @@ This repo ships:
 - **OpenAPI spec** (`openapi/libra-os-partner.v1.yaml`) — source of truth for the partner-facing API surface.
 - **CLI** (`cli/`) — single static Go binary for sync, validate, test-callback, export/import.
 - **Python SDK** (`python/`) — reference client library, published to PyPI as `libraos-sdk`.
-- **Docs** (`docs/`) — getting started, Anthropic compatibility, multi-model, web-search, custom tools.
+- **Docs** (`docs/`) — getting started, Desk chat, Anthropic compatibility, multi-model, web-search, custom tools.
 - **Examples** (`examples/`) — worked partner integrations (legaltech, healthcare, finance).
 
 Official docs: [libraos.com/docs](https://libraos.com/docs/) — including [Create your first agent](https://libraos.com/docs/creating-an-agent/) and [Model settings & token plans](https://libraos.com/docs/model-settings/).
@@ -23,6 +23,9 @@ Official docs: [libraos.com/docs](https://libraos.com/docs/) — including [Crea
 | CLI Docker | `docker pull ghcr.io/libraos/libraos-cli:latest` |
 
 See `python/README.md` and `cli/README.md` for usage details.
+
+Building a web or mobile Desk client? Start with the
+[Desk chat and conversation API](docs/desk-chat-api.md).
 
 ## Self-hosting the LibraOS server
 
@@ -95,7 +98,7 @@ The first two are about meeting partners where they are. The third is the surfac
 
 **Python SDK: v1.1.1** — published to PyPI as [`libraos-sdk`](https://pypi.org/project/libraos-sdk/). The public API has been frozen since `v1.0.0`; downstream consumers can integrate without chasing a moving target. See [`python/CHANGELOG.md`](python/CHANGELOG.md).
 
-**OpenAPI spec: v1.0.0-alpha.5** — still advancing ahead of the SDK to declare new server endpoints as they land.
+**OpenAPI spec: v1.0.0-alpha.7** — still advancing ahead of the SDK to declare new server endpoints as they land.
 
 ## License
 

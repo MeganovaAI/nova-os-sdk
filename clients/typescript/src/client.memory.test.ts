@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "tok" };
 
@@ -19,7 +19,7 @@ describe("getMemory", () => {
           { status: 200, headers: { "content-type": "application/json" } },
         ),
     );
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const out = await client.getMemory("marketing", { scope: "personal" });
     expect(out).toEqual({
       agentId: "marketing",
@@ -37,7 +37,7 @@ describe("getMemory", () => {
 
   it("rejects on a non-ok response", async () => {
     const fetchMock = vi.fn(async () => new Response("bad", { status: 500 }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await expect(client.getMemory("marketing")).rejects.toBeTruthy();
   });
 });

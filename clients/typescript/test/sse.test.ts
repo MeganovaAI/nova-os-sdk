@@ -40,4 +40,25 @@ describe("parseSse", () => {
       "RUN_FINISHED",
     ]);
   });
+
+  it("preserves SSE ids and accepts the complete AG-UI vocabulary", async () => {
+    const body =
+      'id: 7\ndata: {"type":"REASONING_MESSAGE_CONTENT","messageId":"m","delta":"why"}\n\n' +
+      'data: {"type":"TOOL_CALL_RESULT","messageId":"m","toolCallId":"t","content":"ok","role":"tool"}\n\n';
+    const events = [];
+    for await (const ev of parseAgUiStream(sseResponse(body))) events.push(ev);
+    expect(events.map((e) => e.type)).toEqual(["REASONING_MESSAGE_CONTENT", "TOOL_CALL_RESULT"]);
+    expect(events[0]?.sseId).toBe("7");
+  });
+
+  it("normalizes Anthropic citation deltas into a LibraOS custom event", async () => {
+    const body = 'data: {"type":"content_block_delta","delta":{"type":"citations_delta","citation":{"type":"web","cite_source":"web","web_uri":"https://example.com"}}}\n\n';
+    const events = [];
+    for await (const ev of parseAgUiStream(sseResponse(body))) events.push(ev);
+    expect(events).toEqual([{
+      type: "CUSTOM",
+      name: "nova.citations",
+      value: { citations: [{ type: "web", cite_source: "web", web_uri: "https://example.com" }] },
+    }]);
+  });
 });

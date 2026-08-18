@@ -15,18 +15,23 @@ REST call described by `openapi/libra-os-partner.v1.yaml`.
 
 ## 1. Endpoints
 
-The LibraOS server exposes a minimal OIDC provider. Base URL is the instance's public URL
-(`NOVA_OS_PUBLIC_URL`, falling back to `http://<host>:<port>`); the `Deployment.auth.issuer`
+The LibraOS server exposes an embedded OIDC provider. Base URL is the instance's public URL
+(`LIBRA_OS_PUBLIC_URL`, falling back to `http://<host>:<port>`); the `Deployment.auth.issuer`
 field (`GET /v1/managed/deployment`) advertises it and whether OIDC is enabled.
 
 | Endpoint | Method | Purpose |
 |---|---|---|
+| `/.well-known/openid-configuration` | GET | Discovery document, including the issuer, supported scopes, RS256, and `jwks_uri`. |
+| `/.well-known/jwks.json` | GET | Public RS256 keys used to verify ID tokens. |
 | `/oauth/authorize` | GET | Embedded login screen (no third-party redirects). Renders the login form; on success issues a one-time authorization `code` to the registered `redirect_uri`. |
 | `/oauth/login` | POST | Form post from the login screen: bcrypt-verifies credentials, sets the short-lived `nova_oidc_session` cookie (HttpOnly + Secure + SameSite=Lax, ~10 min). |
 | `/oauth/token` | POST | Exchanges a one-time `code` (5 min TTL, single-use) for an `id_token` + `access_token`. PKCE `code_verifier` required when the auth request used `code_challenge`. Also serves the `refresh_token` grant. |
 | `/oauth/userinfo` | GET | Returns `sub` / `email` / `name` / `role` for the bearer token. |
+| `/oauth/revoke` | POST | Revokes a refresh token; unknown/already-invalid tokens also return 200. |
 
-The issued JWT is HS256 and carries `sub`, `email`, `role`, `name`.
+ID tokens are signed with RS256 and carry `sub`, `email`, `role`, and `name`;
+clients verify them through `jwks_uri`. Access tokens remain bearer tokens for
+the LibraOS API and are validated by the server.
 
 > **Sign in with X (upstream IdP brokering):** when the operator configures upstream providers,
 > the `/oauth/authorize` login screen also renders "Sign in with X" buttons (Google/Okta/Azure/
@@ -47,7 +52,7 @@ the kits target:
 | `nova-os-ui` | `<web-origin>/oauth/callback` | **required** (S256) | First-party web client (employee-ui / school-ui). Exact origin is operator-configured. |
 
 Public clients (browser SPA, mobile app) have **no client secret** — PKCE is the proof-of-possession
-that replaces it. Additional clients are operator-configured (`NOVA_OS_OIDC_CLIENTS` env or
+that replaces it. Additional clients are operator-configured (`LIBRA_OS_OIDC_CLIENTS` env or
 `oidc_clients:` YAML); `app_id` collisions with the built-ins are rejected in favor of the built-ins.
 
 ---
@@ -106,10 +111,9 @@ browsers, and RN (with a polyfilled `crypto`).
 
 ## 4. Refresh grant
 
-> **Kernel status:** the `refresh_token` grant on `/oauth/token` is the one known kernel gap in
-> the contract-unification plan (reference: `nova-os-school` branch `feat/i5-oidc-refresh`). Clients
-> keep the `refresh()` seam regardless; when the access token is short-lived and no refresh token
-> is issued yet, the client re-runs the interactive Auth-Code flow on expiry.
+Request `offline_access` during authorization to receive a refresh token.
+Refresh tokens are single-use, expire after the deployment's configured TTL
+(30 days by default), and rotate on every successful refresh.
 
 When a `refresh_token` is present, the client refreshes silently:
 
@@ -119,13 +123,16 @@ POST /oauth/token
   &refresh_token=<refresh_token>
   &client_id=nova-os-ios
 
-→ { access_token, token_type:"Bearer", expires_in, refresh_token? }
+→ { access_token, id_token, token_type:"Bearer", expires_in, refresh_token }
 ```
 
 Refresh strategy in the kit:
 
 - Refresh **proactively** when the access token is within a small skew (e.g. 60 s) of expiry, OR
   **reactively** on a `401 authentication_error` from a REST call — refresh once, retry the call once.
+- Persist the replacement `refresh_token` atomically before making another
+  refresh request. Reusing a rotated token is treated as leak detection and
+  revokes its active replacement lineage.
 - If refresh fails (`invalid_grant`), clear the token store and fall back to the interactive
   Auth-Code flow.
 - Never retry a refresh more than once per failure — a refresh loop is a bug, not a backoff.
@@ -150,8 +157,9 @@ hardened store.
 
 ### Logout
 
-Clear the token store and drop the `nova_oidc_session` cookie (web). The kernel issues stateless
-JWTs, so client-side clearing is the logout primitive; short token lifetimes bound the blast radius.
+Revoke the refresh token with `POST /oauth/revoke`, then clear the local token
+store and drop the OIDC session cookie (web). Access tokens remain valid only
+for their short lifetime.
 
 ---
 
@@ -169,8 +177,8 @@ JWTs, so client-side clearing is the logout primitive; short token lifetimes bou
 
 ## 7. References
 
-- LibraOS OIDC provider — `/oauth/{authorize,login,token,userinfo}`; HS256 id_token; PKCE S256.
+- LibraOS OIDC provider — discovery + JWKS and `/oauth/{authorize,login,token,userinfo,revoke}`; RS256 ID token; PKCE S256; rotating refresh tokens.
 - `openapi/libra-os-partner.v1.yaml` — `Deployment.auth` advertises `oidc_enabled` + `issuer`.
 - Contract-unification design — `docs/superpowers/specs/2026-06-12-contract-unification-design.md`
-  (§2 "the contract is three specs", §5 libraos-sdk owns this doc, §6 refresh grant is the kernel gap).
+  (§2 "the contract is three specs", §5 libraos-sdk owns this doc).
 - RFC 7636 (PKCE), RFC 6749 §4.1 (Authorization Code), RFC 6749 §6 (Refresh grant).

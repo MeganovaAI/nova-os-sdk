@@ -196,6 +196,66 @@ func (e ChatCompletionResponseNovaGrounding) Valid() bool {
 	}
 }
 
+// Defines values for CitationCiteSource.
+const (
+	CitationCiteSourceDocument CitationCiteSource = "document"
+	CitationCiteSourceWeb      CitationCiteSource = "web"
+)
+
+// Valid indicates whether the value is a known member of the CitationCiteSource enum.
+func (e CitationCiteSource) Valid() bool {
+	switch e {
+	case CitationCiteSourceDocument:
+		return true
+	case CitationCiteSourceWeb:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CitationType.
+const (
+	CitationTypeCharLocation         CitationType = "char_location"
+	CitationTypeContentBlockLocation CitationType = "content_block_location"
+	CitationTypePageLocation         CitationType = "page_location"
+	CitationTypeWeb                  CitationType = "web"
+)
+
+// Valid indicates whether the value is a known member of the CitationType enum.
+func (e CitationType) Valid() bool {
+	switch e {
+	case CitationTypeCharLocation:
+		return true
+	case CitationTypeContentBlockLocation:
+		return true
+	case CitationTypePageLocation:
+		return true
+	case CitationTypeWeb:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConversationScope.
+const (
+	ConversationScopeCorporate ConversationScope = "corporate"
+	ConversationScopePersonal  ConversationScope = "personal"
+)
+
+// Valid indicates whether the value is a known member of the ConversationScope enum.
+func (e ConversationScope) Valid() bool {
+	switch e {
+	case ConversationScopeCorporate:
+		return true
+	case ConversationScopePersonal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CountTokensMessageRole.
 const (
 	CountTokensMessageRoleAssistant CountTokensMessageRole = "assistant"
@@ -1684,6 +1744,21 @@ func (e GetMemoryParamsScope) Valid() bool {
 	}
 }
 
+// Defines values for CreateMessageParamsXProtocol.
+const (
+	CreateMessageParamsXProtocolAgUi CreateMessageParamsXProtocol = "ag-ui"
+)
+
+// Valid indicates whether the value is a known member of the CreateMessageParamsXProtocol enum.
+func (e CreateMessageParamsXProtocol) Valid() bool {
+	switch e {
+	case CreateMessageParamsXProtocolAgUi:
+		return true
+	default:
+		return false
+	}
+}
+
 // ActionCallback Webhook fired when the action is approved. It is snapshotted onto the row and never surfaced back to clients.
 type ActionCallback struct {
 	Auth struct {
@@ -2150,6 +2225,33 @@ type ChatMessage struct {
 	Role string `json:"role"`
 }
 
+// Citation Evidence attached to a response text block. Document citations use
+// location fields; grounded web citations use `web_uri`/`web_title`.
+// Fields that do not apply to the selected variant are omitted.
+type Citation struct {
+	ChunkIndex      *int               `json:"chunk_index,omitempty"`
+	CiteSource      CitationCiteSource `json:"cite_source"`
+	CitedText       *string            `json:"cited_text,omitempty"`
+	ConfidenceScore *float32           `json:"confidence_score,omitempty"`
+	DocumentIndex   *int               `json:"document_index,omitempty"`
+	DocumentTitle   *string            `json:"document_title,omitempty"`
+	EndBlockIndex   *int               `json:"end_block_index,omitempty"`
+	EndCharIndex    *int               `json:"end_char_index,omitempty"`
+	EndPageNumber   *int               `json:"end_page_number,omitempty"`
+	StartBlockIndex *int               `json:"start_block_index,omitempty"`
+	StartCharIndex  *int               `json:"start_char_index,omitempty"`
+	StartPageNumber *int               `json:"start_page_number,omitempty"`
+	Type            CitationType       `json:"type"`
+	WebTitle        *string            `json:"web_title,omitempty"`
+	WebUri          *string            `json:"web_uri,omitempty"`
+}
+
+// CitationCiteSource defines model for Citation.CiteSource.
+type CitationCiteSource string
+
+// CitationType defines model for Citation.Type.
+type CitationType string
+
 // Connector A connector configuration with secret values masked; secret_keys lists which secrets are set.
 type Connector struct {
 	// Config Connector-specific non-secret settings.
@@ -2218,6 +2320,12 @@ type Conversation struct {
 	// Metadata App-owned metadata map. Omitted when empty.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
+	// ProjectId Project containing the conversation; omitted when it is in General.
+	ProjectId *string `json:"project_id,omitempty"`
+
+	// Scope Personal assistant data or governed organization data.
+	Scope *ConversationScope `json:"scope,omitempty"`
+
 	// Title Null until set via rename.
 	Title *string `json:"title,omitempty"`
 }
@@ -2250,7 +2358,10 @@ type ConversationDetail struct {
 
 	// Metadata Omitted when empty.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
-	Title    *string                 `json:"title,omitempty"`
+
+	// Scope Personal assistant data or governed organization data.
+	Scope ConversationScope `json:"scope"`
+	Title *string           `json:"title,omitempty"`
 }
 
 // ConversationList defines model for ConversationList.
@@ -2262,10 +2373,19 @@ type ConversationList struct {
 type ConversationMessage struct {
 	Content string `json:"content"`
 
+	// Id Stable message id; user turns echo the request's `message_id`.
+	Id *string `json:"id,omitempty"`
+
 	// Role e.g. `user`, `assistant`.
-	Role      string    `json:"role"`
+	Role string `json:"role"`
+
+	// Seq Server-assigned, 1-based monotonic ordering within the conversation.
+	Seq       *int      `json:"seq,omitempty"`
 	Timestamp time.Time `json:"timestamp"`
 }
+
+// ConversationScope Personal assistant data or governed organization data.
+type ConversationScope string
 
 // CountTokensMessage One message in an Anthropic-shaped request.
 type CountTokensMessage struct {
@@ -3412,16 +3532,33 @@ type Message_Content struct {
 
 // MessageRequest defines model for MessageRequest.
 type MessageRequest struct {
-	MaxTokens *int                     `json:"max_tokens,omitempty"`
+	// ConversationId Stable conversation id. When present, the user and assistant turns
+	// are persisted to this conversation; an unknown id is auto-created.
+	ConversationId *string `json:"conversation_id,omitempty"`
+	MaxTokens      *int    `json:"max_tokens,omitempty"`
+
+	// MessageId Client-generated idempotency key for this user turn. Reuse it only
+	// when retrying the same turn. The value is returned as the persisted
+	// user `ConversationMessage.id`.
+	MessageId *string                  `json:"message_id,omitempty"`
 	Messages  []Message                `json:"messages"`
 	Metadata  *MessageRequest_Metadata `json:"metadata,omitempty"`
 
-	// Model Per-call override; matches Anthropic shape, also accepts <vendor>/<model>.
-	Model       *string           `json:"model,omitempty"`
-	Stream      *bool             `json:"stream,omitempty"`
-	System      *string           `json:"system,omitempty"`
-	Temperature *float32          `json:"temperature,omitempty"`
-	Tools       *[]ToolDefinition `json:"tools,omitempty"`
+	// Model Anthropic-compatible required selector. Desk clients normally set
+	// this to the selected employee/persona id and also send the same id
+	// as `metadata.agent_id`. A `<vendor>/<model>` value may act as an
+	// answer-model override when the deployment permits it.
+	Model string `json:"model"`
+
+	// Scope Personal assistant data or governed organization data.
+	Scope       *ConversationScope `json:"scope,omitempty"`
+	Stream      *bool              `json:"stream,omitempty"`
+	System      *string            `json:"system,omitempty"`
+	Temperature *float32           `json:"temperature,omitempty"`
+
+	// ThreadId AG-UI alias for `conversation_id`; prefer `conversation_id` in Desk clients.
+	ThreadId *string           `json:"threadId,omitempty"`
+	Tools    *[]ToolDefinition `json:"tools,omitempty"`
 }
 
 // MessageRequest_Metadata defines model for MessageRequest.Metadata.
@@ -4179,8 +4316,10 @@ type SyncStatus struct {
 
 // TextBlock defines model for TextBlock.
 type TextBlock struct {
-	Text string        `json:"text"`
-	Type TextBlockType `json:"type"`
+	// Citations Present only when the answer contains structured citations.
+	Citations *[]Citation   `json:"citations,omitempty"`
+	Text      string        `json:"text"`
+	Type      TextBlockType `json:"type"`
 }
 
 // TextBlockType defines model for TextBlock.Type.
@@ -4523,6 +4662,9 @@ type ListConversationsParams struct {
 	// Agent Filter to conversations for a single agent.
 	Agent *string `form:"agent,omitempty" json:"agent,omitempty"`
 
+	// Scope Filter within the server-enforced personal/company boundary.
+	Scope *ConversationScope `form:"scope,omitempty" json:"scope,omitempty"`
+
 	// Limit Maximum conversations to return (1-200, default 50).
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
@@ -4857,6 +4999,15 @@ type PutSettingJSONBody struct {
 	// Value New value (type varies per key).
 	Value interface{} `json:"value"`
 }
+
+// CreateMessageParams defines parameters for CreateMessage.
+type CreateMessageParams struct {
+	// XProtocol Set to `ag-ui` to request canonical AG-UI SSE events.
+	XProtocol *CreateMessageParamsXProtocol `json:"X-Protocol,omitempty"`
+}
+
+// CreateMessageParamsXProtocol defines parameters for CreateMessage.
+type CreateMessageParamsXProtocol string
 
 // RealtimeVoiceParams defines parameters for RealtimeVoice.
 type RealtimeVoiceParams struct {
@@ -6849,9 +7000,9 @@ type ClientInterface interface {
 	GetUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateMessageWithBody request with any body
-	CreateMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateMessageWithBody(ctx context.Context, params *CreateMessageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateMessage(ctx context.Context, params *CreateMessageParams, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CountTokensWithBody request with any body
 	CountTokensWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -9481,8 +9632,8 @@ func (c *Client) GetUser(ctx context.Context, userId string, reqEditors ...Reque
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateMessageRequestWithBody(c.Server, contentType, body)
+func (c *Client) CreateMessageWithBody(ctx context.Context, params *CreateMessageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMessageRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9493,8 +9644,8 @@ func (c *Client) CreateMessageWithBody(ctx context.Context, contentType string, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateMessage(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateMessageRequest(c.Server, body)
+func (c *Client) CreateMessage(ctx context.Context, params *CreateMessageParams, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMessageRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11782,6 +11933,22 @@ func NewListConversationsRequest(server string, params *ListConversationsParams)
 		if params.Agent != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent", *params.Agent, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -16575,18 +16742,18 @@ func NewGetUserRequest(server string, userId string) (*http.Request, error) {
 }
 
 // NewCreateMessageRequest calls the generic CreateMessage builder with application/json body
-func NewCreateMessageRequest(server string, body CreateMessageJSONRequestBody) (*http.Request, error) {
+func NewCreateMessageRequest(server string, params *CreateMessageParams, body CreateMessageJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateMessageRequestWithBody(server, "application/json", bodyReader)
+	return NewCreateMessageRequestWithBody(server, params, "application/json", bodyReader)
 }
 
 // NewCreateMessageRequestWithBody generates requests for CreateMessage with any type of body
-func NewCreateMessageRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateMessageRequestWithBody(server string, params *CreateMessageParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -16610,6 +16777,21 @@ func NewCreateMessageRequestWithBody(server string, contentType string, body io.
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XProtocol != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Protocol", *params.XProtocol, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-Protocol", headerParam0)
+		}
+
+	}
 
 	return req, nil
 }
@@ -17392,9 +17574,9 @@ type ClientWithResponsesInterface interface {
 	GetUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*GetUserResponse, error)
 
 	// CreateMessageWithBodyWithResponse request with any body
-	CreateMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
+	CreateMessageWithBodyWithResponse(ctx context.Context, params *CreateMessageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
 
-	CreateMessageWithResponse(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
+	CreateMessageWithResponse(ctx context.Context, params *CreateMessageParams, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error)
 
 	// CountTokensWithBodyWithResponse request with any body
 	CountTokensWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CountTokensResponse, error)
@@ -18667,6 +18849,7 @@ type ListConversationsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ConversationList
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
 }
 
@@ -21475,9 +21658,12 @@ type CreateMessageResponse struct {
 	JSON200      *MessageResponse
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON422      *Error
 	JSON426      *UpgradeRequired
 	JSON429      *RateLimited
+	JSON503      *Error
 }
 
 // Status returns HTTPResponse.Status
@@ -23475,16 +23661,16 @@ func (c *ClientWithResponses) GetUserWithResponse(ctx context.Context, userId st
 }
 
 // CreateMessageWithBodyWithResponse request with arbitrary body returning *CreateMessageResponse
-func (c *ClientWithResponses) CreateMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
-	rsp, err := c.CreateMessageWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateMessageWithBodyWithResponse(ctx context.Context, params *CreateMessageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
+	rsp, err := c.CreateMessageWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateMessageResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateMessageWithResponse(ctx context.Context, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
-	rsp, err := c.CreateMessage(ctx, body, reqEditors...)
+func (c *ClientWithResponses) CreateMessageWithResponse(ctx context.Context, params *CreateMessageParams, body CreateMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMessageResponse, error) {
+	rsp, err := c.CreateMessage(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -25720,6 +25906,13 @@ func ParseListConversationsResponse(rsp *http.Response) (*ListConversationsRespo
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
@@ -31025,12 +31218,26 @@ func ParseCreateMessageResponse(rsp *http.Response) (*CreateMessageResponse, err
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 426:
 		var dest UpgradeRequired
@@ -31045,6 +31252,13 @@ func ParseCreateMessageResponse(rsp *http.Response) (*CreateMessageResponse, err
 			return nil, err
 		}
 		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
 
 	case rsp.StatusCode == 200:
 		// Content-type (text/event-stream) unsupported
