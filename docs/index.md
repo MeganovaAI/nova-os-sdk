@@ -22,6 +22,7 @@ Partner integration docs for [LibraOS](https://github.com/libraos/sdk) — the a
 | [Web Search Backends](web-search.md) | Five pluggable backends, cost-quality table, fallback chains, reformulator, recency intent |
 | [Comparing Search Backends](comparing-search-backends.md) | Side-by-side pricing / latency / features for each backend vs the Anthropic Claude tool |
 | [Custom Tools](custom-tools.md) | Mode A (SSE inline) + Mode B (webhook) end-to-end, HMAC signing, idempotency |
+| [Desk Chat API](desk-chat-api.md) | Building a native chat client: OIDC PKCE, conversations, `/v1/messages` AG-UI streaming, reconnect/idempotency semantics |
 | [Deployment](deployment.md) | Self-hosted vs cloud, three deploy shapes, reverse-proxy templates, observability |
 | [Scenarios](scenarios.md) | 10 lifecycle workflows traced end-to-end with wire-level detail |
 
