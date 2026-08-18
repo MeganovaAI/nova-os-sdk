@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "tok" };
 const mk = (b: unknown, s = 200) =>
@@ -11,7 +11,7 @@ const raw = {
 };
 
 const client = (fetchMock: unknown) =>
-  new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+  new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
 
 /**
  * The employee half of connector config (desk#240). The property worth

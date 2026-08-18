@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "tok" };
 const mk = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
-const client = (f: unknown) => new NovaClient({ baseUrl: "http://x", auth, fetch: f as unknown as typeof fetch });
+const client = (f: unknown) => new LibraOSClient({ baseUrl: "http://x", auth, fetch: f as unknown as typeof fetch });
 
 describe("personal domain policy", () => {
   it("maps the policy and its caveat", async () => {

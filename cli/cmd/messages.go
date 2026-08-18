@@ -54,7 +54,7 @@ var messagesSendCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(msgTimeoutSec)*time.Second)
 		defer cancel()
 
-		resp, err := c.CreateMessageWithResponse(ctx, body, withEndUserHeader(msgEndUser))
+		resp, err := c.CreateMessageWithResponse(ctx, &gen.CreateMessageParams{}, body, withEndUserHeader(msgEndUser))
 		if err != nil {
 			return fmt.Errorf("send message: %w", err)
 		}
@@ -153,10 +153,11 @@ func buildMessageRequest(agentID, prompt string, stream bool) (gen.CreateMessage
 
 	body := gen.CreateMessageJSONRequestBody{
 		Messages: []gen.Message{msg},
+		Model:    agentID,
 		Stream:   &stream,
 	}
 	if msgModel != "" {
-		body.Model = &msgModel
+		body.Model = msgModel
 	}
 	if msgMaxTokens > 0 {
 		body.MaxTokens = &msgMaxTokens

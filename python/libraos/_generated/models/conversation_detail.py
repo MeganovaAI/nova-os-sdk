@@ -8,6 +8,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..models.conversation_scope import ConversationScope
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -28,6 +29,7 @@ class ConversationDetail:
         created_at (datetime.datetime):
         last_active_at (datetime.datetime):
         message_count (int):
+        scope (ConversationScope): Personal assistant data or governed organization data.
         messages (list[ConversationMessage]):
         title (None | str | Unset):
         metadata (ConversationDetailMetadata | Unset): Omitted when empty.
@@ -38,6 +40,7 @@ class ConversationDetail:
     created_at: datetime.datetime
     last_active_at: datetime.datetime
     message_count: int
+    scope: ConversationScope
     messages: list[ConversationMessage]
     title: None | str | Unset = UNSET
     metadata: ConversationDetailMetadata | Unset = UNSET
@@ -53,6 +56,8 @@ class ConversationDetail:
         last_active_at = self.last_active_at.isoformat()
 
         message_count = self.message_count
+
+        scope = self.scope.value
 
         messages = []
         for messages_item_data in self.messages:
@@ -78,6 +83,7 @@ class ConversationDetail:
                 "created_at": created_at,
                 "last_active_at": last_active_at,
                 "message_count": message_count,
+                "scope": scope,
                 "messages": messages,
             }
         )
@@ -103,6 +109,8 @@ class ConversationDetail:
         last_active_at = isoparse(d.pop("last_active_at"))
 
         message_count = d.pop("message_count")
+
+        scope = ConversationScope(d.pop("scope"))
 
         messages = []
         _messages = d.pop("messages")
@@ -133,6 +141,7 @@ class ConversationDetail:
             created_at=created_at,
             last_active_at=last_active_at,
             message_count=message_count,
+            scope=scope,
             messages=messages,
             title=title,
             metadata=metadata,

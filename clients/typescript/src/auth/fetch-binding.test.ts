@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { NovaClient } from "../client";
+import { LibraOSClient } from "../client";
 import { OidcClient } from "./oidc";
 
 /**
@@ -30,14 +30,14 @@ function installStrictFetch(response: Response): void {
 const auth = { getAccessToken: async () => "tok" };
 
 describe("global fetch is bound to globalThis", () => {
-  it("NovaClient routes through fetch with the window receiver (rawFetch)", async () => {
+  it("LibraOSClient routes through fetch with the window receiver (rawFetch)", async () => {
     installStrictFetch(
       new Response(JSON.stringify({ text: "ok" }), {
         status: 200,
         headers: { "content-type": "application/json" },
       }),
     );
-    const client = new NovaClient({ baseUrl: "http://x", auth });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth });
     await expect(
       client.transcribeAudio(new Blob(["a"], { type: "audio/webm" })),
     ).resolves.toEqual({ text: "ok" });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "tok" };
 
@@ -10,7 +10,7 @@ describe("operator organizations", () => {
         { id: "org-1", name: "Jim's organization", slug: "jims-organization", role: "owner" },
       ],
     }), { status: 200, headers: { "content-type": "application/json" } }));
-    const client = new NovaClient({
+    const client = new LibraOSClient({
       baseUrl: "http://x",
       auth,
       fetch: fetchMock as unknown as typeof fetch,
@@ -26,7 +26,7 @@ describe("operator organizations", () => {
 
   it("normalizes an omitted organization list", async () => {
     const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
-    const client = new NovaClient({
+    const client = new LibraOSClient({
       baseUrl: "http://x",
       auth,
       fetch: fetchMock as unknown as typeof fetch,

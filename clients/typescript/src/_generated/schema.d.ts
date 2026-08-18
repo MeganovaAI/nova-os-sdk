@@ -71,11 +71,15 @@ export interface paths {
         put?: never;
         /**
          * Send an Anthropic-compatible message
-         * @description Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+         * @description Route to a LibraOS agent via `metadata.agent_id`; omit for the default agent.
          *
          *     When `stream:false`, returns a single `MessageResponse`.
-         *     When `stream:true`, returns SSE with one `event:` line + JSON
-         *     payload per event. Event types defined by `StreamEvent`.
+         *     When `stream:true`, returns SSE. With `X-Protocol: ag-ui`, frames use
+         *     the AG-UI contract in `openapi/ag-ui-events.schema.json`; otherwise
+         *     they use the Anthropic-compatible event sequence defined by `StreamEvent`.
+         *     Desk clients send `conversation_id`, a stable per-turn `message_id`,
+         *     and an explicit `scope` so the turn is persisted within the correct
+         *     personal/company boundary.
          */
         post: operations["createMessage"];
         delete?: never;
@@ -2848,6 +2852,32 @@ export interface components {
         };
         /** @enum {string} */
         Role: "user" | "assistant" | "system";
+        /**
+         * @description Evidence attached to a response text block. Document citations use
+         *     location fields; grounded web citations use `web_uri`/`web_title`.
+         *     Fields that do not apply to the selected variant are omitted.
+         */
+        Citation: {
+            /** @enum {string} */
+            type: "char_location" | "page_location" | "content_block_location" | "web";
+            /** @enum {string} */
+            cite_source: "document" | "web";
+            cited_text?: string;
+            document_index?: number;
+            document_title?: string;
+            start_char_index?: number;
+            end_char_index?: number;
+            start_page_number?: number;
+            end_page_number?: number;
+            start_block_index?: number;
+            end_block_index?: number;
+            /** Format: uri */
+            web_uri?: string;
+            web_title?: string;
+            /** Format: float */
+            confidence_score?: number;
+            chunk_index?: number;
+        };
         TextBlock: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -2855,6 +2885,8 @@ export interface components {
              */
             type: "TextBlock";
             text: string;
+            /** @description Present only when the answer contains structured citations. */
+            citations?: components["schemas"]["Citation"][];
         };
         ToolUseBlock: {
             /**
@@ -2896,8 +2928,31 @@ export interface components {
         };
         MessageRequest: {
             messages: components["schemas"]["Message"][];
-            /** @description Per-call override; matches Anthropic shape, also accepts <vendor>/<model>. */
-            model?: string;
+            /**
+             * @description Anthropic-compatible required selector. Desk clients normally set
+             *     this to the selected employee/persona id and also send the same id
+             *     as `metadata.agent_id`. A `<vendor>/<model>` value may act as an
+             *     answer-model override when the deployment permits it.
+             */
+            model: string;
+            /**
+             * @description Stable conversation id. When present, the user and assistant turns
+             *     are persisted to this conversation; an unknown id is auto-created.
+             */
+            conversation_id?: string;
+            /** @description AG-UI alias for `conversation_id`; prefer `conversation_id` in Desk clients. */
+            threadId?: string;
+            /**
+             * @description Client-generated idempotency key for this user turn. Reuse it only
+             *     when retrying the same turn. The value is returned as the persisted
+             *     user `ConversationMessage.id`.
+             */
+            message_id?: string;
+            /**
+             * @description Required by Desk clients. Selects the personal or governed-company
+             *     data boundary for this turn and establishes a new conversation's scope.
+             */
+            scope?: components["schemas"]["ConversationScope"];
             /** @default 4096 */
             max_tokens: number;
             temperature?: number;
@@ -3983,6 +4038,11 @@ export interface components {
             object: "file";
             deleted: boolean;
         };
+        /**
+         * @description Personal assistant data or governed organization data.
+         * @enum {string}
+         */
+        ConversationScope: "personal" | "corporate";
         /** @description Per-user conversation summary. */
         Conversation: {
             id: string;
@@ -3994,6 +4054,13 @@ export interface components {
             /** Format: date-time */
             last_active_at: string;
             message_count: number;
+            /** @description Project containing the conversation; omitted when it is in General. */
+            project_id?: string | null;
+            /**
+             * @description Effective conversation boundary. Present on list results; a newly
+             *     created empty conversation may omit it until its first turn.
+             */
+            scope?: components["schemas"]["ConversationScope"];
             /** @description App-owned metadata map. Omitted when empty. */
             metadata?: {
                 [key: string]: unknown;
@@ -4009,6 +4076,7 @@ export interface components {
             /** Format: date-time */
             last_active_at: string;
             message_count: number;
+            scope: components["schemas"]["ConversationScope"];
             messages: components["schemas"]["ConversationMessage"][];
             /** @description Omitted when empty. */
             metadata?: {
@@ -4016,11 +4084,15 @@ export interface components {
             };
         };
         ConversationMessage: {
+            /** @description Stable message id; user turns echo the request's `message_id`. */
+            id?: string;
             /** @description e.g. `user`, `assistant`. */
             role: string;
             content: string;
             /** Format: date-time */
             timestamp: string;
+            /** @description Server-assigned, 1-based monotonic ordering within the conversation. */
+            seq?: number;
         };
         ConversationList: {
             conversations: components["schemas"]["Conversation"][];
@@ -5187,7 +5259,10 @@ export interface operations {
     createMessage: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Set to `ag-ui` to request canonical AG-UI SSE events. */
+                "X-Protocol"?: "ag-ui";
+            };
             path?: never;
             cookie?: never;
         };
@@ -5200,6 +5275,12 @@ export interface operations {
             /** @description Message response (non-stream) or SSE stream. */
             200: {
                 headers: {
+                    /** @description AG-UI protocol version when `X-Protocol: ag-ui` was selected. */
+                    "X-Ag-Ui-Version"?: string;
+                    /** @description Provider model that actually produced the answer. */
+                    "X-Nova-Model-Used"?: string;
+                    /** @description Whether model fallback was used. */
+                    "X-Nova-Model-Fallback-Triggered"?: "true" | "false" | "1" | "0";
                     [name: string]: unknown;
                 };
                 content: {
@@ -5209,9 +5290,28 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description Message or structured-output validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             426: components["responses"]["UpgradeRequired"];
             429: components["responses"]["RateLimited"];
+            /** @description The selected agent or an upstream dependency is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     submitCustomToolResult: {
@@ -7515,6 +7615,8 @@ export interface operations {
             query?: {
                 /** @description Filter to conversations for a single agent. */
                 agent?: string;
+                /** @description Filter within the server-enforced personal/company boundary. */
+                scope?: components["schemas"]["ConversationScope"];
                 /** @description Maximum conversations to return (1-200, default 50). */
                 limit?: number;
             };
@@ -7533,6 +7635,7 @@ export interface operations {
                     "application/json": components["schemas"]["ConversationList"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
         };
     };

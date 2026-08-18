@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "tok" };
 const mk = (b: unknown, s = 200) =>
@@ -17,7 +17,7 @@ describe("listAgents", () => {
       captured = { input, init };
       return mk({ data: [{ id: "marketing-assistant", name: "Marketing", agent_type: "persona", brain: true }] });
     });
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
 
     const agents = await client.listAgents();
 
@@ -52,7 +52,7 @@ describe("agent CRUD (#61)", () => {
 
   it("createAgent POSTs /v1/agents with the beta header handled internally", async () => {
     const { fetchMock, get } = cap();
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const agent = await client.createAgent({ name: "New", agent_type: "persona" });
     expect(agent).toMatchObject({ id: "new-agent" });
     expect(url(get())).toContain("/v1/agents");
@@ -63,7 +63,7 @@ describe("agent CRUD (#61)", () => {
 
   it("getAgent GETs /v1/agents/{id} with the beta header", async () => {
     const { fetchMock, get } = cap();
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await client.getAgent("marketing-assistant");
     expect(url(get())).toContain("/v1/agents/marketing-assistant");
     expect(method(get())).toBe("GET");
@@ -72,7 +72,7 @@ describe("agent CRUD (#61)", () => {
 
   it("updateAgent PUTs only the supplied fields with the beta header", async () => {
     const { fetchMock, get } = cap();
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await client.updateAgent("marketing-assistant", { system: "Use the house style." });
     expect(url(get())).toContain("/v1/agents/marketing-assistant");
     expect(method(get())).toBe("PUT");
@@ -86,7 +86,7 @@ describe("agent CRUD (#61)", () => {
       c = { input, init };
       return new Response(null, { status: 204 });
     });
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await client.deleteAgent("old-agent");
     const u = typeof c!.input === "string" ? c!.input : c!.input.url;
     const m = c!.init?.method ?? (typeof c!.input === "string" ? undefined : c!.input.method);

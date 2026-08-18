@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "tok" };
 const mk = (b: unknown, s = 200) =>
@@ -37,7 +37,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   it("listCollections() GETs /api/knowledge/collections and maps snake→camel", async () => {
     const fetchMock = vi.fn(async () => mk([sampleRaw]));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const result = await client.listCollections();
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.method).toBe("GET");
@@ -54,7 +54,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
       calls.push([u, init]);
       return mk(sampleRaw, 201);
     });
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const result = await client.createCollection({
       name: "Engineering Docs",
       description: "All eng documents",
@@ -75,7 +75,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   it("getCollection(id) GETs /api/knowledge/collections/:id", async () => {
     const fetchMock = vi.fn(async () => mk(sampleRaw));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const result = await client.getCollection("col-1");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.method).toBe("GET");
@@ -87,7 +87,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   it("deleteCollection(id) DELETEs /api/knowledge/collections/:id", async () => {
     const fetchMock = vi.fn(async () => mk(null, 204));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await client.deleteCollection("col-1");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.method).toBe("DELETE");
@@ -101,7 +101,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
       { id: "doc-1", collection_id: "col-1", filename: "a.pdf", content_type: "application/pdf", chunk_count: 5 },
     ];
     const fetchMock = vi.fn(async () => mk(docs));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const result = await client.listCollectionDocuments("col-1");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.method).toBe("GET");
@@ -113,7 +113,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   it("ingestCollectionText(id, content, {title}) POSTs {content, collection, source} to /api/knowledge/ingest", async () => {
     const fetchMock = vi.fn(async () => mk(null, 200));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await client.ingestCollectionText("col-1", "Hello world", { title: "my-doc" });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.method).toBe("POST");
@@ -128,7 +128,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   it("uploadCollectionDocument(id, blob, {fileName}) POSTs multipart to /api/documents/upload/:id", async () => {
     const fetchMock = vi.fn(async () => mk({ uploaded: "test.pdf", size: 1024 }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const blob = new Blob(["content"], { type: "application/pdf" });
     const result = await client.uploadCollectionDocument("col-1", blob, { fileName: "test.pdf" });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
@@ -142,7 +142,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   it("deleteCollectionDocument(sourceId) DELETEs /api/knowledge/:sourceId", async () => {
     const fetchMock = vi.fn(async () => mk(null, 204));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await client.deleteCollectionDocument("my-source-id");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.method).toBe("DELETE");
@@ -153,7 +153,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   it("bindAgentCollection(agentId, collectionId) POSTs {collection_id} to /api/agents/:id/collections", async () => {
     const fetchMock = vi.fn(async () => mk({ status: "bound" }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const result = await client.bindAgentCollection("agent-a", "col-1");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.method).toBe("POST");
@@ -166,7 +166,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   it("unbindAgentCollection(agentId, collectionId) DELETEs /api/agents/:id/collections/:collectionId", async () => {
     const fetchMock = vi.fn(async () => mk(null, 204));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await client.unbindAgentCollection("agent-a", "col-1");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.method).toBe("DELETE");
@@ -184,7 +184,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
       if (String(url).includes("/api/agents/agent-a")) return mk({ bound_collections: ["col-1"] });
       return mk([col1, col2]); // /api/knowledge/collections
     });
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     const result = await client.listAgentCollections("agent-a");
     expect(result).toHaveLength(1);
     expect(result[0]!.id).toBe("col-1");
@@ -193,7 +193,7 @@ describe("Knowledge Collection CRUD + agent binding", () => {
 
   it("listAgentCollections returns [] when the agent has no bound_collections (#53)", async () => {
     const fetchMock = vi.fn(async () => mk({ bound_collections: [] }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     expect(await client.listAgentCollections("agent-a")).toEqual([]);
     // must NOT even fetch the collections list when nothing is bound
     expect(fetchMock).toHaveBeenCalledTimes(1);

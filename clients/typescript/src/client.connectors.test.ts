@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "tok" };
 const mk = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
@@ -13,7 +13,7 @@ const raw = {
 describe("connector configs", () => {
   it("listConnectorConfigs unwraps {connectors} and maps the masked view", async () => {
     const fetchMock = vi.fn(async () => mk({ connectors: [raw] }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     expect(await client.listConnectorConfigs()).toEqual([{
       kind: "freshdesk", tenantId: "acme", enabled: true, groupId: "support",
       config: { subdomain: "acme" }, secretKeys: ["api_key", "webhook_secret"], updatedAt: "t1",
@@ -27,7 +27,7 @@ describe("connector configs", () => {
 
   it("putConnectorConfig PUTs snake_case with secrets merge payload", async () => {
     const fetchMock = vi.fn(async () => mk({ connector: raw }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await client.putConnectorConfig("freshdesk", {
       enabled: true, groupId: "support",
       config: { subdomain: "acme" },
@@ -46,7 +46,7 @@ describe("connector configs", () => {
   it("getConnectorConfig unwraps {connector}; delete DELETEs", async () => {
     const calls: string[] = [];
     const fetchMock = vi.fn(async (url: string, init: RequestInit) => { calls.push(`${init.method} ${url}`); return mk({ connector: raw }); });
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     expect((await client.getConnectorConfig("freshdesk")).secretKeys).toContain("api_key");
     await client.deleteConnectorConfig("freshdesk");
     expect(calls).toEqual([
@@ -60,13 +60,13 @@ describe("connector configs", () => {
   // here would silently revoke everyone's permission on every secret rotation.
   it("omits personal_allowed unless the caller names it", async () => {
     const fetchMock = vi.fn(async () => mk({ connector: raw }));
-    const c = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const c = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
     await c.putConnectorConfig("freshdesk", { enabled: true, secrets: { api_key: "rotated" } });
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string)).not.toHaveProperty("personal_allowed");
 
     const fetchMock2 = vi.fn(async () => mk({ connector: { ...raw, personal_allowed: true } }));
-    const c2 = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock2 as unknown as typeof fetch });
+    const c2 = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock2 as unknown as typeof fetch });
     const out = await c2.putConnectorConfig("freshdesk", { enabled: true, personalAllowed: true });
     const [, init2] = fetchMock2.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init2.body as string).personal_allowed).toBe(true);

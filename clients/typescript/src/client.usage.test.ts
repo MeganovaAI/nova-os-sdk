@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { NovaClient } from "./client";
+import { LibraOSClient } from "./client";
 
 const auth = { getAccessToken: async () => "tok" };
 
@@ -16,7 +16,7 @@ describe("usage summary", () => {
       by_agent: [{ agent_id: "quanta", tokens: 1200, prompt_tokens: 900, completion_tokens: 300, calls: 7, cost_usd: 1.25, has_pricing: true }],
       by_model: [{ model: "openai/gpt-5", tokens: 1200, prompt_tokens: 900, completion_tokens: 300, calls: 7, cost_usd: 1.25, has_pricing: true }],
     }), { status: 200, headers: { "content-type": "application/json" } }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
 
     const result = await client.getUsageSummary("30d");
 
@@ -32,7 +32,7 @@ describe("usage summary", () => {
 
   it("normalizes omitted arrays and counters", async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ range: "today" }), { status: 200 }));
-    const client = new NovaClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
+    const client = new LibraOSClient({ baseUrl: "http://x", auth, fetch: fetchMock as unknown as typeof fetch });
 
     const result = await client.getUsageSummary("today");
 

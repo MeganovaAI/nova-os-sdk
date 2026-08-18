@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: LibraOS Partner API
-  version: 1.0.0-alpha.6
+  version: 1.0.0-alpha.7
   description: |
     Partner integration API for LibraOS. Mirrors Anthropic Managed Agents
     1:1 for the compat surface (Section 1.1 of the design); extends with
@@ -591,6 +591,34 @@ components:
       type: string
       enum: [user, assistant, system]
 
+    Citation:
+      type: object
+      description: |
+        Evidence attached to a response text block. Document citations use
+        location fields; grounded web citations use `web_uri`/`web_title`.
+        Fields that do not apply to the selected variant are omitted.
+      required: [type, cite_source]
+      properties:
+        type:
+          type: string
+          enum: [char_location, page_location, content_block_location, web]
+        cite_source:
+          type: string
+          enum: [document, web]
+        cited_text: { type: string }
+        document_index: { type: integer }
+        document_title: { type: string }
+        start_char_index: { type: integer }
+        end_char_index: { type: integer }
+        start_page_number: { type: integer }
+        end_page_number: { type: integer }
+        start_block_index: { type: integer }
+        end_block_index: { type: integer }
+        web_uri: { type: string, format: uri }
+        web_title: { type: string }
+        confidence_score: { type: number, format: float }
+        chunk_index: { type: integer }
+
     TextBlock:
       type: object
       required: [type, text]
@@ -600,6 +628,10 @@ components:
           enum: [text]
         text:
           type: string
+        citations:
+          type: array
+          description: Present only when the answer contains structured citations.
+          items: { $ref: '#/components/schemas/Citation' }
 
     ToolUseBlock:
       type: object
@@ -677,7 +709,7 @@ components:
 
     MessageRequest:
       type: object
-      required: [messages]
+      required: [model, messages]
       properties:
         messages:
           type: array
@@ -685,8 +717,30 @@ components:
             $ref: '#/components/schemas/Message'
         model:
           type: string
-          description: Per-call override; matches Anthropic shape, also accepts <vendor>/<model>.
-          pattern: '^[a-z0-9_.-]+/[A-Za-z0-9_.:-]+$|^claude-[a-z0-9._-]+$'
+          description: |
+            Anthropic-compatible required selector. Desk clients normally set
+            this to the selected employee/persona id and also send the same id
+            as `metadata.agent_id`. A `<vendor>/<model>` value may act as an
+            answer-model override when the deployment permits it.
+        conversation_id:
+          type: string
+          description: |
+            Stable conversation id. When present, the user and assistant turns
+            are persisted to this conversation; an unknown id is auto-created.
+        threadId:
+          type: string
+          description: AG-UI alias for `conversation_id`; prefer `conversation_id` in Desk clients.
+        message_id:
+          type: string
+          description: |
+            Client-generated idempotency key for this user turn. Reuse it only
+            when retrying the same turn. The value is returned as the persisted
+            user `ConversationMessage.id`.
+        scope:
+          $ref: '#/components/schemas/ConversationScope'
+          description: |
+            Required by Desk clients. Selects the personal or governed-company
+            data boundary for this turn and establishes a new conversation's scope.
         max_tokens:
           type: integer
           minimum: 1
@@ -2225,6 +2279,10 @@ components:
           const: file
         deleted:
           type: boolean
+    ConversationScope:
+      type: string
+      enum: [personal, corporate]
+      description: Personal assistant data or governed organization data.
     Conversation:
       type: object
       description: Per-user conversation summary.
@@ -2244,6 +2302,15 @@ components:
           format: date-time
         message_count:
           type: integer
+        project_id:
+          type: string
+          nullable: true
+          description: Project containing the conversation; omitted when it is in General.
+        scope:
+          $ref: '#/components/schemas/ConversationScope'
+          description: |
+            Effective conversation boundary. Present on list results; a newly
+            created empty conversation may omit it until its first turn.
         metadata:
           type: object
           additionalProperties: true
@@ -2251,7 +2318,7 @@ components:
     ConversationDetail:
       type: object
       description: Conversation summary plus its message log.
-      required: [id, agent_id, created_at, last_active_at, message_count, messages]
+      required: [id, agent_id, created_at, last_active_at, message_count, scope, messages]
       properties:
         id: { type: string }
         agent_id: { type: string }
@@ -2266,6 +2333,8 @@ components:
           format: date-time
         message_count:
           type: integer
+        scope:
+          $ref: '#/components/schemas/ConversationScope'
         messages:
           type: array
           items: { $ref: '#/components/schemas/ConversationMessage' }
@@ -2277,6 +2346,9 @@ components:
       type: object
       required: [role, content, timestamp]
       properties:
+        id:
+          type: string
+          description: Stable message id; user turns echo the request's `message_id`.
         role:
           type: string
           description: e.g. `user`, `assistant`.
@@ -2285,6 +2357,10 @@ components:
         timestamp:
           type: string
           format: date-time
+        seq:
+          type: integer
+          minimum: 1
+          description: Server-assigned, 1-based monotonic ordering within the conversation.
     ConversationList:
       type: object
       required: [conversations]
@@ -3615,12 +3691,24 @@ paths:
       operationId: createMessage
       summary: Send an Anthropic-compatible message
       description: |
-        Route to a Nova OS agent via `metadata.agent_id`; omit for the default agent.
+        Route to a LibraOS agent via `metadata.agent_id`; omit for the default agent.
 
         When `stream:false`, returns a single `MessageResponse`.
-        When `stream:true`, returns SSE with one `event:` line + JSON
-        payload per event. Event types defined by `StreamEvent`.
+        When `stream:true`, returns SSE. With `X-Protocol: ag-ui`, frames use
+        the AG-UI contract in `openapi/ag-ui-events.schema.json`; otherwise
+        they use the Anthropic-compatible event sequence defined by `StreamEvent`.
+        Desk clients send `conversation_id`, a stable per-turn `message_id`,
+        and an explicit `scope` so the turn is persisted within the correct
+        personal/company boundary.
       tags: [Messages]
+      parameters:
+        - name: X-Protocol
+          in: header
+          required: false
+          description: Set to `ag-ui` to request canonical AG-UI SSE events.
+          schema:
+            type: string
+            enum: [ag-ui]
       requestBody:
         required: true
         content:
@@ -3630,6 +3718,16 @@ paths:
       responses:
         '200':
           description: Message response (non-stream) or SSE stream.
+          headers:
+            X-Ag-Ui-Version:
+              description: "AG-UI protocol version when `X-Protocol: ag-ui` was selected."
+              schema: { type: string }
+            X-Nova-Model-Used:
+              description: Provider model that actually produced the answer.
+              schema: { type: string }
+            X-Nova-Model-Fallback-Triggered:
+              description: Whether model fallback was used.
+              schema: { type: string, enum: ['true', 'false', '1', '0'] }
           content:
             application/json:
               schema:
@@ -3639,8 +3737,19 @@ paths:
                 $ref: '#/components/schemas/StreamEvent'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Message or structured-output validation failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: The selected agent or an upstream dependency is unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '426': { $ref: '#/components/responses/UpgradeRequired' }
 
   /v1/managed/agents/messages/{message_id}/custom_tool_results:
@@ -5555,6 +5664,11 @@ paths:
           required: false
           description: Filter to conversations for a single agent.
           schema: { type: string }
+        - name: scope
+          in: query
+          required: false
+          description: Filter within the server-enforced personal/company boundary.
+          schema: { $ref: '#/components/schemas/ConversationScope' }
         - name: limit
           in: query
           required: false
@@ -5567,6 +5681,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ConversationList' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '400': { $ref: '#/components/responses/BadRequest' }
     post:
       operationId: createConversation
       summary: Create a conversation
