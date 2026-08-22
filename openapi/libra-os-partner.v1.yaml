@@ -8215,3 +8215,405 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+
+  # ── Managed knowledge base (libraos#1147) ───────────────────────────────────
+  # This spec covered /v1/* and /agents/v1/* and omitted the /api/knowledge/*
+  # and /api/super-nova/* surfaces entirely — 164 routes with zero matches for
+  # the endpoints an application built on the managed knowledge base actually
+  # calls. An integrator hand-wrote a 117-line client because there was nothing
+  # to generate from, and separately filed a feature request for
+  # POST /api/knowledge/debug-retrieve, which already existed and which they
+  # could only have found by grepping route registrations.
+  #
+  # Adding them here makes them contractual and generated, and the caller-side
+  # route index must move in the same change: sdk-check compares the two sets
+  # in BOTH directions and fails on either difference.
+
+  /api/knowledge/search:
+    post:
+      operationId: searchKnowledge
+      summary: Search a knowledge collection
+      description: >-
+        Hybrid retrieval over one collection. `collection` accepts a collection
+        id OR its exact display name; an unresolvable value returns 404 rather
+        than an empty list, because `[]` with HTTP 200 is indistinguishable from
+        "the store is empty" or "retrieval is broken". Omitting `collection`
+        defaults to the caller's own and keeps the empty-list behaviour.
+        Set `debug: true` for a per-arm breakdown (BM25 ranking, vector ranking,
+        keyword fallback, the full fused ordering before truncation, and the
+        resolved rrf_k) — only the surreal backend fuses arms.
+      tags: [Knowledge]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string }
+                collection: { type: string }
+                top_k: { type: integer, default: 5 }
+                threshold: { type: number }
+                metadata_filter:
+                  type: object
+                  additionalProperties: { type: string }
+                debug: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Matching chunks, or `{chunks, arms}` when `debug` is true.
+        '400':
+          description: query required.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The named collection does not resolve.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/knowledge/ingest:
+    post:
+      operationId: ingestKnowledgeDocument
+      summary: Ingest a document
+      description: >-
+        Chunks, embeds and stores one document. `source` names it; `filename`
+        and `name` are accepted aliases, and omitting all three stores an empty
+        source which renders as "." in listings.
+      tags: [Knowledge]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                id: { type: string }
+                content: { type: string }
+                source: { type: string }
+                filename: { type: string }
+                name: { type: string }
+                collection: { type: string, default: default }
+                collection_id: { type: string }
+                metadata: { type: object, additionalProperties: true }
+      responses:
+        '201': { description: Ingested. }
+        '400':
+          description: content required.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/knowledge/{id}:
+    delete:
+      operationId: deleteKnowledgeDocument
+      summary: Delete a document and its chunks
+      description: >-
+        Admin-only. The id is a storage PATH and must be percent-encoded;
+        before libraos#1143 the parameter was not decoded, so a correctly
+        encoded call matched nothing and returned 404 echoing the escaping
+        back. Returns `chunks_removed` so a purge can be verified rather than
+        assumed.
+      tags: [Knowledge]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          description: Document id or source path, percent-encoded.
+      responses:
+        '200': { description: Deleted, with the removed-chunk count. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: No chunks matched — nothing was deleted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/knowledge/collections:
+    get:
+      operationId: listKnowledgeCollections
+      summary: List knowledge collections
+      tags: [Knowledge]
+      responses:
+        '200': { description: Collections visible to the caller's scope. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createKnowledgeCollection
+      summary: Create a knowledge collection
+      description: >-
+        Admins may create any collection. A non-admin may create only
+        `access_level: personal`, whose name is server-derived from the caller's
+        email so the namespace cannot be squatted. Repeat calls are an
+        idempotent 200 ensure.
+      tags: [Knowledge]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                access_level:
+                  type: string
+                  enum: [public, private, corporate, personal]
+                description: { type: string }
+      responses:
+        '200': { description: Already existed — idempotent ensure. }
+        '201': { description: Created. }
+        '400':
+          description: name required.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/knowledge/collections/{id}:
+    get:
+      operationId: getKnowledgeCollection
+      summary: Get collection detail
+      tags: [Knowledge]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Collection detail. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      operationId: deleteKnowledgeCollection
+      summary: Delete a collection and all its chunks
+      description: >-
+        Admin-only. Cascades to chunks, ACL grants, agent bindings and the
+        durable registry row. Afterwards the collection no longer resolves, so
+        searching it returns 404 rather than an empty list.
+      tags: [Knowledge]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Deleted. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Existed in neither the manager nor the store.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/knowledge/collections/{id}/documents:
+    get:
+      operationId: listKnowledgeCollectionDocuments
+      summary: List a collection's documents
+      description: >-
+        Derived from chunks — each distinct `source` becomes one document with
+        its chunk count. This is how an ingest or a delete is verified.
+      tags: [Knowledge]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Documents with chunk counts. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/knowledge/collections/{id}/chunks:
+    get:
+      operationId: browseKnowledgeCollectionChunks
+      summary: Browse a collection's chunks
+      tags: [Knowledge]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200': { description: A page of chunks with the collection total. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/knowledge/collections/{id}/query:
+    post:
+      operationId: queryKnowledgeCollection
+      summary: Search within one collection
+      tags: [Knowledge]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string }
+                top_k: { type: integer, default: 5 }
+                threshold: { type: number }
+      responses:
+        '200': { description: Matching chunks. }
+        '400':
+          description: query required.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/knowledge/debug-retrieve:
+    post:
+      operationId: debugRetrieveKnowledge
+      summary: Per-stage retrieval diagnostics
+      description: >-
+        Admin-only. Runs the retriever pipeline and returns each stage's output
+        (bm25, vector, fused, reranked, filtered) with per-stage timings and the
+        OTEL trace id, plus `skip_rerank` / `skip_llm_filter` switches. This is
+        the endpoint to reach for before hypothesising about ranking.
+      tags: [Knowledge]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string }
+                collections: { type: array, items: { type: string } }
+                top_k: { type: integer, default: 10 }
+                skip_rerank: { type: boolean }
+                skip_llm_filter: { type: boolean }
+      responses:
+        '200': { description: Per-stage retrieval breakdown. }
+        '400':
+          description: query required.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503':
+          description: Retriever unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/capabilities:
+    get:
+      operationId: getCapabilities
+      summary: What this deployment can actually do right now
+      description: >-
+        Reports EFFECTIVE capability rather than configuration: whether vector
+        retrieval is active, whether the store is durable, and per collection
+        whether its corpus is actually embedded. Not admin-gated — collections
+        are filtered to the caller's scope. Docs go stale; a self-reporting
+        binary does not.
+      tags: [Ops]
+      responses:
+        '200': { description: Capability snapshot. }
+        '503':
+          description: Disabled via the runtime hatch.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/super-nova/emergency/status:
+    get:
+      operationId: getAutoIndexStatus
+      summary: Auto-index worker status
+      description: >-
+        Whether auto-indexing is paused, what is running or queued, and how many
+        bus events were dropped. Makes no model call, so it answers even when
+        the LLM is unreachable.
+      tags: [Ops]
+      responses:
+        '200': { description: Worker status and queue depth. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/super-nova/emergency/pause:
+    post:
+      operationId: pauseAutoIndex
+      summary: Pause auto-indexing
+      description: >-
+        Holds new events without dropping them. PROCESS-LOCAL: the flag is in
+        memory, so a restart, upgrade, crash or reboot resumes ingestion. For a
+        durable off switch set LIBRA_OS_SUPERNOVA_ENABLED=false.
+      tags: [Ops]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        '200': { description: Paused, with the reason and timestamp. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/super-nova/emergency/resume:
+    post:
+      operationId: resumeAutoIndex
+      summary: Resume auto-indexing
+      tags: [Ops]
+      responses:
+        '200': { description: Resumed; queued events drain. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/super-nova/emergency/cancel:
+    post:
+      operationId: cancelAutoIndexJob
+      summary: Cancel one indexing job
+      tags: [Ops]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [job_id]
+              properties:
+                job_id: { type: string }
+      responses:
+        '200': { description: Cancelled. }
+        '400':
+          description: Malformed body.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: No such job.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
