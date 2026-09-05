@@ -48,6 +48,7 @@ from .autonomy_grant_lifecycle_state import AutonomyGrantLifecycleState
 from .bundle_import_result import BundleImportResult
 from .bundle_manifest import BundleManifest
 from .bundle_manifest_schema_version import BundleManifestSchemaVersion
+from .cancel_auto_index_job_body import CancelAutoIndexJobBody
 from .chat_completion_choice import ChatCompletionChoice
 from .chat_completion_choice_finish_reason import ChatCompletionChoiceFinishReason
 from .chat_completion_request import ChatCompletionRequest
@@ -94,6 +95,8 @@ from .create_action_request_risk import CreateActionRequestRisk
 from .create_agent_key_body import CreateAgentKeyBody
 from .create_eval_suite_revision_body import CreateEvalSuiteRevisionBody
 from .create_group_request import CreateGroupRequest
+from .create_knowledge_collection_body import CreateKnowledgeCollectionBody
+from .create_knowledge_collection_body_access_level import CreateKnowledgeCollectionBodyAccessLevel
 from .create_knowledge_signal_body import CreateKnowledgeSignalBody
 from .create_message_x_protocol import CreateMessageXProtocol
 from .create_service_key_request import CreateServiceKeyRequest
@@ -104,6 +107,7 @@ from .custom_tool_callback_auth_type import CustomToolCallbackAuthType
 from .custom_tool_callback_retry import CustomToolCallbackRetry
 from .custom_tool_callback_retry_backoff import CustomToolCallbackRetryBackoff
 from .custom_tool_result_request import CustomToolResultRequest
+from .debug_retrieve_knowledge_body import DebugRetrieveKnowledgeBody
 from .delete_connector_response_200 import DeleteConnectorResponse200
 from .delete_group_response_200 import DeleteGroupResponse200
 from .delete_service_key_response_200 import DeleteServiceKeyResponse200
@@ -217,6 +221,8 @@ from .infra_grounding_counts import InfraGroundingCounts
 from .infra_health import InfraHealth
 from .infra_latency_stat import InfraLatencyStat
 from .infra_tool_error import InfraToolError
+from .ingest_knowledge_document_body import IngestKnowledgeDocumentBody
+from .ingest_knowledge_document_body_metadata import IngestKnowledgeDocumentBodyMetadata
 from .ingest_knowledge_response_201 import IngestKnowledgeResponse201
 from .ingest_knowledge_response_201_status import IngestKnowledgeResponse201Status
 from .issue_execution_capability_response_201 import IssueExecutionCapabilityResponse201
@@ -297,6 +303,7 @@ from .oidc_discovery import OidcDiscovery
 from .output_type_contract import OutputTypeContract
 from .output_type_contract_violation_mode import OutputTypeContractViolationMode
 from .output_violation import OutputViolation
+from .pause_auto_index_body import PauseAutoIndexBody
 from .pending_action import PendingAction
 from .pending_action_input import PendingActionInput
 from .pending_action_preview import PendingActionPreview
@@ -312,6 +319,7 @@ from .put_connector_response_200 import PutConnectorResponse200
 from .put_house_profile_response_409 import PutHouseProfileResponse409
 from .put_house_profile_response_413 import PutHouseProfileResponse413
 from .put_setting_body import PutSettingBody
+from .query_knowledge_collection_body import QueryKnowledgeCollectionBody
 from .reject_action_response_409 import RejectActionResponse409
 from .remove_group_member_response_200 import RemoveGroupMemberResponse200
 from .rename_conversation_body import RenameConversationBody
@@ -337,6 +345,8 @@ from .scim_patch_op_operations_item import ScimPatchOpOperationsItem
 from .scim_patch_op_operations_item_op import ScimPatchOpOperationsItemOp
 from .scim_service_provider_config_response_200 import ScimServiceProviderConfigResponse200
 from .scim_user import ScimUser
+from .search_app_knowledge_body import SearchAppKnowledgeBody
+from .search_app_knowledge_body_metadata_filter import SearchAppKnowledgeBodyMetadataFilter
 from .service_key import ServiceKey
 from .service_key_list import ServiceKeyList
 from .service_key_secret import ServiceKeySecret
@@ -400,6 +410,17 @@ from .user_list import UserList
 from .user_role import UserRole
 from .web_search_backend import WebSearchBackend
 from .web_search_config import WebSearchConfig
+from .web_search_provider_answer import WebSearchProviderAnswer
+from .web_search_provider_answer_derivation import WebSearchProviderAnswerDerivation
+from .web_search_provider_answer_representation import WebSearchProviderAnswerRepresentation
+from .web_search_request import WebSearchRequest
+from .web_search_request_fetch import WebSearchRequestFetch
+from .web_search_request_kind import WebSearchRequestKind
+from .web_search_response import WebSearchResponse
+from .web_search_result import WebSearchResult
+from .web_search_result_derivation import WebSearchResultDerivation
+from .web_search_result_representation import WebSearchResultRepresentation
+from .web_search_result_status import WebSearchResultStatus
 
 __all__ = (
     "ActionCallback",
@@ -450,6 +471,7 @@ __all__ = (
     "BundleImportResult",
     "BundleManifest",
     "BundleManifestSchemaVersion",
+    "CancelAutoIndexJobBody",
     "ChatCompletionChoice",
     "ChatCompletionChoiceFinishReason",
     "ChatCompletionRequest",
@@ -496,6 +518,8 @@ __all__ = (
     "CreateAgentKeyBody",
     "CreateEvalSuiteRevisionBody",
     "CreateGroupRequest",
+    "CreateKnowledgeCollectionBody",
+    "CreateKnowledgeCollectionBodyAccessLevel",
     "CreateKnowledgeSignalBody",
     "CreateMessageXProtocol",
     "CreateServiceKeyRequest",
@@ -506,6 +530,7 @@ __all__ = (
     "CustomToolCallbackRetry",
     "CustomToolCallbackRetryBackoff",
     "CustomToolResultRequest",
+    "DebugRetrieveKnowledgeBody",
     "DeleteConnectorResponse200",
     "DeleteGroupResponse200",
     "DeleteServiceKeyResponse200",
@@ -617,6 +642,8 @@ __all__ = (
     "InfraHealth",
     "InfraLatencyStat",
     "InfraToolError",
+    "IngestKnowledgeDocumentBody",
+    "IngestKnowledgeDocumentBodyMetadata",
     "IngestKnowledgeResponse201",
     "IngestKnowledgeResponse201Status",
     "IssueExecutionCapabilityResponse201",
@@ -697,6 +724,7 @@ __all__ = (
     "OutputTypeContract",
     "OutputTypeContractViolationMode",
     "OutputViolation",
+    "PauseAutoIndexBody",
     "PendingAction",
     "PendingActionInput",
     "PendingActionPreview",
@@ -712,6 +740,7 @@ __all__ = (
     "PutHouseProfileResponse409",
     "PutHouseProfileResponse413",
     "PutSettingBody",
+    "QueryKnowledgeCollectionBody",
     "RejectActionResponse409",
     "RemoveGroupMemberResponse200",
     "RenameConversationBody",
@@ -737,6 +766,8 @@ __all__ = (
     "ScimPatchOpOperationsItemOp",
     "ScimServiceProviderConfigResponse200",
     "ScimUser",
+    "SearchAppKnowledgeBody",
+    "SearchAppKnowledgeBodyMetadataFilter",
     "ServiceKey",
     "ServiceKeyList",
     "ServiceKeySecret",
@@ -800,4 +831,15 @@ __all__ = (
     "UserRole",
     "WebSearchBackend",
     "WebSearchConfig",
+    "WebSearchProviderAnswer",
+    "WebSearchProviderAnswerDerivation",
+    "WebSearchProviderAnswerRepresentation",
+    "WebSearchRequest",
+    "WebSearchRequestFetch",
+    "WebSearchRequestKind",
+    "WebSearchResponse",
+    "WebSearchResult",
+    "WebSearchResultDerivation",
+    "WebSearchResultRepresentation",
+    "WebSearchResultStatus",
 )

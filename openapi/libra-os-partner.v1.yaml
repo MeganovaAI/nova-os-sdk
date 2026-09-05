@@ -3276,6 +3276,108 @@ components:
           type: integer
           minimum: 1
           description: Optional expiry in days; omit for a non-expiring key.
+    WebSearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          description: The search query.
+        buckets:
+          type: array
+          items: { type: string }
+          description: >-
+            Source buckets to search first (e.g. `legal-qc`). Omitted means the
+            calling identity's bound buckets, or general search when it has
+            none.
+        kind:
+          type: string
+          enum: [interactive, batch]
+          default: interactive
+          description: >-
+            Drives the publisher-policy gate. `batch` honours robots
+            everywhere, including sources where a user-initiated interactive
+            turn is exempt.
+        top_k:
+          type: integer
+          default: 10
+          minimum: 1
+          maximum: 25
+          description: Result ceiling. Values outside the range are clamped, not rejected.
+        fetch:
+          type: string
+          enum: [none, snippets, content]
+          default: snippets
+          description: >-
+            How much of each hit to hydrate. `anchored` is reserved and
+            rejected with 400 in v1.
+    WebSearchResult:
+      type: object
+      properties:
+        title: { type: string }
+        url: { type: string, format: uri }
+        source:
+          type: string
+          description: >-
+            Driver attribution, e.g. `source:soquij` or
+            `general (bucket-miss)`.
+        content: { type: string }
+        published_date: { type: string }
+        representation:
+          type: string
+          enum: [search_snippet, provider_excerpt, page_extract, provider_summary, model_answer]
+          description: >-
+            What `content` IS, as declared by whichever component produced it.
+            `search_snippet`, `provider_excerpt` and `page_extract` are
+            page-derived; `provider_summary` and `model_answer` are generated
+            prose about the page and are not evidence of what it says.
+        derivation:
+          type: string
+          enum: [page_derived, model_derived]
+          description: Coarse axis over `representation`.
+        status:
+          type: string
+          enum: [opened, blocked_policy, blocked_target, blocked_soft, fetch_failed]
+          description: >-
+            What happened to the hit. Empty means it was found and nothing
+            more was attempted — found and opened are different claims.
+            `blocked_policy` is our refusal to read the source;
+            `blocked_soft` is the source refusing us with an anti-bot
+            challenge served at HTTP 200.
+    WebSearchProviderAnswer:
+      type: object
+      description: >-
+        A model's answer to the query, supplied by a provider that offers one.
+        Carried outside `results` so it can never be read as a hit, and never
+        cited as a source.
+      properties:
+        text: { type: string }
+        representation: { type: string, enum: [model_answer] }
+        derivation: { type: string, enum: [model_derived] }
+    WebSearchResponse:
+      type: object
+      required: [results, bucket_miss]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebSearchResult'
+        provider_answer:
+          $ref: '#/components/schemas/WebSearchProviderAnswer'
+        refusals:
+          type: array
+          items: { type: string }
+          description: >-
+            Per-source refusals, each naming the source and the reason
+            (e.g. `blocked_by_publisher_policy: ...`). A refusal is not fatal
+            and is never silent: the remaining sources still return.
+        bucket_miss:
+          type: boolean
+          description: >-
+            True when no bound bucket produced a hit and the general searcher
+            answered instead.
+        usage:
+          $ref: '#/components/schemas/UsageBlock'
     ServiceKey:
       type: object
       description: Service API key metadata (no secret).
@@ -4985,6 +5087,68 @@ paths:
                 $ref: '#/components/schemas/Error'
         '503':
           description: Realtime voice is unconfigured or disabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/search:
+    post:
+      operationId: search
+      summary: Governed web search
+      description: >-
+        The search subsystem as a first-class primitive: the sibling of
+        `/v1/chat/completions`. The governed engine (source buckets ->
+        adapters -> publisher-policy gate -> hydration) is otherwise reachable
+        only inside a persona turn via the web skill; this is the call any
+        app, agent or MCP client makes directly.
+
+
+        Semantics are the skill layer's, re-exposed. The bucket cascade runs
+        first and per-source refusals are NAMED in-band rather than dropped,
+        so a source the deployment is not permitted to read is visible as a
+        refusal instead of silently missing from the results. The
+        publisher-policy gate runs per source with the caller-declared `kind`:
+        `batch` honours robots everywhere, including sources where an
+        interactive, user-initiated turn is exempt.
+
+
+        Results are grouped by source (bucket order, then general) and are NOT
+        re-ranked across sources in v1. Content carries `representation` and
+        `status` so a provider's generated summary is never mistaken for text
+        read from the page, and a hit that was found but never opened is not
+        reported as read.
+      tags: [Search]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebSearchRequest'
+      responses:
+        '200':
+          description: Results, plus any per-source refusals.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebSearchResponse'
+        '400':
+          description: >-
+            Missing query, or an unsupported `kind`/`fetch` value.
+            `fetch: "anchored"` is reserved and refused here rather than
+            half-implemented; use `fetch_url` with an anchor for
+            passage-precise reads.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Search API disabled (`LIBRA_OS_SEARCH_API_DISABLED`).
           content:
             application/json:
               schema:
@@ -8231,7 +8395,7 @@ paths:
 
   /api/knowledge/search:
     post:
-      operationId: searchKnowledge
+      operationId: searchAppKnowledge
       summary: Search a knowledge collection
       description: >-
         Hybrid retrieval over one collection. `collection` accepts a collection
@@ -8328,7 +8492,7 @@ paths:
           schema: { type: string }
           description: Document id or source path, percent-encoded.
       responses:
-        '200': { description: Deleted, with the removed-chunk count. }
+        '200': { description: 'Deleted, with the removed-chunk count.' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404':
@@ -8339,7 +8503,7 @@ paths:
 
   /api/knowledge/collections:
     get:
-      operationId: listKnowledgeCollections
+      operationId: listAppKnowledgeCollections
       summary: List knowledge collections
       tags: [Knowledge]
       responses:
@@ -8578,7 +8742,7 @@ paths:
               properties:
                 reason: { type: string }
       responses:
-        '200': { description: Paused, with the reason and timestamp. }
+        '200': { description: 'Paused, with the reason and timestamp.' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/super-nova/emergency/resume:
