@@ -1555,6 +1555,171 @@ func (e WebSearchBackend) Valid() bool {
 	}
 }
 
+// Defines values for WebSearchProviderAnswerDerivation.
+const (
+	WebSearchProviderAnswerDerivationModelDerived WebSearchProviderAnswerDerivation = "model_derived"
+)
+
+// Valid indicates whether the value is a known member of the WebSearchProviderAnswerDerivation enum.
+func (e WebSearchProviderAnswerDerivation) Valid() bool {
+	switch e {
+	case WebSearchProviderAnswerDerivationModelDerived:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebSearchProviderAnswerRepresentation.
+const (
+	WebSearchProviderAnswerRepresentationModelAnswer WebSearchProviderAnswerRepresentation = "model_answer"
+)
+
+// Valid indicates whether the value is a known member of the WebSearchProviderAnswerRepresentation enum.
+func (e WebSearchProviderAnswerRepresentation) Valid() bool {
+	switch e {
+	case WebSearchProviderAnswerRepresentationModelAnswer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebSearchRequestFetch.
+const (
+	WebSearchRequestFetchContent  WebSearchRequestFetch = "content"
+	WebSearchRequestFetchNone     WebSearchRequestFetch = "none"
+	WebSearchRequestFetchSnippets WebSearchRequestFetch = "snippets"
+)
+
+// Valid indicates whether the value is a known member of the WebSearchRequestFetch enum.
+func (e WebSearchRequestFetch) Valid() bool {
+	switch e {
+	case WebSearchRequestFetchContent:
+		return true
+	case WebSearchRequestFetchNone:
+		return true
+	case WebSearchRequestFetchSnippets:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebSearchRequestKind.
+const (
+	WebSearchRequestKindBatch       WebSearchRequestKind = "batch"
+	WebSearchRequestKindInteractive WebSearchRequestKind = "interactive"
+)
+
+// Valid indicates whether the value is a known member of the WebSearchRequestKind enum.
+func (e WebSearchRequestKind) Valid() bool {
+	switch e {
+	case WebSearchRequestKindBatch:
+		return true
+	case WebSearchRequestKindInteractive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebSearchResultDerivation.
+const (
+	WebSearchResultDerivationModelDerived WebSearchResultDerivation = "model_derived"
+	WebSearchResultDerivationPageDerived  WebSearchResultDerivation = "page_derived"
+)
+
+// Valid indicates whether the value is a known member of the WebSearchResultDerivation enum.
+func (e WebSearchResultDerivation) Valid() bool {
+	switch e {
+	case WebSearchResultDerivationModelDerived:
+		return true
+	case WebSearchResultDerivationPageDerived:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebSearchResultRepresentation.
+const (
+	WebSearchResultRepresentationModelAnswer     WebSearchResultRepresentation = "model_answer"
+	WebSearchResultRepresentationPageExtract     WebSearchResultRepresentation = "page_extract"
+	WebSearchResultRepresentationProviderExcerpt WebSearchResultRepresentation = "provider_excerpt"
+	WebSearchResultRepresentationProviderSummary WebSearchResultRepresentation = "provider_summary"
+	WebSearchResultRepresentationSearchSnippet   WebSearchResultRepresentation = "search_snippet"
+)
+
+// Valid indicates whether the value is a known member of the WebSearchResultRepresentation enum.
+func (e WebSearchResultRepresentation) Valid() bool {
+	switch e {
+	case WebSearchResultRepresentationModelAnswer:
+		return true
+	case WebSearchResultRepresentationPageExtract:
+		return true
+	case WebSearchResultRepresentationProviderExcerpt:
+		return true
+	case WebSearchResultRepresentationProviderSummary:
+		return true
+	case WebSearchResultRepresentationSearchSnippet:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebSearchResultStatus.
+const (
+	WebSearchResultStatusBlockedPolicy WebSearchResultStatus = "blocked_policy"
+	WebSearchResultStatusBlockedSoft   WebSearchResultStatus = "blocked_soft"
+	WebSearchResultStatusBlockedTarget WebSearchResultStatus = "blocked_target"
+	WebSearchResultStatusFetchFailed   WebSearchResultStatus = "fetch_failed"
+	WebSearchResultStatusOpened        WebSearchResultStatus = "opened"
+)
+
+// Valid indicates whether the value is a known member of the WebSearchResultStatus enum.
+func (e WebSearchResultStatus) Valid() bool {
+	switch e {
+	case WebSearchResultStatusBlockedPolicy:
+		return true
+	case WebSearchResultStatusBlockedSoft:
+		return true
+	case WebSearchResultStatusBlockedTarget:
+		return true
+	case WebSearchResultStatusFetchFailed:
+		return true
+	case WebSearchResultStatusOpened:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateKnowledgeCollectionJSONBodyAccessLevel.
+const (
+	CreateKnowledgeCollectionJSONBodyAccessLevelCorporate CreateKnowledgeCollectionJSONBodyAccessLevel = "corporate"
+	CreateKnowledgeCollectionJSONBodyAccessLevelPersonal  CreateKnowledgeCollectionJSONBodyAccessLevel = "personal"
+	CreateKnowledgeCollectionJSONBodyAccessLevelPrivate   CreateKnowledgeCollectionJSONBodyAccessLevel = "private"
+	CreateKnowledgeCollectionJSONBodyAccessLevelPublic    CreateKnowledgeCollectionJSONBodyAccessLevel = "public"
+)
+
+// Valid indicates whether the value is a known member of the CreateKnowledgeCollectionJSONBodyAccessLevel enum.
+func (e CreateKnowledgeCollectionJSONBodyAccessLevel) Valid() bool {
+	switch e {
+	case CreateKnowledgeCollectionJSONBodyAccessLevelCorporate:
+		return true
+	case CreateKnowledgeCollectionJSONBodyAccessLevelPersonal:
+		return true
+	case CreateKnowledgeCollectionJSONBodyAccessLevelPrivate:
+		return true
+	case CreateKnowledgeCollectionJSONBodyAccessLevelPublic:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OauthAuthorizeParamsResponseType.
 const (
 	OauthAuthorizeParamsResponseTypeCode OauthAuthorizeParamsResponseType = "code"
@@ -4537,6 +4702,88 @@ type WebSearchConfig struct {
 	Reformulator *bool `json:"reformulator,omitempty"`
 }
 
+// WebSearchProviderAnswer A model's answer to the query, supplied by a provider that offers one. Carried outside `results` so it can never be read as a hit, and never cited as a source.
+type WebSearchProviderAnswer struct {
+	Derivation     *WebSearchProviderAnswerDerivation     `json:"derivation,omitempty"`
+	Representation *WebSearchProviderAnswerRepresentation `json:"representation,omitempty"`
+	Text           *string                                `json:"text,omitempty"`
+}
+
+// WebSearchProviderAnswerDerivation defines model for WebSearchProviderAnswer.Derivation.
+type WebSearchProviderAnswerDerivation string
+
+// WebSearchProviderAnswerRepresentation defines model for WebSearchProviderAnswer.Representation.
+type WebSearchProviderAnswerRepresentation string
+
+// WebSearchRequest defines model for WebSearchRequest.
+type WebSearchRequest struct {
+	// Buckets Source buckets to search first (e.g. `legal-qc`). Omitted means the calling identity's bound buckets, or general search when it has none.
+	Buckets *[]string `json:"buckets,omitempty"`
+
+	// Fetch How much of each hit to hydrate. `anchored` is reserved and rejected with 400 in v1.
+	Fetch *WebSearchRequestFetch `json:"fetch,omitempty"`
+
+	// Kind Drives the publisher-policy gate. `batch` honours robots everywhere, including sources where a user-initiated interactive turn is exempt.
+	Kind *WebSearchRequestKind `json:"kind,omitempty"`
+
+	// Query The search query.
+	Query string `json:"query"`
+
+	// TopK Result ceiling. Values outside the range are clamped, not rejected.
+	TopK *int `json:"top_k,omitempty"`
+}
+
+// WebSearchRequestFetch How much of each hit to hydrate. `anchored` is reserved and rejected with 400 in v1.
+type WebSearchRequestFetch string
+
+// WebSearchRequestKind Drives the publisher-policy gate. `batch` honours robots everywhere, including sources where a user-initiated interactive turn is exempt.
+type WebSearchRequestKind string
+
+// WebSearchResponse defines model for WebSearchResponse.
+type WebSearchResponse struct {
+	// BucketMiss True when no bound bucket produced a hit and the general searcher answered instead.
+	BucketMiss bool `json:"bucket_miss"`
+
+	// ProviderAnswer A model's answer to the query, supplied by a provider that offers one. Carried outside `results` so it can never be read as a hit, and never cited as a source.
+	ProviderAnswer *WebSearchProviderAnswer `json:"provider_answer,omitempty"`
+
+	// Refusals Per-source refusals, each naming the source and the reason (e.g. `blocked_by_publisher_policy: ...`). A refusal is not fatal and is never silent: the remaining sources still return.
+	Refusals *[]string         `json:"refusals,omitempty"`
+	Results  []WebSearchResult `json:"results"`
+
+	// Usage Aggregated token usage across all of the turn's model sub-calls, with a per-stage breakdown. Omitted on non-model/zero-usage turns. Excludes embedding calls.
+	Usage *UsageBlock `json:"usage,omitempty"`
+}
+
+// WebSearchResult defines model for WebSearchResult.
+type WebSearchResult struct {
+	Content *string `json:"content,omitempty"`
+
+	// Derivation Coarse axis over `representation`.
+	Derivation    *WebSearchResultDerivation `json:"derivation,omitempty"`
+	PublishedDate *string                    `json:"published_date,omitempty"`
+
+	// Representation What `content` IS, as declared by whichever component produced it. `search_snippet`, `provider_excerpt` and `page_extract` are page-derived; `provider_summary` and `model_answer` are generated prose about the page and are not evidence of what it says.
+	Representation *WebSearchResultRepresentation `json:"representation,omitempty"`
+
+	// Source Driver attribution, e.g. `source:soquij` or `general (bucket-miss)`.
+	Source *string `json:"source,omitempty"`
+
+	// Status What happened to the hit. Empty means it was found and nothing more was attempted — found and opened are different claims. `blocked_policy` is our refusal to read the source; `blocked_soft` is the source refusing us with an anti-bot challenge served at HTTP 200.
+	Status *WebSearchResultStatus `json:"status,omitempty"`
+	Title  *string                `json:"title,omitempty"`
+	Url    *string                `json:"url,omitempty"`
+}
+
+// WebSearchResultDerivation Coarse axis over `representation`.
+type WebSearchResultDerivation string
+
+// WebSearchResultRepresentation What `content` IS, as declared by whichever component produced it. `search_snippet`, `provider_excerpt` and `page_extract` are page-derived; `provider_summary` and `model_answer` are generated prose about the page and are not evidence of what it says.
+type WebSearchResultRepresentation string
+
+// WebSearchResultStatus What happened to the hit. Empty means it was found and nothing more was attempted — found and opened are different claims. `blocked_policy` is our refusal to read the source; `blocked_soft` is the source refusing us with an anti-bot challenge served at HTTP 200.
+type WebSearchResultStatus string
+
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
 
@@ -4578,8 +4825,72 @@ type CreateAgentKeyJSONBody struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// CreateKnowledgeCollectionJSONBody defines parameters for CreateKnowledgeCollection.
+type CreateKnowledgeCollectionJSONBody struct {
+	AccessLevel *CreateKnowledgeCollectionJSONBodyAccessLevel `json:"access_level,omitempty"`
+	Description *string                                       `json:"description,omitempty"`
+	Name        string                                        `json:"name"`
+}
+
+// CreateKnowledgeCollectionJSONBodyAccessLevel defines parameters for CreateKnowledgeCollection.
+type CreateKnowledgeCollectionJSONBodyAccessLevel string
+
+// BrowseKnowledgeCollectionChunksParams defines parameters for BrowseKnowledgeCollectionChunks.
+type BrowseKnowledgeCollectionChunksParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// QueryKnowledgeCollectionJSONBody defines parameters for QueryKnowledgeCollection.
+type QueryKnowledgeCollectionJSONBody struct {
+	Query     string   `json:"query"`
+	Threshold *float32 `json:"threshold,omitempty"`
+	TopK      *int     `json:"top_k,omitempty"`
+}
+
+// DebugRetrieveKnowledgeJSONBody defines parameters for DebugRetrieveKnowledge.
+type DebugRetrieveKnowledgeJSONBody struct {
+	Collections   *[]string `json:"collections,omitempty"`
+	Query         string    `json:"query"`
+	SkipLlmFilter *bool     `json:"skip_llm_filter,omitempty"`
+	SkipRerank    *bool     `json:"skip_rerank,omitempty"`
+	TopK          *int      `json:"top_k,omitempty"`
+}
+
+// IngestKnowledgeDocumentJSONBody defines parameters for IngestKnowledgeDocument.
+type IngestKnowledgeDocumentJSONBody struct {
+	Collection   *string                 `json:"collection,omitempty"`
+	CollectionId *string                 `json:"collection_id,omitempty"`
+	Content      string                  `json:"content"`
+	Filename     *string                 `json:"filename,omitempty"`
+	Id           *string                 `json:"id,omitempty"`
+	Metadata     *map[string]interface{} `json:"metadata,omitempty"`
+	Name         *string                 `json:"name,omitempty"`
+	Source       *string                 `json:"source,omitempty"`
+}
+
+// SearchAppKnowledgeJSONBody defines parameters for SearchAppKnowledge.
+type SearchAppKnowledgeJSONBody struct {
+	Collection     *string            `json:"collection,omitempty"`
+	Debug          *bool              `json:"debug,omitempty"`
+	MetadataFilter *map[string]string `json:"metadata_filter,omitempty"`
+	Query          string             `json:"query"`
+	Threshold      *float32           `json:"threshold,omitempty"`
+	TopK           *int               `json:"top_k,omitempty"`
+}
+
 // RunSkillToolJSONBody defines parameters for RunSkillTool.
 type RunSkillToolJSONBody map[string]interface{}
+
+// CancelAutoIndexJobJSONBody defines parameters for CancelAutoIndexJob.
+type CancelAutoIndexJobJSONBody struct {
+	JobId string `json:"job_id"`
+}
+
+// PauseAutoIndexJSONBody defines parameters for PauseAutoIndex.
+type PauseAutoIndexJSONBody struct {
+	Reason *string `json:"reason,omitempty"`
+}
 
 // OauthAuthorizeParams defines parameters for OauthAuthorize.
 type OauthAuthorizeParams struct {
@@ -5030,6 +5341,21 @@ type CreateNativeJobJSONRequestBody = NativeChatRequest
 // CreateAgentKeyJSONRequestBody defines body for CreateAgentKey for application/json ContentType.
 type CreateAgentKeyJSONRequestBody CreateAgentKeyJSONBody
 
+// CreateKnowledgeCollectionJSONRequestBody defines body for CreateKnowledgeCollection for application/json ContentType.
+type CreateKnowledgeCollectionJSONRequestBody CreateKnowledgeCollectionJSONBody
+
+// QueryKnowledgeCollectionJSONRequestBody defines body for QueryKnowledgeCollection for application/json ContentType.
+type QueryKnowledgeCollectionJSONRequestBody QueryKnowledgeCollectionJSONBody
+
+// DebugRetrieveKnowledgeJSONRequestBody defines body for DebugRetrieveKnowledge for application/json ContentType.
+type DebugRetrieveKnowledgeJSONRequestBody DebugRetrieveKnowledgeJSONBody
+
+// IngestKnowledgeDocumentJSONRequestBody defines body for IngestKnowledgeDocument for application/json ContentType.
+type IngestKnowledgeDocumentJSONRequestBody IngestKnowledgeDocumentJSONBody
+
+// SearchAppKnowledgeJSONRequestBody defines body for SearchAppKnowledge for application/json ContentType.
+type SearchAppKnowledgeJSONRequestBody SearchAppKnowledgeJSONBody
+
 // McpRpcJSONRequestBody defines body for McpRpc for application/json ContentType.
 type McpRpcJSONRequestBody = McpRequest
 
@@ -5041,6 +5367,12 @@ type CreateSelfServiceKeyJSONRequestBody = CreateServiceKeyRequest
 
 // RunSkillToolJSONRequestBody defines body for RunSkillTool for application/json ContentType.
 type RunSkillToolJSONRequestBody RunSkillToolJSONBody
+
+// CancelAutoIndexJobJSONRequestBody defines body for CancelAutoIndexJob for application/json ContentType.
+type CancelAutoIndexJobJSONRequestBody CancelAutoIndexJobJSONBody
+
+// PauseAutoIndexJSONRequestBody defines body for PauseAutoIndex for application/json ContentType.
+type PauseAutoIndexJSONRequestBody PauseAutoIndexJSONBody
 
 // OauthLoginFormdataRequestBody defines body for OauthLogin for application/x-www-form-urlencoded ContentType.
 type OauthLoginFormdataRequestBody OauthLoginFormdataBody
@@ -5224,6 +5556,9 @@ type CreateMessageJSONRequestBody = MessageRequest
 
 // CountTokensJSONRequestBody defines body for CountTokens for application/json ContentType.
 type CountTokensJSONRequestBody = CountTokensRequest
+
+// SearchJSONRequestBody defines body for Search for application/json ContentType.
+type SearchJSONRequestBody = WebSearchRequest
 
 // Getter for additional properties for ImageGenerationRequest. Returns the specified
 // element and whether it was found
@@ -6436,6 +6771,52 @@ type ClientInterface interface {
 
 	CreateAgentKey(ctx context.Context, id string, body CreateAgentKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetCapabilities request
+	GetCapabilities(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAppKnowledgeCollections request
+	ListAppKnowledgeCollections(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateKnowledgeCollectionWithBody request with any body
+	CreateKnowledgeCollectionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateKnowledgeCollection(ctx context.Context, body CreateKnowledgeCollectionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteKnowledgeCollection request
+	DeleteKnowledgeCollection(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetKnowledgeCollection request
+	GetKnowledgeCollection(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BrowseKnowledgeCollectionChunks request
+	BrowseKnowledgeCollectionChunks(ctx context.Context, id string, params *BrowseKnowledgeCollectionChunksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListKnowledgeCollectionDocuments request
+	ListKnowledgeCollectionDocuments(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QueryKnowledgeCollectionWithBody request with any body
+	QueryKnowledgeCollectionWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	QueryKnowledgeCollection(ctx context.Context, id string, body QueryKnowledgeCollectionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DebugRetrieveKnowledgeWithBody request with any body
+	DebugRetrieveKnowledgeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	DebugRetrieveKnowledge(ctx context.Context, body DebugRetrieveKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// IngestKnowledgeDocumentWithBody request with any body
+	IngestKnowledgeDocumentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	IngestKnowledgeDocument(ctx context.Context, body IngestKnowledgeDocumentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SearchAppKnowledgeWithBody request with any body
+	SearchAppKnowledgeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SearchAppKnowledge(ctx context.Context, body SearchAppKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteKnowledgeDocument request
+	DeleteKnowledgeDocument(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// McpRpcWithBody request with any body
 	McpRpcWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6461,6 +6842,22 @@ type ClientInterface interface {
 	RunSkillToolWithBody(ctx context.Context, skill string, tool string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	RunSkillTool(ctx context.Context, skill string, tool string, body RunSkillToolJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelAutoIndexJobWithBody request with any body
+	CancelAutoIndexJobWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CancelAutoIndexJob(ctx context.Context, body CancelAutoIndexJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PauseAutoIndexWithBody request with any body
+	PauseAutoIndexWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PauseAutoIndex(ctx context.Context, body PauseAutoIndexJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResumeAutoIndex request
+	ResumeAutoIndex(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAutoIndexStatus request
+	GetAutoIndexStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// OauthAuthorize request
 	OauthAuthorize(ctx context.Context, params *OauthAuthorizeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7014,6 +7411,11 @@ type ClientInterface interface {
 
 	// RealtimeVoice request
 	RealtimeVoice(ctx context.Context, params *RealtimeVoiceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SearchWithBody request with any body
+	SearchWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	Search(ctx context.Context, body SearchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) OauthDiscovery(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7160,6 +7562,210 @@ func (c *Client) CreateAgentKey(ctx context.Context, id string, body CreateAgent
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetCapabilities(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCapabilitiesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListAppKnowledgeCollections(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAppKnowledgeCollectionsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateKnowledgeCollectionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateKnowledgeCollectionRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateKnowledgeCollection(ctx context.Context, body CreateKnowledgeCollectionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateKnowledgeCollectionRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteKnowledgeCollection(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteKnowledgeCollectionRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetKnowledgeCollection(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetKnowledgeCollectionRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) BrowseKnowledgeCollectionChunks(ctx context.Context, id string, params *BrowseKnowledgeCollectionChunksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBrowseKnowledgeCollectionChunksRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListKnowledgeCollectionDocuments(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListKnowledgeCollectionDocumentsRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) QueryKnowledgeCollectionWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryKnowledgeCollectionRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) QueryKnowledgeCollection(ctx context.Context, id string, body QueryKnowledgeCollectionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryKnowledgeCollectionRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DebugRetrieveKnowledgeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDebugRetrieveKnowledgeRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DebugRetrieveKnowledge(ctx context.Context, body DebugRetrieveKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDebugRetrieveKnowledgeRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) IngestKnowledgeDocumentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIngestKnowledgeDocumentRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) IngestKnowledgeDocument(ctx context.Context, body IngestKnowledgeDocumentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIngestKnowledgeDocumentRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SearchAppKnowledgeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchAppKnowledgeRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SearchAppKnowledge(ctx context.Context, body SearchAppKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchAppKnowledgeRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteKnowledgeDocument(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteKnowledgeDocumentRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) McpRpcWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewMcpRpcRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -7270,6 +7876,78 @@ func (c *Client) RunSkillToolWithBody(ctx context.Context, skill string, tool st
 
 func (c *Client) RunSkillTool(ctx context.Context, skill string, tool string, body RunSkillToolJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRunSkillToolRequest(c.Server, skill, tool, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelAutoIndexJobWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelAutoIndexJobRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelAutoIndexJob(ctx context.Context, body CancelAutoIndexJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelAutoIndexJobRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PauseAutoIndexWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPauseAutoIndexRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PauseAutoIndex(ctx context.Context, body PauseAutoIndexJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPauseAutoIndexRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResumeAutoIndex(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResumeAutoIndexRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAutoIndexStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAutoIndexStatusRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -9704,6 +10382,30 @@ func (c *Client) RealtimeVoice(ctx context.Context, params *RealtimeVoiceParams,
 	return c.Client.Do(req)
 }
 
+func (c *Client) SearchWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Search(ctx context.Context, body SearchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // NewOauthDiscoveryRequest generates requests for OauthDiscovery
 func NewOauthDiscoveryRequest(server string) (*http.Request, error) {
 	var err error
@@ -10108,6 +10810,475 @@ func NewCreateAgentKeyRequestWithBody(server string, id string, contentType stri
 	return req, nil
 }
 
+// NewGetCapabilitiesRequest generates requests for GetCapabilities
+func NewGetCapabilitiesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/capabilities")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListAppKnowledgeCollectionsRequest generates requests for ListAppKnowledgeCollections
+func NewListAppKnowledgeCollectionsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/collections")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateKnowledgeCollectionRequest calls the generic CreateKnowledgeCollection builder with application/json body
+func NewCreateKnowledgeCollectionRequest(server string, body CreateKnowledgeCollectionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateKnowledgeCollectionRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateKnowledgeCollectionRequestWithBody generates requests for CreateKnowledgeCollection with any type of body
+func NewCreateKnowledgeCollectionRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/collections")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteKnowledgeCollectionRequest generates requests for DeleteKnowledgeCollection
+func NewDeleteKnowledgeCollectionRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/collections/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetKnowledgeCollectionRequest generates requests for GetKnowledgeCollection
+func NewGetKnowledgeCollectionRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/collections/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewBrowseKnowledgeCollectionChunksRequest generates requests for BrowseKnowledgeCollectionChunks
+func NewBrowseKnowledgeCollectionChunksRequest(server string, id string, params *BrowseKnowledgeCollectionChunksParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/collections/%s/chunks", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "offset", *params.Offset, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListKnowledgeCollectionDocumentsRequest generates requests for ListKnowledgeCollectionDocuments
+func NewListKnowledgeCollectionDocumentsRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/collections/%s/documents", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewQueryKnowledgeCollectionRequest calls the generic QueryKnowledgeCollection builder with application/json body
+func NewQueryKnowledgeCollectionRequest(server string, id string, body QueryKnowledgeCollectionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewQueryKnowledgeCollectionRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewQueryKnowledgeCollectionRequestWithBody generates requests for QueryKnowledgeCollection with any type of body
+func NewQueryKnowledgeCollectionRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/collections/%s/query", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDebugRetrieveKnowledgeRequest calls the generic DebugRetrieveKnowledge builder with application/json body
+func NewDebugRetrieveKnowledgeRequest(server string, body DebugRetrieveKnowledgeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDebugRetrieveKnowledgeRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewDebugRetrieveKnowledgeRequestWithBody generates requests for DebugRetrieveKnowledge with any type of body
+func NewDebugRetrieveKnowledgeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/debug-retrieve")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewIngestKnowledgeDocumentRequest calls the generic IngestKnowledgeDocument builder with application/json body
+func NewIngestKnowledgeDocumentRequest(server string, body IngestKnowledgeDocumentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewIngestKnowledgeDocumentRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewIngestKnowledgeDocumentRequestWithBody generates requests for IngestKnowledgeDocument with any type of body
+func NewIngestKnowledgeDocumentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/ingest")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSearchAppKnowledgeRequest calls the generic SearchAppKnowledge builder with application/json body
+func NewSearchAppKnowledgeRequest(server string, body SearchAppKnowledgeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSearchAppKnowledgeRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSearchAppKnowledgeRequestWithBody generates requests for SearchAppKnowledge with any type of body
+func NewSearchAppKnowledgeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/search")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteKnowledgeDocumentRequest generates requests for DeleteKnowledgeDocument
+func NewDeleteKnowledgeDocumentRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/knowledge/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewMcpRpcRequest calls the generic McpRpc builder with application/json body
 func NewMcpRpcRequest(server string, body McpRpcJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -10339,6 +11510,140 @@ func NewRunSkillToolRequestWithBody(server string, skill string, tool string, co
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCancelAutoIndexJobRequest calls the generic CancelAutoIndexJob builder with application/json body
+func NewCancelAutoIndexJobRequest(server string, body CancelAutoIndexJobJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCancelAutoIndexJobRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCancelAutoIndexJobRequestWithBody generates requests for CancelAutoIndexJob with any type of body
+func NewCancelAutoIndexJobRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/super-nova/emergency/cancel")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPauseAutoIndexRequest calls the generic PauseAutoIndex builder with application/json body
+func NewPauseAutoIndexRequest(server string, body PauseAutoIndexJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPauseAutoIndexRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPauseAutoIndexRequestWithBody generates requests for PauseAutoIndex with any type of body
+func NewPauseAutoIndexRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/super-nova/emergency/pause")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewResumeAutoIndexRequest generates requests for ResumeAutoIndex
+func NewResumeAutoIndexRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/super-nova/emergency/resume")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAutoIndexStatusRequest generates requests for GetAutoIndexStatus
+func NewGetAutoIndexStatusRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/super-nova/emergency/status")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -16934,6 +18239,46 @@ func NewRealtimeVoiceRequest(server string, params *RealtimeVoiceParams) (*http.
 	return req, nil
 }
 
+// NewSearchRequest calls the generic Search builder with application/json body
+func NewSearchRequest(server string, body SearchJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSearchRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSearchRequestWithBody generates requests for Search with any type of body
+func NewSearchRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/search")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -17010,6 +18355,52 @@ type ClientWithResponsesInterface interface {
 
 	CreateAgentKeyWithResponse(ctx context.Context, id string, body CreateAgentKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentKeyResponse, error)
 
+	// GetCapabilitiesWithResponse request
+	GetCapabilitiesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCapabilitiesResponse, error)
+
+	// ListAppKnowledgeCollectionsWithResponse request
+	ListAppKnowledgeCollectionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAppKnowledgeCollectionsResponse, error)
+
+	// CreateKnowledgeCollectionWithBodyWithResponse request with any body
+	CreateKnowledgeCollectionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateKnowledgeCollectionResponse, error)
+
+	CreateKnowledgeCollectionWithResponse(ctx context.Context, body CreateKnowledgeCollectionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateKnowledgeCollectionResponse, error)
+
+	// DeleteKnowledgeCollectionWithResponse request
+	DeleteKnowledgeCollectionWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteKnowledgeCollectionResponse, error)
+
+	// GetKnowledgeCollectionWithResponse request
+	GetKnowledgeCollectionWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetKnowledgeCollectionResponse, error)
+
+	// BrowseKnowledgeCollectionChunksWithResponse request
+	BrowseKnowledgeCollectionChunksWithResponse(ctx context.Context, id string, params *BrowseKnowledgeCollectionChunksParams, reqEditors ...RequestEditorFn) (*BrowseKnowledgeCollectionChunksResponse, error)
+
+	// ListKnowledgeCollectionDocumentsWithResponse request
+	ListKnowledgeCollectionDocumentsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*ListKnowledgeCollectionDocumentsResponse, error)
+
+	// QueryKnowledgeCollectionWithBodyWithResponse request with any body
+	QueryKnowledgeCollectionWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryKnowledgeCollectionResponse, error)
+
+	QueryKnowledgeCollectionWithResponse(ctx context.Context, id string, body QueryKnowledgeCollectionJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryKnowledgeCollectionResponse, error)
+
+	// DebugRetrieveKnowledgeWithBodyWithResponse request with any body
+	DebugRetrieveKnowledgeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DebugRetrieveKnowledgeResponse, error)
+
+	DebugRetrieveKnowledgeWithResponse(ctx context.Context, body DebugRetrieveKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*DebugRetrieveKnowledgeResponse, error)
+
+	// IngestKnowledgeDocumentWithBodyWithResponse request with any body
+	IngestKnowledgeDocumentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IngestKnowledgeDocumentResponse, error)
+
+	IngestKnowledgeDocumentWithResponse(ctx context.Context, body IngestKnowledgeDocumentJSONRequestBody, reqEditors ...RequestEditorFn) (*IngestKnowledgeDocumentResponse, error)
+
+	// SearchAppKnowledgeWithBodyWithResponse request with any body
+	SearchAppKnowledgeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchAppKnowledgeResponse, error)
+
+	SearchAppKnowledgeWithResponse(ctx context.Context, body SearchAppKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchAppKnowledgeResponse, error)
+
+	// DeleteKnowledgeDocumentWithResponse request
+	DeleteKnowledgeDocumentWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteKnowledgeDocumentResponse, error)
+
 	// McpRpcWithBodyWithResponse request with any body
 	McpRpcWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*McpRpcResponse, error)
 
@@ -17035,6 +18426,22 @@ type ClientWithResponsesInterface interface {
 	RunSkillToolWithBodyWithResponse(ctx context.Context, skill string, tool string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunSkillToolResponse, error)
 
 	RunSkillToolWithResponse(ctx context.Context, skill string, tool string, body RunSkillToolJSONRequestBody, reqEditors ...RequestEditorFn) (*RunSkillToolResponse, error)
+
+	// CancelAutoIndexJobWithBodyWithResponse request with any body
+	CancelAutoIndexJobWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelAutoIndexJobResponse, error)
+
+	CancelAutoIndexJobWithResponse(ctx context.Context, body CancelAutoIndexJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelAutoIndexJobResponse, error)
+
+	// PauseAutoIndexWithBodyWithResponse request with any body
+	PauseAutoIndexWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PauseAutoIndexResponse, error)
+
+	PauseAutoIndexWithResponse(ctx context.Context, body PauseAutoIndexJSONRequestBody, reqEditors ...RequestEditorFn) (*PauseAutoIndexResponse, error)
+
+	// ResumeAutoIndexWithResponse request
+	ResumeAutoIndexWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ResumeAutoIndexResponse, error)
+
+	// GetAutoIndexStatusWithResponse request
+	GetAutoIndexStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAutoIndexStatusResponse, error)
 
 	// OauthAuthorizeWithResponse request
 	OauthAuthorizeWithResponse(ctx context.Context, params *OauthAuthorizeParams, reqEditors ...RequestEditorFn) (*OauthAuthorizeResponse, error)
@@ -17588,6 +18995,11 @@ type ClientWithResponsesInterface interface {
 
 	// RealtimeVoiceWithResponse request
 	RealtimeVoiceWithResponse(ctx context.Context, params *RealtimeVoiceParams, reqEditors ...RequestEditorFn) (*RealtimeVoiceResponse, error)
+
+	// SearchWithBodyWithResponse request with any body
+	SearchWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchResponse, error)
+
+	SearchWithResponse(ctx context.Context, body SearchJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchResponse, error)
 }
 
 type OauthDiscoveryResponse struct {
@@ -17810,6 +19222,290 @@ func (r CreateAgentKeyResponse) StatusCode() int {
 	return 0
 }
 
+type GetCapabilitiesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON503      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCapabilitiesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCapabilitiesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListAppKnowledgeCollectionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAppKnowledgeCollectionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAppKnowledgeCollectionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateKnowledgeCollectionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *Error
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateKnowledgeCollectionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateKnowledgeCollectionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteKnowledgeCollectionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteKnowledgeCollectionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteKnowledgeCollectionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetKnowledgeCollectionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetKnowledgeCollectionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetKnowledgeCollectionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type BrowseKnowledgeCollectionChunksResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r BrowseKnowledgeCollectionChunksResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BrowseKnowledgeCollectionChunksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListKnowledgeCollectionDocumentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListKnowledgeCollectionDocumentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListKnowledgeCollectionDocumentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type QueryKnowledgeCollectionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *Error
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r QueryKnowledgeCollectionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QueryKnowledgeCollectionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DebugRetrieveKnowledgeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *Error
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON503      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DebugRetrieveKnowledgeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DebugRetrieveKnowledgeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type IngestKnowledgeDocumentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *Error
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r IngestKnowledgeDocumentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r IngestKnowledgeDocumentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SearchAppKnowledgeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *Error
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchAppKnowledgeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchAppKnowledgeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteKnowledgeDocumentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteKnowledgeDocumentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteKnowledgeDocumentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type McpRpcResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -17955,6 +19651,96 @@ func (r RunSkillToolResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RunSkillToolResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CancelAutoIndexJobResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *Error
+	JSON401      *Unauthorized
+	JSON404      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelAutoIndexJobResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelAutoIndexJobResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PauseAutoIndexResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r PauseAutoIndexResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PauseAutoIndexResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ResumeAutoIndexResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r ResumeAutoIndexResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResumeAutoIndexResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAutoIndexStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAutoIndexStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAutoIndexStatusResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -21756,6 +23542,31 @@ func (r RealtimeVoiceResponse) StatusCode() int {
 	return 0
 }
 
+type SearchResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *WebSearchResponse
+	JSON400      *Error
+	JSON401      *Error
+	JSON503      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // OauthDiscoveryWithResponse request returning *OauthDiscoveryResponse
 func (c *ClientWithResponses) OauthDiscoveryWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*OauthDiscoveryResponse, error) {
 	rsp, err := c.OauthDiscovery(ctx, reqEditors...)
@@ -21861,6 +23672,154 @@ func (c *ClientWithResponses) CreateAgentKeyWithResponse(ctx context.Context, id
 	return ParseCreateAgentKeyResponse(rsp)
 }
 
+// GetCapabilitiesWithResponse request returning *GetCapabilitiesResponse
+func (c *ClientWithResponses) GetCapabilitiesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCapabilitiesResponse, error) {
+	rsp, err := c.GetCapabilities(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCapabilitiesResponse(rsp)
+}
+
+// ListAppKnowledgeCollectionsWithResponse request returning *ListAppKnowledgeCollectionsResponse
+func (c *ClientWithResponses) ListAppKnowledgeCollectionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAppKnowledgeCollectionsResponse, error) {
+	rsp, err := c.ListAppKnowledgeCollections(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAppKnowledgeCollectionsResponse(rsp)
+}
+
+// CreateKnowledgeCollectionWithBodyWithResponse request with arbitrary body returning *CreateKnowledgeCollectionResponse
+func (c *ClientWithResponses) CreateKnowledgeCollectionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateKnowledgeCollectionResponse, error) {
+	rsp, err := c.CreateKnowledgeCollectionWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateKnowledgeCollectionResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateKnowledgeCollectionWithResponse(ctx context.Context, body CreateKnowledgeCollectionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateKnowledgeCollectionResponse, error) {
+	rsp, err := c.CreateKnowledgeCollection(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateKnowledgeCollectionResponse(rsp)
+}
+
+// DeleteKnowledgeCollectionWithResponse request returning *DeleteKnowledgeCollectionResponse
+func (c *ClientWithResponses) DeleteKnowledgeCollectionWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteKnowledgeCollectionResponse, error) {
+	rsp, err := c.DeleteKnowledgeCollection(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteKnowledgeCollectionResponse(rsp)
+}
+
+// GetKnowledgeCollectionWithResponse request returning *GetKnowledgeCollectionResponse
+func (c *ClientWithResponses) GetKnowledgeCollectionWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetKnowledgeCollectionResponse, error) {
+	rsp, err := c.GetKnowledgeCollection(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetKnowledgeCollectionResponse(rsp)
+}
+
+// BrowseKnowledgeCollectionChunksWithResponse request returning *BrowseKnowledgeCollectionChunksResponse
+func (c *ClientWithResponses) BrowseKnowledgeCollectionChunksWithResponse(ctx context.Context, id string, params *BrowseKnowledgeCollectionChunksParams, reqEditors ...RequestEditorFn) (*BrowseKnowledgeCollectionChunksResponse, error) {
+	rsp, err := c.BrowseKnowledgeCollectionChunks(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBrowseKnowledgeCollectionChunksResponse(rsp)
+}
+
+// ListKnowledgeCollectionDocumentsWithResponse request returning *ListKnowledgeCollectionDocumentsResponse
+func (c *ClientWithResponses) ListKnowledgeCollectionDocumentsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*ListKnowledgeCollectionDocumentsResponse, error) {
+	rsp, err := c.ListKnowledgeCollectionDocuments(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListKnowledgeCollectionDocumentsResponse(rsp)
+}
+
+// QueryKnowledgeCollectionWithBodyWithResponse request with arbitrary body returning *QueryKnowledgeCollectionResponse
+func (c *ClientWithResponses) QueryKnowledgeCollectionWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryKnowledgeCollectionResponse, error) {
+	rsp, err := c.QueryKnowledgeCollectionWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQueryKnowledgeCollectionResponse(rsp)
+}
+
+func (c *ClientWithResponses) QueryKnowledgeCollectionWithResponse(ctx context.Context, id string, body QueryKnowledgeCollectionJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryKnowledgeCollectionResponse, error) {
+	rsp, err := c.QueryKnowledgeCollection(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQueryKnowledgeCollectionResponse(rsp)
+}
+
+// DebugRetrieveKnowledgeWithBodyWithResponse request with arbitrary body returning *DebugRetrieveKnowledgeResponse
+func (c *ClientWithResponses) DebugRetrieveKnowledgeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DebugRetrieveKnowledgeResponse, error) {
+	rsp, err := c.DebugRetrieveKnowledgeWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDebugRetrieveKnowledgeResponse(rsp)
+}
+
+func (c *ClientWithResponses) DebugRetrieveKnowledgeWithResponse(ctx context.Context, body DebugRetrieveKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*DebugRetrieveKnowledgeResponse, error) {
+	rsp, err := c.DebugRetrieveKnowledge(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDebugRetrieveKnowledgeResponse(rsp)
+}
+
+// IngestKnowledgeDocumentWithBodyWithResponse request with arbitrary body returning *IngestKnowledgeDocumentResponse
+func (c *ClientWithResponses) IngestKnowledgeDocumentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IngestKnowledgeDocumentResponse, error) {
+	rsp, err := c.IngestKnowledgeDocumentWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIngestKnowledgeDocumentResponse(rsp)
+}
+
+func (c *ClientWithResponses) IngestKnowledgeDocumentWithResponse(ctx context.Context, body IngestKnowledgeDocumentJSONRequestBody, reqEditors ...RequestEditorFn) (*IngestKnowledgeDocumentResponse, error) {
+	rsp, err := c.IngestKnowledgeDocument(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIngestKnowledgeDocumentResponse(rsp)
+}
+
+// SearchAppKnowledgeWithBodyWithResponse request with arbitrary body returning *SearchAppKnowledgeResponse
+func (c *ClientWithResponses) SearchAppKnowledgeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchAppKnowledgeResponse, error) {
+	rsp, err := c.SearchAppKnowledgeWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchAppKnowledgeResponse(rsp)
+}
+
+func (c *ClientWithResponses) SearchAppKnowledgeWithResponse(ctx context.Context, body SearchAppKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchAppKnowledgeResponse, error) {
+	rsp, err := c.SearchAppKnowledge(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchAppKnowledgeResponse(rsp)
+}
+
+// DeleteKnowledgeDocumentWithResponse request returning *DeleteKnowledgeDocumentResponse
+func (c *ClientWithResponses) DeleteKnowledgeDocumentWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteKnowledgeDocumentResponse, error) {
+	rsp, err := c.DeleteKnowledgeDocument(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteKnowledgeDocumentResponse(rsp)
+}
+
 // McpRpcWithBodyWithResponse request with arbitrary body returning *McpRpcResponse
 func (c *ClientWithResponses) McpRpcWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*McpRpcResponse, error) {
 	rsp, err := c.McpRpcWithBody(ctx, contentType, body, reqEditors...)
@@ -21945,6 +23904,58 @@ func (c *ClientWithResponses) RunSkillToolWithResponse(ctx context.Context, skil
 		return nil, err
 	}
 	return ParseRunSkillToolResponse(rsp)
+}
+
+// CancelAutoIndexJobWithBodyWithResponse request with arbitrary body returning *CancelAutoIndexJobResponse
+func (c *ClientWithResponses) CancelAutoIndexJobWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelAutoIndexJobResponse, error) {
+	rsp, err := c.CancelAutoIndexJobWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelAutoIndexJobResponse(rsp)
+}
+
+func (c *ClientWithResponses) CancelAutoIndexJobWithResponse(ctx context.Context, body CancelAutoIndexJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelAutoIndexJobResponse, error) {
+	rsp, err := c.CancelAutoIndexJob(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelAutoIndexJobResponse(rsp)
+}
+
+// PauseAutoIndexWithBodyWithResponse request with arbitrary body returning *PauseAutoIndexResponse
+func (c *ClientWithResponses) PauseAutoIndexWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PauseAutoIndexResponse, error) {
+	rsp, err := c.PauseAutoIndexWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePauseAutoIndexResponse(rsp)
+}
+
+func (c *ClientWithResponses) PauseAutoIndexWithResponse(ctx context.Context, body PauseAutoIndexJSONRequestBody, reqEditors ...RequestEditorFn) (*PauseAutoIndexResponse, error) {
+	rsp, err := c.PauseAutoIndex(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePauseAutoIndexResponse(rsp)
+}
+
+// ResumeAutoIndexWithResponse request returning *ResumeAutoIndexResponse
+func (c *ClientWithResponses) ResumeAutoIndexWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ResumeAutoIndexResponse, error) {
+	rsp, err := c.ResumeAutoIndex(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResumeAutoIndexResponse(rsp)
+}
+
+// GetAutoIndexStatusWithResponse request returning *GetAutoIndexStatusResponse
+func (c *ClientWithResponses) GetAutoIndexStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAutoIndexStatusResponse, error) {
+	rsp, err := c.GetAutoIndexStatus(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAutoIndexStatusResponse(rsp)
 }
 
 // OauthAuthorizeWithResponse request returning *OauthAuthorizeResponse
@@ -23712,6 +25723,23 @@ func (c *ClientWithResponses) RealtimeVoiceWithResponse(ctx context.Context, par
 	return ParseRealtimeVoiceResponse(rsp)
 }
 
+// SearchWithBodyWithResponse request with arbitrary body returning *SearchResponse
+func (c *ClientWithResponses) SearchWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchResponse, error) {
+	rsp, err := c.SearchWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchResponse(rsp)
+}
+
+func (c *ClientWithResponses) SearchWithResponse(ctx context.Context, body SearchJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchResponse, error) {
+	rsp, err := c.Search(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchResponse(rsp)
+}
+
 // ParseOauthDiscoveryResponse parses an HTTP response from a OauthDiscoveryWithResponse call
 func ParseOauthDiscoveryResponse(rsp *http.Response) (*OauthDiscoveryResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24103,6 +26131,458 @@ func ParseCreateAgentKeyResponse(rsp *http.Response) (*CreateAgentKeyResponse, e
 	return response, nil
 }
 
+// ParseGetCapabilitiesResponse parses an HTTP response from a GetCapabilitiesWithResponse call
+func ParseGetCapabilitiesResponse(rsp *http.Response) (*GetCapabilitiesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCapabilitiesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAppKnowledgeCollectionsResponse parses an HTTP response from a ListAppKnowledgeCollectionsWithResponse call
+func ParseListAppKnowledgeCollectionsResponse(rsp *http.Response) (*ListAppKnowledgeCollectionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAppKnowledgeCollectionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateKnowledgeCollectionResponse parses an HTTP response from a CreateKnowledgeCollectionWithResponse call
+func ParseCreateKnowledgeCollectionResponse(rsp *http.Response) (*CreateKnowledgeCollectionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateKnowledgeCollectionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteKnowledgeCollectionResponse parses an HTTP response from a DeleteKnowledgeCollectionWithResponse call
+func ParseDeleteKnowledgeCollectionResponse(rsp *http.Response) (*DeleteKnowledgeCollectionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteKnowledgeCollectionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetKnowledgeCollectionResponse parses an HTTP response from a GetKnowledgeCollectionWithResponse call
+func ParseGetKnowledgeCollectionResponse(rsp *http.Response) (*GetKnowledgeCollectionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetKnowledgeCollectionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBrowseKnowledgeCollectionChunksResponse parses an HTTP response from a BrowseKnowledgeCollectionChunksWithResponse call
+func ParseBrowseKnowledgeCollectionChunksResponse(rsp *http.Response) (*BrowseKnowledgeCollectionChunksResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BrowseKnowledgeCollectionChunksResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListKnowledgeCollectionDocumentsResponse parses an HTTP response from a ListKnowledgeCollectionDocumentsWithResponse call
+func ParseListKnowledgeCollectionDocumentsResponse(rsp *http.Response) (*ListKnowledgeCollectionDocumentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListKnowledgeCollectionDocumentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseQueryKnowledgeCollectionResponse parses an HTTP response from a QueryKnowledgeCollectionWithResponse call
+func ParseQueryKnowledgeCollectionResponse(rsp *http.Response) (*QueryKnowledgeCollectionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QueryKnowledgeCollectionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDebugRetrieveKnowledgeResponse parses an HTTP response from a DebugRetrieveKnowledgeWithResponse call
+func ParseDebugRetrieveKnowledgeResponse(rsp *http.Response) (*DebugRetrieveKnowledgeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DebugRetrieveKnowledgeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseIngestKnowledgeDocumentResponse parses an HTTP response from a IngestKnowledgeDocumentWithResponse call
+func ParseIngestKnowledgeDocumentResponse(rsp *http.Response) (*IngestKnowledgeDocumentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &IngestKnowledgeDocumentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSearchAppKnowledgeResponse parses an HTTP response from a SearchAppKnowledgeWithResponse call
+func ParseSearchAppKnowledgeResponse(rsp *http.Response) (*SearchAppKnowledgeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchAppKnowledgeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteKnowledgeDocumentResponse parses an HTTP response from a DeleteKnowledgeDocumentWithResponse call
+func ParseDeleteKnowledgeDocumentResponse(rsp *http.Response) (*DeleteKnowledgeDocumentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteKnowledgeDocumentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseMcpRpcResponse parses an HTTP response from a McpRpcWithResponse call
 func ParseMcpRpcResponse(rsp *http.Response) (*McpRpcResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24362,6 +26842,124 @@ func ParseRunSkillToolResponse(rsp *http.Response) (*RunSkillToolResponse, error
 			return nil, err
 		}
 		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelAutoIndexJobResponse parses an HTTP response from a CancelAutoIndexJobWithResponse call
+func ParseCancelAutoIndexJobResponse(rsp *http.Response) (*CancelAutoIndexJobResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelAutoIndexJobResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePauseAutoIndexResponse parses an HTTP response from a PauseAutoIndexWithResponse call
+func ParsePauseAutoIndexResponse(rsp *http.Response) (*PauseAutoIndexResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PauseAutoIndexResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseResumeAutoIndexResponse parses an HTTP response from a ResumeAutoIndexWithResponse call
+func ParseResumeAutoIndexResponse(rsp *http.Response) (*ResumeAutoIndexResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResumeAutoIndexResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAutoIndexStatusResponse parses an HTTP response from a GetAutoIndexStatusWithResponse call
+func ParseGetAutoIndexStatusResponse(rsp *http.Response) (*GetAutoIndexStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAutoIndexStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	}
 
@@ -31389,6 +33987,53 @@ func ParseRealtimeVoiceResponse(rsp *http.Response) (*RealtimeVoiceResponse, err
 			return nil, err
 		}
 		response.JSON502 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSearchResponse parses an HTTP response from a SearchWithResponse call
+func ParseSearchResponse(rsp *http.Response) (*SearchResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WebSearchResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
 		var dest Error

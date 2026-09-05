@@ -851,6 +851,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Governed web search
+         * @description The search subsystem as a first-class primitive: the sibling of `/v1/chat/completions`. The governed engine (source buckets -> adapters -> publisher-policy gate -> hydration) is otherwise reachable only inside a persona turn via the web skill; this is the call any app, agent or MCP client makes directly.
+         *
+         *     Semantics are the skill layer's, re-exposed. The bucket cascade runs first and per-source refusals are NAMED in-band rather than dropped, so a source the deployment is not permitted to read is visible as a refusal instead of silently missing from the results. The publisher-policy gate runs per source with the caller-declared `kind`: `batch` honours robots everywhere, including sources where an interactive, user-initiated turn is exempt.
+         *
+         *     Results are grouped by source (bucket order, then general) and are NOT re-ranked across sources in v1. Content carries `representation` and `status` so a provider's generated summary is never mistaken for text read from the page, and a hit that was found but never opened is not reported as read.
+         */
+        post: operations["search"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/images/generations": {
         parameters: {
             query?: never;
@@ -2579,6 +2603,276 @@ export interface paths {
         get: operations["getLogs"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/knowledge/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search a knowledge collection
+         * @description Hybrid retrieval over one collection. `collection` accepts a collection id OR its exact display name; an unresolvable value returns 404 rather than an empty list, because `[]` with HTTP 200 is indistinguishable from "the store is empty" or "retrieval is broken". Omitting `collection` defaults to the caller's own and keeps the empty-list behaviour. Set `debug: true` for a per-arm breakdown (BM25 ranking, vector ranking, keyword fallback, the full fused ordering before truncation, and the resolved rrf_k) — only the surreal backend fuses arms.
+         */
+        post: operations["searchAppKnowledge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/knowledge/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest a document
+         * @description Chunks, embeds and stores one document. `source` names it; `filename` and `name` are accepted aliases, and omitting all three stores an empty source which renders as "." in listings.
+         */
+        post: operations["ingestKnowledgeDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/knowledge/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a document and its chunks
+         * @description Admin-only. The id is a storage PATH and must be percent-encoded; before libraos#1143 the parameter was not decoded, so a correctly encoded call matched nothing and returned 404 echoing the escaping back. Returns `chunks_removed` so a purge can be verified rather than assumed.
+         */
+        delete: operations["deleteKnowledgeDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/knowledge/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List knowledge collections */
+        get: operations["listAppKnowledgeCollections"];
+        put?: never;
+        /**
+         * Create a knowledge collection
+         * @description Admins may create any collection. A non-admin may create only `access_level: personal`, whose name is server-derived from the caller's email so the namespace cannot be squatted. Repeat calls are an idempotent 200 ensure.
+         */
+        post: operations["createKnowledgeCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/knowledge/collections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get collection detail */
+        get: operations["getKnowledgeCollection"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a collection and all its chunks
+         * @description Admin-only. Cascades to chunks, ACL grants, agent bindings and the durable registry row. Afterwards the collection no longer resolves, so searching it returns 404 rather than an empty list.
+         */
+        delete: operations["deleteKnowledgeCollection"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/knowledge/collections/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a collection's documents
+         * @description Derived from chunks — each distinct `source` becomes one document with its chunk count. This is how an ingest or a delete is verified.
+         */
+        get: operations["listKnowledgeCollectionDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/knowledge/collections/{id}/chunks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browse a collection's chunks */
+        get: operations["browseKnowledgeCollectionChunks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/knowledge/collections/{id}/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Search within one collection */
+        post: operations["queryKnowledgeCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/knowledge/debug-retrieve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Per-stage retrieval diagnostics
+         * @description Admin-only. Runs the retriever pipeline and returns each stage's output (bm25, vector, fused, reranked, filtered) with per-stage timings and the OTEL trace id, plus `skip_rerank` / `skip_llm_filter` switches. This is the endpoint to reach for before hypothesising about ranking.
+         */
+        post: operations["debugRetrieveKnowledge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What this deployment can actually do right now
+         * @description Reports EFFECTIVE capability rather than configuration: whether vector retrieval is active, whether the store is durable, and per collection whether its corpus is actually embedded. Not admin-gated — collections are filtered to the caller's scope. Docs go stale; a self-reporting binary does not.
+         */
+        get: operations["getCapabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/super-nova/emergency/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Auto-index worker status
+         * @description Whether auto-indexing is paused, what is running or queued, and how many bus events were dropped. Makes no model call, so it answers even when the LLM is unreachable.
+         */
+        get: operations["getAutoIndexStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/super-nova/emergency/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause auto-indexing
+         * @description Holds new events without dropping them. PROCESS-LOCAL: the flag is in memory, so a restart, upgrade, crash or reboot resumes ingestion. For a durable off switch set LIBRA_OS_SUPERNOVA_ENABLED=false.
+         */
+        post: operations["pauseAutoIndex"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/super-nova/emergency/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume auto-indexing */
+        post: operations["resumeAutoIndex"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/super-nova/emergency/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel one indexing job */
+        post: operations["cancelAutoIndexJob"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4831,6 +5125,70 @@ export interface components {
             /** @description Optional expiry in days; omit for a non-expiring key. */
             expires_in_days?: number;
         };
+        WebSearchRequest: {
+            /** @description The search query. */
+            query: string;
+            /** @description Source buckets to search first (e.g. `legal-qc`). Omitted means the calling identity's bound buckets, or general search when it has none. */
+            buckets?: string[];
+            /**
+             * @description Drives the publisher-policy gate. `batch` honours robots everywhere, including sources where a user-initiated interactive turn is exempt.
+             * @default interactive
+             * @enum {string}
+             */
+            kind: "interactive" | "batch";
+            /**
+             * @description Result ceiling. Values outside the range are clamped, not rejected.
+             * @default 10
+             */
+            top_k: number;
+            /**
+             * @description How much of each hit to hydrate. `anchored` is reserved and rejected with 400 in v1.
+             * @default snippets
+             * @enum {string}
+             */
+            fetch: "none" | "snippets" | "content";
+        };
+        WebSearchResult: {
+            title?: string;
+            /** Format: uri */
+            url?: string;
+            /** @description Driver attribution, e.g. `source:soquij` or `general (bucket-miss)`. */
+            source?: string;
+            content?: string;
+            published_date?: string;
+            /**
+             * @description What `content` IS, as declared by whichever component produced it. `search_snippet`, `provider_excerpt` and `page_extract` are page-derived; `provider_summary` and `model_answer` are generated prose about the page and are not evidence of what it says.
+             * @enum {string}
+             */
+            representation?: "search_snippet" | "provider_excerpt" | "page_extract" | "provider_summary" | "model_answer";
+            /**
+             * @description Coarse axis over `representation`.
+             * @enum {string}
+             */
+            derivation?: "page_derived" | "model_derived";
+            /**
+             * @description What happened to the hit. Empty means it was found and nothing more was attempted — found and opened are different claims. `blocked_policy` is our refusal to read the source; `blocked_soft` is the source refusing us with an anti-bot challenge served at HTTP 200.
+             * @enum {string}
+             */
+            status?: "opened" | "blocked_policy" | "blocked_target" | "blocked_soft" | "fetch_failed";
+        };
+        /** @description A model's answer to the query, supplied by a provider that offers one. Carried outside `results` so it can never be read as a hit, and never cited as a source. */
+        WebSearchProviderAnswer: {
+            text?: string;
+            /** @enum {string} */
+            representation?: "model_answer";
+            /** @enum {string} */
+            derivation?: "model_derived";
+        };
+        WebSearchResponse: {
+            results: components["schemas"]["WebSearchResult"][];
+            provider_answer?: components["schemas"]["WebSearchProviderAnswer"];
+            /** @description Per-source refusals, each naming the source and the reason (e.g. `blocked_by_publisher_policy: ...`). A refusal is not fatal and is never silent: the remaining sources still return. */
+            refusals?: string[];
+            /** @description True when no bound bucket produced a hit and the general searcher answered instead. */
+            bucket_miss: boolean;
+            usage?: components["schemas"]["UsageBlock"];
+        };
         /** @description Service API key metadata (no secret). */
         ServiceKey: {
             id?: string;
@@ -6777,6 +7135,57 @@ export interface operations {
                 };
             };
             /** @description Realtime voice is unconfigured or disabled. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Results, plus any per-source refusals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebSearchResponse"];
+                };
+            };
+            /** @description Missing query, or an unsupported `kind`/`fetch` value. `fetch: "anchored"` is reserved and refused here rather than half-implemented; use `fetch_url` with an anchor for passage-precise reads. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Missing or invalid credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Search API disabled (`LIBRA_OS_SEARCH_API_DISABLED`). */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -10721,6 +11130,531 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             /** @description Endpoint disabled, or source=requests requires persistent storage. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    searchAppKnowledge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    query: string;
+                    collection?: string;
+                    /** @default 5 */
+                    top_k?: number;
+                    threshold?: number;
+                    metadata_filter?: {
+                        [key: string]: string;
+                    };
+                    /** @default false */
+                    debug?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Matching chunks, or `{chunks, arms}` when `debug` is true. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description query required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description The named collection does not resolve. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    ingestKnowledgeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id?: string;
+                    content: string;
+                    source?: string;
+                    filename?: string;
+                    name?: string;
+                    /** @default default */
+                    collection?: string;
+                    collection_id?: string;
+                    metadata?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Ingested. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description content required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteKnowledgeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Document id or source path, percent-encoded. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted, with the removed-chunk count. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No chunks matched — nothing was deleted. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listAppKnowledgeCollections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Collections visible to the caller's scope. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createKnowledgeCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** @enum {string} */
+                    access_level?: "public" | "private" | "corporate" | "personal";
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Already existed — idempotent ensure. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description name required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getKnowledgeCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Collection detail. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteKnowledgeCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Existed in neither the manager nor the store. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listKnowledgeCollectionDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Documents with chunk counts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    browseKnowledgeCollectionChunks: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of chunks with the collection total. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    queryKnowledgeCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    query: string;
+                    /** @default 5 */
+                    top_k?: number;
+                    threshold?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Matching chunks. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description query required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    debugRetrieveKnowledge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    query: string;
+                    collections?: string[];
+                    /** @default 10 */
+                    top_k?: number;
+                    skip_rerank?: boolean;
+                    skip_llm_filter?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Per-stage retrieval breakdown. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description query required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Retriever unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getCapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Capability snapshot. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Disabled via the runtime hatch. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getAutoIndexStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Worker status and queue depth. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    pauseAutoIndex: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Paused, with the reason and timestamp. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    resumeAutoIndex: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumed; queued events drain. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    cancelAutoIndexJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    job_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Cancelled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Malformed body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description No such job. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

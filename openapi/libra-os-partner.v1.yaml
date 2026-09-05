@@ -3276,7 +3276,7 @@ components:
           type: integer
           minimum: 1
           description: Optional expiry in days; omit for a non-expiring key.
-    SearchRequest:
+    WebSearchRequest:
       type: object
       required: [query]
       properties:
@@ -3311,7 +3311,7 @@ components:
           description: >-
             How much of each hit to hydrate. `anchored` is reserved and
             rejected with 400 in v1.
-    SearchResult:
+    WebSearchResult:
       type: object
       properties:
         title: { type: string }
@@ -3344,7 +3344,7 @@ components:
             `blocked_policy` is our refusal to read the source;
             `blocked_soft` is the source refusing us with an anti-bot
             challenge served at HTTP 200.
-    SearchProviderAnswer:
+    WebSearchProviderAnswer:
       type: object
       description: >-
         A model's answer to the query, supplied by a provider that offers one.
@@ -3354,16 +3354,16 @@ components:
         text: { type: string }
         representation: { type: string, enum: [model_answer] }
         derivation: { type: string, enum: [model_derived] }
-    SearchResponse:
+    WebSearchResponse:
       type: object
       required: [results, bucket_miss]
       properties:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/SearchResult'
+            $ref: '#/components/schemas/WebSearchResult'
         provider_answer:
-          $ref: '#/components/schemas/SearchProviderAnswer'
+          $ref: '#/components/schemas/WebSearchProviderAnswer'
         refusals:
           type: array
           items: { type: string }
@@ -5123,14 +5123,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SearchRequest'
+              $ref: '#/components/schemas/WebSearchRequest'
       responses:
         '200':
           description: Results, plus any per-source refusals.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchResponse'
+                $ref: '#/components/schemas/WebSearchResponse'
         '400':
           description: >-
             Missing query, or an unsupported `kind`/`fetch` value.
@@ -8395,7 +8395,7 @@ paths:
 
   /api/knowledge/search:
     post:
-      operationId: searchKnowledge
+      operationId: searchAppKnowledge
       summary: Search a knowledge collection
       description: >-
         Hybrid retrieval over one collection. `collection` accepts a collection
@@ -8492,7 +8492,7 @@ paths:
           schema: { type: string }
           description: Document id or source path, percent-encoded.
       responses:
-        '200': { description: Deleted, with the removed-chunk count. }
+        '200': { description: 'Deleted, with the removed-chunk count.' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404':
@@ -8503,7 +8503,7 @@ paths:
 
   /api/knowledge/collections:
     get:
-      operationId: listKnowledgeCollections
+      operationId: listAppKnowledgeCollections
       summary: List knowledge collections
       tags: [Knowledge]
       responses:
@@ -8742,7 +8742,7 @@ paths:
               properties:
                 reason: { type: string }
       responses:
-        '200': { description: Paused, with the reason and timestamp. }
+        '200': { description: 'Paused, with the reason and timestamp.' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/super-nova/emergency/resume:
